@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: sushi_pos_api
+Version: 1.0.0
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: sqlalchemy
+Requires-Dist: pydantic
+Requires-Dist: pydantic-settings
+Requires-Dist: psycopg2-binary
+Dynamic: requires-dist
