@@ -1,6 +1,6 @@
 # Sushi POS API
 
-A modern Point of Sale (POS) system built for restaurants — originally inspired by a local all-you-can-eat sushi place in Durham, NC. I started this project to explore full-stack development and build something useful that could streamline restaurant operations like menu customization, order processing, and table tracking. While it started with sushi in mind, it’s flexible enough to be used for any kind of restaurant.
+A modern Point of Sale (POS) system built for restaurants, originally inspired by a local all-you-can-eat sushi place in Durham, NC. I started this project to explore full-stack development and build something useful that could streamline restaurant operations like menu customization, order processing, and table tracking. While it started with sushi in mind, it’s flexible enough to be used for any kind of restaurant.
 
 This project has taught me a ton about database design, backend API development, and frontend UI integration. I'm continuing to build this out with the goal of making it a full-scale solution for small and mid-sized restaurants.
 ## Project Structure
