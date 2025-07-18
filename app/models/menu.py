@@ -10,11 +10,12 @@ It includes:
 """
 
 # all the database stuff we need
-from sqlalchemy import Boolean, Column, Integer, String, Text, Numeric, ForeignKey, DateTime, Table
+from sqlalchemy import Boolean, Column, Integer, String, Text, Numeric, ForeignKey, DateTime, Table, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 from datetime import datetime
+import enum
 
 # this table connects menu items with their modifiers (like extra sauce, no onions, etc)
 menu_item_modifiers = Table(
@@ -99,6 +100,11 @@ class Modifier(Base):
     menu_items = relationship("MenuItem", secondary=menu_item_modifiers, back_populates="modifiers")
 
 # a menu item is something you can order, like "California Roll"
+class MealPeriodEnum(str, enum.Enum):
+    LUNCH = "LUNCH"
+    DINNER = "DINNER"
+    BOTH = "BOTH"
+
 class MenuItem(Base):
     """
     Database model for menu items.
@@ -132,7 +138,7 @@ class MenuItem(Base):
     is_available = Column(Boolean, default=True)  # whether we can order this right now
     is_popular = Column(Boolean, default=False)  # whether this is a popular item
     display_order = Column(Integer, nullable=False, default=0)  # where to show this in the menu
-    meal_period = Column(String(20), nullable=False, default='both')  # when this item is available: lunch, dinner, or both
+    meal_period = Column(SQLEnum(MealPeriodEnum), nullable=False, default=MealPeriodEnum.BOTH)  # when this item is available: lunch, dinner, or both
 
     # when this item was created and last updated
     created_at = Column(DateTime(timezone=True), server_default=func.now())
