@@ -23,7 +23,7 @@ export interface MenuItem {
   price: number;
   category_id: number;
   is_available: boolean;
-  meal_period: 'both' | 'lunch' | 'dinner'; // Meal period support - required field
+  meal_period: 'BOTH' | 'LUNCH' | 'DINNER'; // Meal period support - required field
 }
 
 export interface Category {
@@ -175,7 +175,7 @@ export const menuApi = {
   getItems: (params?: { skip?: number; limit?: number; category_id?: number }): Promise<MenuItem[]> => 
     api.get('/menu/menu-items/', { params }).then(res => res.data),
   getItem: (id: number): Promise<MenuItem> => api.get(`/menu/menu-items/${id}/`).then(res => res.data),
-  createItem: (data: { name: string; description: string; price: number; category_id: number; meal_period: 'both' | 'lunch' | 'dinner' }): Promise<MenuItem> => 
+  createItem: (data: { name: string; description: string; price: number; category_id: number; meal_period: 'BOTH' | 'LUNCH' | 'DINNER' }): Promise<MenuItem> => 
     api.post('/menu/menu-items/', data).then(res => res.data),
   updateItem: (id: number, data: Partial<MenuItem>): Promise<MenuItem> => 
     api.patch(`/menu/menu-items/${id}/`, data).then(res => res.data),

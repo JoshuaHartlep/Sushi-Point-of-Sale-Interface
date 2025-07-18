@@ -8,6 +8,7 @@ including menu items, categories, and modifiers.
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from datetime import datetime
+from app.models.menu import MealPeriodEnum
 
 class MenuItemBase(BaseModel):
     """Base schema for menu items."""
@@ -16,7 +17,7 @@ class MenuItemBase(BaseModel):
     price: float
     category_id: Optional[int] = None
     is_available: bool = True
-    meal_period: Literal['lunch', 'dinner', 'both'] = 'both'
+    meal_period: MealPeriodEnum = MealPeriodEnum.BOTH
 
 class MenuItemCreate(MenuItemBase):
     """Schema for creating a menu item."""
@@ -26,7 +27,7 @@ class MenuItemUpdate(MenuItemBase):
     """Schema for updating a menu item."""
     name: Optional[str] = None
     price: Optional[float] = None
-    meal_period: Optional[Literal['lunch', 'dinner', 'both']] = None
+    meal_period: Optional[MealPeriodEnum] = None
 
 class MenuItemResponse(MenuItemBase):
     """Schema for menu item responses."""

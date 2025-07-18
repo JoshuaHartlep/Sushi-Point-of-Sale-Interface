@@ -19,7 +19,7 @@ export default function Menu() {
     description: '',
     price: '',
     category_id: '',
-    meal_period: 'both' as 'both' | 'lunch' | 'dinner',
+    meal_period: 'BOTH' as 'BOTH' | 'LUNCH' | 'DINNER',
   });
 
   const queryClient = useQueryClient();
@@ -27,11 +27,11 @@ export default function Menu() {
 
   // Helper function to check if an item is available during current meal period
   const isItemAvailable = (item: MenuItem): boolean => {
-    if (!item.meal_period || item.meal_period === 'both') {
+    if (!item.meal_period || item.meal_period === 'BOTH') {
       return item.is_available;
     }
     
-    if (isLunch && item.meal_period === 'dinner') {
+    if (isLunch && item.meal_period === 'DINNER') {
       return false; // Dinner-only items are not available during lunch
     }
     
@@ -40,11 +40,11 @@ export default function Menu() {
 
   // Helper function to get availability message
   const getAvailabilityMessage = (item: MenuItem): string | null => {
-    if (!item.meal_period || item.meal_period === 'both') {
+    if (!item.meal_period || item.meal_period === 'BOTH') {
       return null;
     }
     
-    if (isLunch && item.meal_period === 'dinner') {
+    if (isLunch && item.meal_period === 'DINNER') {
       return 'Only available during dinner';
     }
     
@@ -83,7 +83,7 @@ export default function Menu() {
         description: '',
         price: '',
         category_id: '',
-        meal_period: 'both',
+        meal_period: 'BOTH',
       });
     },
   });
@@ -462,13 +462,13 @@ export default function Menu() {
                   Meal Period
                 </label>
                 <select
-                  value={editItemData.meal_period ?? selectedItem?.meal_period ?? 'both'}
-                  onChange={(e) => setEditItemData({ ...editItemData, meal_period: e.target.value as 'both' | 'lunch' | 'dinner' })}
+                  value={editItemData.meal_period ?? selectedItem?.meal_period ?? 'BOTH'}
+                  onChange={(e) => setEditItemData({ ...editItemData, meal_period: e.target.value as 'BOTH' | 'LUNCH' | 'DINNER' })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="both">Available All Day</option>
-                  <option value="lunch">Lunch Only</option>
-                  <option value="dinner">Dinner Only</option>
+                  <option value="BOTH">Available All Day</option>
+                  <option value="LUNCH">Lunch Only</option>
+                  <option value="DINNER">Dinner Only</option>
                 </select>
               </div>
 
@@ -590,12 +590,12 @@ export default function Menu() {
                 </label>
                 <select
                   value={newItemData.meal_period}
-                  onChange={(e) => setNewItemData({ ...newItemData, meal_period: e.target.value as 'both' | 'lunch' | 'dinner' })}
+                  onChange={(e) => setNewItemData({ ...newItemData, meal_period: e.target.value as 'BOTH' | 'LUNCH' | 'DINNER' })}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="both">Available All Day</option>
-                  <option value="lunch">Lunch Only</option>
-                  <option value="dinner">Dinner Only</option>
+                  <option value="BOTH">Available All Day</option>
+                  <option value="LUNCH">Lunch Only</option>
+                  <option value="DINNER">Dinner Only</option>
                 </select>
               </div>
             </div>

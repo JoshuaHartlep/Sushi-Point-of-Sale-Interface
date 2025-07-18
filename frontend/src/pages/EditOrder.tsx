@@ -13,7 +13,7 @@ interface MenuItem {
   price: number;
   category_id: number;
   is_available: boolean;
-  meal_period?: 'both' | 'lunch' | 'dinner';
+  meal_period?: 'BOTH' | 'LUNCH' | 'DINNER';
 }
 
 interface OrderItem {
@@ -46,11 +46,11 @@ const EditOrder = () => {
 
   // Helper function to check if an item is available during current meal period
   const isItemAvailable = (item: MenuItem): boolean => {
-    if (!item.meal_period || item.meal_period === 'both') {
+    if (!item.meal_period || item.meal_period === 'BOTH') {
       return item.is_available;
     }
     
-    if (isLunch && item.meal_period === 'dinner') {
+    if (isLunch && item.meal_period === 'DINNER') {
       return false; // Dinner-only items are not available during lunch
     }
     
@@ -59,11 +59,11 @@ const EditOrder = () => {
 
   // Helper function to get availability message
   const getAvailabilityMessage = (item: MenuItem): string | null => {
-    if (!item.meal_period || item.meal_period === 'both') {
+    if (!item.meal_period || item.meal_period === 'BOTH') {
       return null;
     }
     
-    if (isLunch && item.meal_period === 'dinner') {
+    if (isLunch && item.meal_period === 'DINNER') {
       return 'Only available during dinner';
     }
     
@@ -72,15 +72,15 @@ const EditOrder = () => {
 
   // Helper function to get meal period tag
   const getMealPeriodTag = (item: MenuItem): string | null => {
-    if (!item.meal_period || item.meal_period === 'both') {
+    if (!item.meal_period || item.meal_period === 'BOTH') {
       return null;
     }
     
-    if (item.meal_period === 'lunch') {
+    if (item.meal_period === 'LUNCH') {
       return 'Lunch Only';
     }
     
-    if (item.meal_period === 'dinner') {
+    if (item.meal_period === 'DINNER') {
       return 'Dinner Only';
     }
     
@@ -271,7 +271,7 @@ const EditOrder = () => {
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           !available 
                             ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
-                            : item.meal_period === 'lunch'
+                            : item.meal_period === 'LUNCH'
                               ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
                               : 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
                         }`}>
