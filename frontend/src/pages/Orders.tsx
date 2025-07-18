@@ -298,8 +298,8 @@ const Orders = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto" />
-          <p className="mt-4 text-gray-600">Loading orders...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-600 dark:text-gray-400" />
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading orders...</p>
         </div>
       </div>
     );
@@ -310,10 +310,10 @@ const Orders = () => {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <AlertCircle className="w-8 h-8 text-red-500 mx-auto" />
-          <p className="mt-4 text-red-600">
+          <p className="mt-4 text-red-600 dark:text-red-400">
             Error loading orders. Please try again later.
           </p>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {ordersError?.message || totalsError?.message}
           </p>
         </div>
@@ -324,10 +324,10 @@ const Orders = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
         <button
           onClick={() => setIsNewOrderModalOpen(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors"
         >
           <Plus className="w-5 h-5 mr-2" />
           New Order
@@ -339,14 +339,14 @@ const Orders = () => {
         {orders.map((order) => (
           <div
             key={order.id}
-            className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
+            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-md dark:hover:shadow-lg transition-all border dark:border-gray-700"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   Order #{order.id}
                 </h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Table {order.table_id}
                 </p>
               </div>
@@ -360,21 +360,21 @@ const Orders = () => {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Total</span>
-                <span className="font-medium text-gray-900">
+                <span className="text-gray-500 dark:text-gray-400">Total</span>
+                <span className="font-medium text-gray-900 dark:text-white">
                   ${formatTotal(orderTotals[order.id])}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Created</span>
-                <span className="text-gray-700">
+                <span className="text-gray-500 dark:text-gray-400">Created</span>
+                <span className="text-gray-700 dark:text-gray-300">
                   {new Date(order.created_at).toLocaleString()}
                 </span>
               </div>
               {order.ayce_order && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Type</span>
-                  <span className="text-blue-600 font-medium">AYCE</span>
+                  <span className="text-gray-500 dark:text-gray-400">Type</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-medium">AYCE</span>
                 </div>
               )}
             </div>
@@ -383,20 +383,20 @@ const Orders = () => {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handleViewOrder(order)}
-                  className="p-2 text-blue-500 hover:text-blue-700"
+                  className="p-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                 >
                   <Eye className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => navigate(`/orders/${order.id}/edit`)}
-                  className="p-2 text-blue-500 hover:text-blue-700"
+                  className="p-2 text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                 >
                   <Edit2 className="w-5 h-5" />
                 </button>
               </div>
               <button 
                 onClick={() => handleDeleteClick(order)}
-                className="p-2 text-red-500 hover:text-red-700"
+                className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -407,20 +407,20 @@ const Orders = () => {
 
       {/* Orders Table */}
       <div className="mt-8">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Order ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Table</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {orders.map((order) => (
-              <tr key={order.id} className="border-b">
-                <td className="py-4 px-6">#{order.id}</td>
-                <td className="py-4 px-6">Table {order.table_id}</td>
+              <tr key={order.id} className="border-b border-gray-200 dark:border-gray-700">
+                <td className="py-4 px-6 text-gray-900 dark:text-white">#{order.id}</td>
+                <td className="py-4 px-6 text-gray-900 dark:text-white">Table {order.table_id}</td>
                 <td className="py-4 px-6">
                   <StatusDropdown
                     currentStatus={order.status}
@@ -429,7 +429,7 @@ const Orders = () => {
                     isUpdating={updateStatusMutation.isPending && updateStatusMutation.variables?.orderId === order.id}
                   />
                 </td>
-                <td className="py-4 px-6">${formatTotal(orderTotals[order.id])}</td>
+                <td className="py-4 px-6 text-gray-900 dark:text-white">${formatTotal(orderTotals[order.id])}</td>
               </tr>
             ))}
           </tbody>
@@ -439,16 +439,16 @@ const Orders = () => {
       {/* New Order Modal */}
       {isNewOrderModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Create New Order</h2>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-96 border dark:border-gray-700">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Create New Order</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Table Number</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Table Number</label>
                 <input
                   type="number"
                   value={newOrder.table_id}
                   onChange={(e) => setNewOrder({ ...newOrder, table_id: parseInt(e.target.value) })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
               <div>
@@ -459,26 +459,26 @@ const Orders = () => {
                     onChange={(e) => setNewOrder({ ...newOrder, ayce_order: e.target.checked })}
                     className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">All You Can Eat Order</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">All You Can Eat Order</span>
                 </label>
               </div>
               {newOrder.ayce_order && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">AYCE Price</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">AYCE Price</label>
                   <input
                     type="number"
                     value={newOrder.ayce_price}
                     onChange={(e) => setNewOrder({ ...newOrder, ayce_price: parseFloat(e.target.value) })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-gray-700">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
                 <textarea
                   value={newOrder.notes || ''}
                   onChange={(e) => setNewOrder({ ...newOrder, notes: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   rows={3}
                 />
               </div>
@@ -486,13 +486,13 @@ const Orders = () => {
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 onClick={() => setIsNewOrderModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-md hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateOrder}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors"
               >
                 Create Order
               </button>
@@ -504,9 +504,9 @@ const Orders = () => {
       {/* View Order Modal */}
       {isViewModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl border dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Order #{selectedOrder.id} Details
               </h2>
               <button
@@ -514,7 +514,7 @@ const Orders = () => {
                   setIsViewModalOpen(false);
                   setSelectedOrder(null);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -525,7 +525,7 @@ const Orders = () => {
                 <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
               </div>
             ) : detailsError || totalError ? (
-              <div className="p-4 bg-red-50 text-red-600 rounded-md">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md">
                 <AlertCircle className="w-5 h-5 inline-block mr-2" />
                 Error loading order details. Please try again.
               </div>
@@ -534,21 +534,21 @@ const Orders = () => {
                 {/* Order Status and Table */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <p className="font-medium">{selectedOrder.status}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedOrder.status}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Table</p>
-                    <p className="font-medium">#{selectedOrder.table_id}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Table</p>
+                    <p className="font-medium text-gray-900 dark:text-white">#{selectedOrder.table_id}</p>
                   </div>
                 </div>
 
                 {/* AYCE Status */}
                 <div>
-                  <p className="text-sm text-gray-500">All You Can Eat</p>
-                  <p className="font-medium">{selectedOrder.ayce_order ? 'Yes' : 'No'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">All You Can Eat</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{selectedOrder.ayce_order ? 'Yes' : 'No'}</p>
                   {selectedOrder.ayce_order && orderTotal && (
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                       AYCE Price: ${formatTotal(orderTotal.ayce_price)}
                     </p>
                   )}
@@ -556,7 +556,7 @@ const Orders = () => {
 
                 {/* Order Items */}
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Items</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Items</p>
                   <div className="space-y-2">
                     {orderDetails?.items?.map((item) => {
                       const menuItem = menuItems?.[item.menu_item_id];
@@ -564,12 +564,12 @@ const Orders = () => {
                       return (
                         <div key={item.id} className="flex justify-between">
                           <div>
-                            <p className="font-medium">
+                            <p className="font-medium text-gray-900 dark:text-white">
                               {menuItem?.name || 'Unknown item'}
                             </p>
-                            <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Qty: {item.quantity}</p>
                           </div>
-                          <p className="text-gray-900">
+                          <p className="text-gray-900 dark:text-white">
                             ${formatTotal(itemTotal)}
                           </p>
                         </div>
@@ -581,25 +581,25 @@ const Orders = () => {
                 {/* Order Notes */}
                 {selectedOrder.notes && (
                   <div>
-                    <p className="text-sm text-gray-500">Notes</p>
-                    <p className="font-medium">{selectedOrder.notes}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Notes</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{selectedOrder.notes}</p>
                   </div>
                 )}
 
                 {/* Pricing Summary */}
                 {orderTotal && (
-                  <div className="border-t pt-4 space-y-2">
+                  <div className="border-t border-gray-200 dark:border-gray-600 pt-4 space-y-2">
                     <div className="flex justify-between">
-                      <p className="text-gray-600">Subtotal</p>
-                      <p className="font-medium">${formatTotal(orderTotal.subtotal)}</p>
+                      <p className="text-gray-600 dark:text-gray-400">Subtotal</p>
+                      <p className="font-medium text-gray-900 dark:text-white">${formatTotal(orderTotal.subtotal)}</p>
                     </div>
                     {orderTotal.discount_amount && Number(orderTotal.discount_amount) > 0 && (
-                      <div className="flex justify-between text-red-600">
+                      <div className="flex justify-between text-red-600 dark:text-red-400">
                         <p>Discount</p>
                         <p>-${formatTotal(orderTotal.discount_amount)}</p>
                       </div>
                     )}
-                    <div className="flex justify-between font-semibold text-lg">
+                    <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-white">
                       <p>Total</p>
                       <p>${formatTotal(orderTotal.total)}</p>
                     </div>
@@ -614,24 +614,24 @@ const Orders = () => {
       {/* Discount Modal */}
       {showDiscountModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Apply Discount</h2>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md border dark:border-gray-700">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Apply Discount</h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Discount Type
                 </label>
                 <select
                   value={discountType}
                   onChange={(e) => setDiscountType(e.target.value as 'percentage' | 'fixed')}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="percentage">Percentage</option>
                   <option value="fixed">Fixed Amount</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Amount
                 </label>
                 <input
@@ -639,20 +639,20 @@ const Orders = () => {
                   value={discountAmount}
                   onChange={(e) => setDiscountAmount(e.target.value)}
                   placeholder={discountType === 'percentage' ? 'Enter percentage' : 'Enter amount'}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
             <div className="flex justify-end space-x-4 mt-6">
               <button
                 onClick={() => setShowDiscountModal(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleApplyDiscount}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
               >
                 Apply
               </button>
@@ -664,9 +664,9 @@ const Orders = () => {
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md border dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Delete Order
               </h2>
               <button
@@ -674,18 +674,18 @@ const Orders = () => {
                   setIsDeleteModalOpen(false);
                   setSelectedOrder(null);
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
               Are you sure you want to delete Order #{selectedOrder.id}? This action cannot be undone.
             </p>
 
             {deleteOrderMutation.isError && (
-              <div className="p-4 bg-red-50 text-red-600 rounded-md mb-4">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md mb-4">
                 <AlertCircle className="w-5 h-5 inline-block mr-2" />
                 Failed to delete order. Please try again.
               </div>
@@ -697,14 +697,14 @@ const Orders = () => {
                   setIsDeleteModalOpen(false);
                   setSelectedOrder(null);
                 }}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleteOrderMutation.isPending}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                className="px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-500 disabled:opacity-50 transition-colors"
               >
                 {deleteOrderMutation.isPending ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

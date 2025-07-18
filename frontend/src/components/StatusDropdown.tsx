@@ -19,17 +19,17 @@ const statusOptions = [
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'pending':
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
     case 'preparing':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
     case 'ready':
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
     case 'completed':
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
     case 'cancelled':
-      return 'bg-red-100 text-red-800';
+      return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
   }
 };
 
@@ -66,14 +66,14 @@ const StatusDropdown = ({ currentStatus, orderId, onStatusChange, isUpdating }: 
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
+        <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 border dark:border-gray-700">
           <div className="py-1">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleStatusSelect(option.value)}
-                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                  option.value === currentStatus ? 'bg-gray-100' : ''
+                className={`block w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  option.value === currentStatus ? 'bg-gray-100 dark:bg-gray-700' : ''
                 }`}
               >
                 {option.label}

@@ -132,6 +132,7 @@ class MenuItem(Base):
     is_available = Column(Boolean, default=True)  # whether we can order this right now
     is_popular = Column(Boolean, default=False)  # whether this is a popular item
     display_order = Column(Integer, nullable=False, default=0)  # where to show this in the menu
+    meal_period = Column(String(20), nullable=False, default='both')  # when this item is available: lunch, dinner, or both
 
     # when this item was created and last updated
     created_at = Column(DateTime(timezone=True), server_default=func.now())
