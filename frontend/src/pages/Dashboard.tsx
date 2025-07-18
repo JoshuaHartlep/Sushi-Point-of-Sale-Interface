@@ -71,8 +71,8 @@ export default function Dashboard() {
   if (statsLoading || ordersLoading || totalsLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
-        <span className="ml-2">Loading dashboard data...</span>
+        <Loader2 className="w-8 h-8 animate-spin text-gray-600 dark:text-gray-400" />
+        <span className="ml-2 text-gray-600 dark:text-gray-400">Loading dashboard data...</span>
       </div>
     );
   }
@@ -81,7 +81,7 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-screen">
         <AlertCircle className="w-8 h-8 text-red-500" />
-        <span className="ml-2 text-red-500">Error loading dashboard data</span>
+        <span className="ml-2 text-red-500 dark:text-red-400">Error loading dashboard data</span>
       </div>
     );
   }
@@ -108,63 +108,63 @@ export default function Dashboard() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Dashboard</h1>
       
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-gray-500 text-sm">Total Orders 🍽️</h3>
-          <p className="text-2xl font-bold">{stats.total_orders || 0}</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
+          <h3 className="text-gray-500 dark:text-gray-400 text-sm">Total Orders 🍽️</h3>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_orders || 0}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-gray-500 text-sm">Total Revenue 💰</h3>
-          <p className="text-2xl font-bold">${(stats.total_revenue || 0).toFixed(2)}</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
+          <h3 className="text-gray-500 dark:text-gray-400 text-sm">Total Revenue 💰</h3>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">${(stats.total_revenue || 0).toFixed(2)}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-gray-500 text-sm">Average Order Time ⏰</h3>
-          <p className="text-2xl font-bold">{formatTime(stats.average_order_time)}</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
+          <h3 className="text-gray-500 dark:text-gray-400 text-sm">Average Order Time ⏰</h3>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatTime(stats.average_order_time)}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-gray-500 text-sm">Active Orders</h3>
-          <p className="text-2xl font-bold">{stats.active_orders || 0}</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
+          <h3 className="text-gray-500 dark:text-gray-400 text-sm">Active Orders</h3>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.active_orders || 0}</p>
         </div>
       </div>
 
       {/* Recent Orders Table */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h2>
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 border dark:border-gray-700">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Orders</h2>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Table</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Order ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Table</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Time</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {recentOrders.map((order) => (
                 <tr key={order.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{order.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Table {order.table_id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">#{order.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Table {order.table_id}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 py-1 rounded-full text-sm ${
-                      order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                      order.status === 'preparing' ? 'bg-blue-100 text-blue-800' :
-                      order.status === 'ready' ? 'bg-green-100 text-green-800' :
-                      order.status === 'delivered' ? 'bg-purple-100 text-purple-800' :
-                      order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-800'
+                      order.status === 'pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300' :
+                      order.status === 'preparing' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' :
+                      order.status === 'ready' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' :
+                      order.status === 'delivered' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' :
+                      order.status === 'cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' :
+                      'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
                     }`}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     ${formatTotal(orderTotals[order.id])}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {new Date(order.created_at).toLocaleTimeString()}
                   </td>
                 </tr>
