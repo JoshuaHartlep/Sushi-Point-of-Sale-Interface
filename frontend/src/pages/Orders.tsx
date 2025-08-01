@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, CheckCircle2, XCircle, Plus, Percent, Edit2, Trash2, X, Edit, Eye, AlertCircle, Loader2, DollarSign, ChevronDown } from 'lucide-react';
-import { ordersApi, menuApi, Order } from '../services/api';
+import { ordersApi, menuApi, settingsApi, Order } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import StatusDropdown from '../components/StatusDropdown';
 
@@ -30,7 +30,6 @@ interface OrderCreate {
   table_id: number;
   status: 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   ayce_order: boolean;
-  ayce_price: number;
   items: OrderItem[];
   notes?: string;
 }
@@ -51,6 +50,16 @@ const formatTotal = (total: string | number | undefined): string => {
   return '0.00';
 };
 
+const formatPrice = (price: string | number): string => {
+  if (typeof price === 'string') {
+    return parseFloat(price).toFixed(2);
+  }
+  if (typeof price === 'number' && !isNaN(price)) {
+    return price.toFixed(2);
+  }
+  return '0.00';
+};
+
 const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
@@ -61,7 +70,6 @@ const Orders = () => {
     table_id: 1,
     status: 'pending',
     ayce_order: false,
-    ayce_price: 0,
     items: []
   });
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -102,6 +110,13 @@ const Orders = () => {
       return totals;
     },
     enabled: orders.length > 0,
+  });
+
+  const { 
+    data: settings 
+  } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingsApi.get,
   });
 
   const { 
@@ -173,7 +188,6 @@ const Orders = () => {
         table_id: 1,
         status: 'pending',
         ayce_order: false,
-        ayce_price: 0,
         items: []
       });
     },
@@ -224,7 +238,6 @@ const Orders = () => {
         table_id: 1,
         status: 'pending',
         ayce_order: false,
-        ayce_price: 0,
         items: []
       });
     } catch (error) {
@@ -462,15 +475,23 @@ const Orders = () => {
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">All You Can Eat Order</span>
                 </label>
               </div>
-              {newOrder.ayce_order && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">AYCE Price</label>
-                  <input
-                    type="number"
-                    value={newOrder.ayce_price}
-                    onChange={(e) => setNewOrder({ ...newOrder, ayce_price: parseFloat(e.target.value) })}
-                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  />
+              {newOrder.ayce_order && settings && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        Current AYCE Price
+                      </p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        Based on {settings.current_meal_period.toLowerCase()} period
+                      </p>
+                    </div>
+                    <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                      ${settings.current_meal_period === 'LUNCH' 
+                        ? formatPrice(settings.ayce_lunch_price) 
+                        : formatPrice(settings.ayce_dinner_price)}
+                    </div>
+                  </div>
                 </div>
               )}
               <div>

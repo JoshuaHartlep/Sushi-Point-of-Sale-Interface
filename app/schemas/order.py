@@ -88,7 +88,6 @@ class OrderCreate(BaseModel):
     status: OrderStatus = OrderStatus.PENDING
     notes: Optional[str] = None
     ayce_order: bool = False
-    ayce_price: Optional[Decimal] = None
     items: List[OrderItemCreate]
 
 class OrderUpdate(BaseModel):

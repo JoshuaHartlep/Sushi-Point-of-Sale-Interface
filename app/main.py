@@ -15,10 +15,12 @@ The application includes:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import menu, order, dashboard
+from app.api import menu, order, dashboard, settings as settings_api
 from app.core.config import settings
 from app.core.database import engine, Base, init_db
 from app.core.logging import setup_logging
+# Import all models to ensure they are registered with SQLAlchemy
+from app.models import *
 import logging
 
 # Set up logging
@@ -48,6 +50,7 @@ app.add_middleware(
 app.include_router(menu.router, prefix="/api/v1/menu", tags=["Menu"])
 app.include_router(order.router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
+app.include_router(settings_api.router, prefix="/api/v1", tags=["Settings"])
 
 @app.get("/")
 async def root():

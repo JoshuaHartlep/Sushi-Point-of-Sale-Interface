@@ -7,4 +7,5 @@ and data serialization/deserialization.
 
 from .menu import *
 from .order import *
-from .bulk_operations import * 
+from .bulk_operations import *
+from .settings import * 

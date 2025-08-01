@@ -66,7 +66,6 @@ export interface OrderCreate {
   table_id: number;
   status: OrderStatus;
   ayce_order: boolean;
-  ayce_price: number;
   items: OrderItemCreate[];
   notes?: string;
 }
@@ -82,6 +81,25 @@ export type DiscountType = 'percent' | 'fixed';
 export interface DiscountCreate {
   type: DiscountType;
   value: number;
+}
+
+export interface Settings {
+  id: number;
+  restaurant_name: string;
+  timezone: string;
+  current_meal_period: 'LUNCH' | 'DINNER';
+  ayce_lunch_price: string | number; // API returns string, but can be number
+  ayce_dinner_price: string | number; // API returns string, but can be number
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface SettingsUpdate {
+  restaurant_name?: string;
+  timezone?: string;
+  current_meal_period?: 'LUNCH' | 'DINNER';
+  ayce_lunch_price?: string | number;
+  ayce_dinner_price?: string | number;
 }
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
@@ -151,7 +169,7 @@ api.interceptors.request.use(
 export const ordersApi = {
   getAll: (): Promise<Order[]> => api.get('/orders/').then(res => res.data),
   getById: (id: number): Promise<Order> => api.get(`/orders/${id}/`).then(res => res.data),
-  create: (data: { table_id: number; ayce_order: boolean; notes?: string }): Promise<Order> => 
+  create: (data: OrderCreate): Promise<Order> => 
     api.post('/orders/', data).then(res => res.data),
   update: (id: number, data: Partial<Order>): Promise<Order> => 
     api.put(`/orders/${id}/`, data).then(res => res.data),
@@ -208,6 +226,22 @@ export const dashboardApi = {
   },
   getRecentOrders: async (): Promise<RecentOrder[]> => {
     const response = await api.get('/dashboard/recent-orders/');
+    return response.data;
+  },
+};
+
+// Settings API
+export const settingsApi = {
+  get: async (): Promise<Settings> => {
+    const response = await api.get('/settings/');
+    return response.data;
+  },
+  update: async (data: SettingsUpdate): Promise<Settings> => {
+    const response = await api.patch('/settings/', data);
+    return response.data;
+  },
+  updateMealPeriod: async (mealPeriod: 'LUNCH' | 'DINNER'): Promise<Settings> => {
+    const response = await api.patch(`/settings/meal-period?meal_period=${mealPeriod}`);
     return response.data;
   },
 };
