@@ -1,8 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Home, List, Utensils, Settings, ListOrdered, PlusCircle, Tag, Moon, Sun, Clock } from 'lucide-react';
 import { useRestaurant } from '../contexts/RestaurantContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
+import { useQuery } from '@tanstack/react-query';
+import { settingsApi } from '../services/api';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +16,18 @@ const Layout = ({ children }: LayoutProps) => {
   const { restaurantName } = useRestaurant();
   const { theme, toggleTheme, isDark } = useTheme();
   const { mealPeriod, isDinner, isLunch } = useMealPeriod();
+  // Fetch restaurant name from settings API
+  const { data: settings, isLoading, error } = useQuery({
+    queryKey: ['settings'],
+    queryFn: settingsApi.get,
+  });
+
+  // Generate display title based on settings
+  const displayTitle = (() => {
+    if (isLoading) return 'Hartlep POS';
+    if (error || !settings?.restaurant_name) return 'Hartlep POS – Restaurant';
+    return `Hartlep POS – ${settings.restaurant_name}`;
+  })();
 
   const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },
@@ -27,7 +42,7 @@ const Layout = ({ children }: LayoutProps) => {
       <header className="bg-white dark:bg-gray-800 shadow transition-colors">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight font-['Poppins']">{restaurantName}</h1>
+            <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight font-['Poppins']">{displayTitle}</h1>
             <div className="flex items-center space-x-4">
               {/* Meal Period Indicator */}
               <div className="flex items-center space-x-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-lg">

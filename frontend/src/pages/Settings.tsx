@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const SettingsPage = () => {
   const { restaurantName, setRestaurantName } = useRestaurant();
-  const { mealPeriod, isDinner, isLunch, switchToLunch, switchToDinner, toggleMealPeriod } = useMealPeriod();
+  const { syncWithSettings } = useMealPeriod();
   const [settings, setSettings] = useState<SettingsType | null>(null);
   const [formData, setFormData] = useState({
     restaurant_name: '',
@@ -18,6 +18,7 @@ const SettingsPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const queryClient = useQueryClient();
 
@@ -46,6 +47,9 @@ const SettingsPage = () => {
         ayce_lunch_price: data.ayce_lunch_price,
         ayce_dinner_price: data.ayce_dinner_price
       });
+      
+      // Sync meal period context with database settings
+      syncWithSettings(data.current_meal_period);
     } catch (error) {
       console.error('Failed to load settings:', error);
     } finally {
@@ -53,29 +57,11 @@ const SettingsPage = () => {
     }
   };
 
-  // Mutation for updating meal period
-  const mealPeriodMutation = useMutation({
-    mutationFn: settingsApi.updateMealPeriod,
-    onSuccess: (updatedSettings) => {
-      // Update local state
-      setSettings(updatedSettings);
-      setFormData(prev => ({
-        ...prev,
-        current_meal_period: updatedSettings.current_meal_period
-      }));
-      
-      // Invalidate queries to refresh any other components using settings
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-      
-      console.log('Meal period updated successfully');
-    },
-    onError: (error) => {
-      console.error('Failed to update meal period:', error);
-    }
-  });
+  // Note: Meal period is now updated through the main settings save operation
 
   const handleMealPeriodChange = (newMealPeriod: 'LUNCH' | 'DINNER') => {
-    mealPeriodMutation.mutate(newMealPeriod);
+    // Update local form data instead of immediately calling API
+    handleInputChange('current_meal_period', newMealPeriod);
   };
 
   const handleSave = async () => {
@@ -111,10 +97,28 @@ const SettingsPage = () => {
           setRestaurantName(updateData.restaurant_name);
         }
         
+        // Sync meal period context if meal period changed
+        if (updateData.current_meal_period) {
+          syncWithSettings(updateData.current_meal_period);
+        }
+        
+        // Refresh settings from backend to ensure consistency
+        await loadSettings();
+        
+        // Show success feedback
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000); // Hide after 3 seconds
+        
+        // Invalidate queries to refresh other components
+        queryClient.invalidateQueries({ queryKey: ['settings'] });
+        
         console.log('Settings saved successfully');
+      } else {
+        console.log('No changes to save');
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
+      // TODO: Add error state handling if needed
     } finally {
       setSaving(false);
     }
@@ -225,25 +229,23 @@ const SettingsPage = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleMealPeriodChange('LUNCH')}
-                        disabled={mealPeriodMutation.isPending}
-                        className={`px-3 py-1 text-sm rounded-md transition-colors disabled:opacity-50 ${
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
                           formData.current_meal_period === 'LUNCH' 
                             ? 'bg-blue-600 text-white' 
                             : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                         }`}
                       >
-                        {mealPeriodMutation.isPending && formData.current_meal_period !== 'LUNCH' ? '...' : 'Lunch'}
+                        Lunch
                       </button>
                       <button
                         onClick={() => handleMealPeriodChange('DINNER')}
-                        disabled={mealPeriodMutation.isPending}
-                        className={`px-3 py-1 text-sm rounded-md transition-colors disabled:opacity-50 ${
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
                           formData.current_meal_period === 'DINNER' 
                             ? 'bg-blue-600 text-white' 
                             : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
                         }`}
                       >
-                        {mealPeriodMutation.isPending && formData.current_meal_period !== 'DINNER' ? '...' : 'Dinner'}
+                        Dinner
                       </button>
                     </div>
                   </div>
@@ -299,55 +301,18 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      saveSuccess 
+                        ? 'bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600' 
+                        : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600'
+                    } focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      saveSuccess ? 'focus:ring-green-500' : 'focus:ring-blue-500'
+                    }`}
                   >
-                    {saving ? 'Saving...' : 'Save Settings'}
+                    {saving ? 'Saving...' : saveSuccess ? 'Settings Saved ✓' : 'Save Settings'}
                   </button>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    Current Meal Period
-                  </label>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div className="flex items-center">
-                      <Clock className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          Currently serving: {isDinner ? 'Dinner' : 'Lunch'}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {isDinner 
-                            ? 'All menu items are available' 
-                            : 'Dinner-only items are hidden from ordering'
-                          }
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={switchToLunch}
-                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                          isLunch 
-                            ? 'bg-blue-600 text-white' 
-                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-                        }`}
-                      >
-                        Lunch
-                      </button>
-                      <button
-                        onClick={switchToDinner}
-                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                          isDinner 
-                            ? 'bg-blue-600 text-white' 
-                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500'
-                        }`}
-                      >
-                        Dinner
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           )}

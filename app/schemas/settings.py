@@ -58,6 +58,17 @@ class SettingsUpdate(BaseModel):
     ayce_lunch_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="All-you-can-eat lunch price")
     ayce_dinner_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="All-you-can-eat dinner price")
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "restaurant_name": "Sushi House",
+                "timezone": "America/New_York",
+                "current_meal_period": "DINNER",
+                "ayce_lunch_price": 15.99,
+                "ayce_dinner_price": 25.99
+            }
+        }
+
     @validator('ayce_lunch_price', 'ayce_dinner_price')
     def validate_price(cls, v):
         """Ensure prices are positive and have max 2 decimal places"""
