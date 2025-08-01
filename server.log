@@ -865,3 +865,165 @@ INFO:     127.0.0.1:54021 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54152 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54284 - "OPTIONS /api/v1/settings/ HTTP/1.1" 200 OK
 INFO:     127.0.0.1:54284 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/schemas/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 14:23:18,513 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [60473]
+/Users/joshuahartlep/Sushi Pos/sushi_pos_api/venv/lib/python3.13/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
+* 'schema_extra' has been renamed to 'json_schema_extra'
+  warnings.warn(message, UserWarning)
+INFO:     Started server process [61241]
+INFO:     Waiting for application startup.
+2025-08-01 14:23:18,955 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:54524 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54552 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54552 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54554 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54679 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54710 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54712 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54712 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54784 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54895 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54929 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54929 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54936 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54943 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54969 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55332 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55332 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55693 - "OPTIONS /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55693 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55693 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55714 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55714 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55745 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55745 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55761 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55773 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55762 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55773 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55917 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55917 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55955 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55955 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55955 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55988 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56056 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56084 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56091 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56097 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56362 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56362 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56362 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56362 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56370 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56362 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56354 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56378 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56382 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56647 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56699 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56740 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56740 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56742 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56770 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56780 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56801 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56859 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "OPTIONS /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56872 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56869 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56869 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56872 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:56889 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56889 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56872 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK

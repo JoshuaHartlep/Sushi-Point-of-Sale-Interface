@@ -9,6 +9,7 @@ interface MealPeriodContextType {
   switchToLunch: () => void;
   switchToDinner: () => void;
   toggleMealPeriod: () => void;
+  syncWithSettings: (dbMealPeriod: 'LUNCH' | 'DINNER') => void;
 }
 
 const MealPeriodContext = createContext<MealPeriodContextType | undefined>(undefined);
@@ -47,6 +48,12 @@ export const MealPeriodProvider: React.FC<MealPeriodProviderProps> = ({ children
     localStorage.setItem('sushi-pos-meal-period', newPeriod);
   };
 
+  const syncWithSettings = (dbMealPeriod: 'LUNCH' | 'DINNER') => {
+    const newPeriod = dbMealPeriod.toLowerCase() as MealPeriod;
+    setMealPeriod(newPeriod);
+    localStorage.setItem('sushi-pos-meal-period', newPeriod);
+  };
+
   const value = {
     mealPeriod,
     isDinner: mealPeriod === 'dinner',
@@ -54,6 +61,7 @@ export const MealPeriodProvider: React.FC<MealPeriodProviderProps> = ({ children
     switchToLunch,
     switchToDinner,
     toggleMealPeriod,
+    syncWithSettings,
   };
 
   return (
