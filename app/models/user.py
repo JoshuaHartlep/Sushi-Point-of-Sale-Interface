@@ -40,8 +40,8 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # connect this user to their orders
-    orders = relationship("Order", back_populates="server")
+    # Note: Server-order relationship will be added later when needed
+    # orders = relationship("Order", back_populates="server")
 
     # check if this user has permission to do something
     def has_permission(self, required_role: UserRole) -> bool:

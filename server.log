@@ -1,0 +1,867 @@
+INFO:     Will watch for changes in these directories: ['/Users/joshuahartlep/Sushi Pos']
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [51668] using StatReload
+INFO:     Started server process [51679]
+INFO:     Waiting for application startup.
+2025-08-01 12:40:48,147 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:63684 - "GET /docs HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63702 - "GET /api/docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63709 - "GET /api/v1/ HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63789 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63789 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63789 - "GET /api/docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63789 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63789 - "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:64103 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64104 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64104 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64103 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64133 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64136 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64137 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64137 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64137 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64133 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64136 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64175 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64176 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64175 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64176 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64231 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:64233 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64233 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64226 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64233 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64231 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64237 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64238 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64245 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64247 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64273 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64271 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64280 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64277 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64305 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64307 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64320 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64321 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64476 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64477 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/schemas/__init__.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 12:55:47,552 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [51679]
+INFO:     Started server process [54323]
+INFO:     Waiting for application startup.
+2025-08-01 12:55:48,095 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 12:56:33,271 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54323]
+INFO:     Started server process [54531]
+INFO:     Waiting for application startup.
+2025-08-01 12:56:33,862 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 12:56:36,800 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54531]
+INFO:     Started server process [54560]
+INFO:     Waiting for application startup.
+2025-08-01 12:56:37,190 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 12:56:41,035 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54560]
+INFO:     Started server process [54599]
+INFO:     Waiting for application startup.
+2025-08-01 12:56:41,400 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+Error getting settings: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65020 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65020 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65022 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65022 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65098 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65098 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:65106 - "GET /api/v1/dashboard/stats HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65100 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+Error getting settings: One or more mappers failed to initialize - can't proceed with initialization of other mappers. Triggering mapper: 'Mapper[User(users)]'. Original exception was: Could not determine join condition between parent/child tables on relationship User.orders - there are no foreign keys linking these tables.  Ensure that referencing columns are associated with a ForeignKey or ForeignKeyConstraint, or specify a 'primaryjoin' expression.
+INFO:     127.0.0.1:65100 - "GET /api/v1/settings/ HTTP/1.1" 500 Internal Server Error
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:00:40,710 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54599]
+INFO:     Started server process [55155]
+INFO:     Waiting for application startup.
+2025-08-01 13:00:41,133 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'alembic/env.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:00:56,505 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [55155]
+INFO:     Started server process [55270]
+INFO:     Waiting for application startup.
+2025-08-01 13:00:56,871 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/models/user.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:01:51,435 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [55270]
+INFO:     Started server process [55648]
+INFO:     Waiting for application startup.
+2025-08-01 13:01:51,896 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:49711 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49730 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50063 - "GET /api/docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50063 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50063 - "GET /api/docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50063 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50064 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50184 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50184 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50184 - "OPTIONS /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50184 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50199 - "GET /api/docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50199 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50199 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50186 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50200 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50241 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:50347 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:50347 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50347 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50347 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50345 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50358 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50358 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50358 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50354 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "OPTIONS /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "POST /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:50371 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50369 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50372 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50372 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50372 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50366 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50372 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50397 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50398 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50403 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50405 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50405 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50403 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/models/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:08:08,871 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [55648]
+INFO:     Started server process [56293]
+INFO:     Waiting for application startup.
+2025-08-01 13:08:09,314 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/models/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:08:13,468 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56293]
+INFO:     Started server process [56314]
+INFO:     Waiting for application startup.
+2025-08-01 13:08:13,835 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/models/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:08:20,010 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56314]
+INFO:     Started server process [56347]
+INFO:     Waiting for application startup.
+2025-08-01 13:08:20,363 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/schemas/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:08:23,909 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56347]
+INFO:     Started server process [56374]
+INFO:     Waiting for application startup.
+2025-08-01 13:08:24,261 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/schemas/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:08:30,028 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56374]
+INFO:     Started server process [56398]
+INFO:     Waiting for application startup.
+2025-08-01 13:08:30,372 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/schemas/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:08:36,546 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56398]
+INFO:     Started server process [56419]
+INFO:     Waiting for application startup.
+2025-08-01 13:08:36,917 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:50688 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:09:16,325 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56419]
+INFO:     Started server process [56606]
+INFO:     Waiting for application startup.
+2025-08-01 13:09:16,683 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:09:37,807 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56606]
+INFO:     Started server process [56703]
+INFO:     Waiting for application startup.
+2025-08-01 13:09:38,143 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:09:44,317 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56703]
+INFO:     Started server process [56733]
+INFO:     Waiting for application startup.
+2025-08-01 13:09:44,660 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:09:49,719 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56733]
+INFO:     Started server process [56766]
+INFO:     Waiting for application startup.
+2025-08-01 13:09:50,050 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:10:10,872 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56766]
+INFO:     Started server process [56887]
+INFO:     Waiting for application startup.
+2025-08-01 13:10:11,311 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:10:14,448 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56887]
+INFO:     Started server process [56905]
+INFO:     Waiting for application startup.
+2025-08-01 13:10:14,826 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:10:35,953 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56905]
+INFO:     Started server process [57027]
+INFO:     Waiting for application startup.
+2025-08-01 13:10:36,295 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 13:10:48,020 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [57027]
+INFO:     Started server process [57099]
+INFO:     Waiting for application startup.
+2025-08-01 13:10:48,369 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:50970 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50970 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50970 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50970 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50972 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51269 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51269 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51398 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51398 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51644 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51669 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51690 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51695 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51720 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51723 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51728 - "POST /api/v1/orders/20/items HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51769 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51796 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51842 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51844 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51850 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51850 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51850 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51850 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51858 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51850 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/menu/menu-items/1/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51854 - "GET /api/v1/menu/menu-items/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51865 - "GET /api/v1/menu/menu-items/1/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51858 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51850 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51865 - "GET /api/v1/menu/menu-items/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51865 - "OPTIONS /api/v1/orders/20/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "PUT /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51860 - "OPTIONS /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "PUT /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "PUT /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51860 - "PUT /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51854 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "OPTIONS /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51872 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51872 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51860 - "GET /api/v1/orders/2/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "OPTIONS /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "POST /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51878 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51893 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51893 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51892 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51893 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51917 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51917 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51917 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51917 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51915 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51917 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51917 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51915 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51917 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51915 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51935 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51937 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51938 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51938 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51938 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51935 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51938 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51937 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51938 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/21/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51954 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51953 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51951 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51946 - "GET /api/v1/orders/21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/orders/21/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51983 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51978 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51984 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/orders/21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/menu/menu-items/?category_id=2 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/menu/menu-items/?category_id=1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/menu/menu-items/?category_id=4 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/menu/menu-items/?category_id=3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51991 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51991 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/8/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/7/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/orders/3/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51992 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51981 - "GET /api/v1/menu/modifiers/?skip=0&limit=12 HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/schemas/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 14:05:21,297 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [57099]
+INFO:     Started server process [59083]
+INFO:     Waiting for application startup.
+2025-08-01 14:05:21,793 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/order.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 14:05:42,011 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [59083]
+INFO:     Started server process [59192]
+INFO:     Waiting for application startup.
+2025-08-01 14:05:42,456 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:52422 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52424 - "GET /api/v1/menu/modifiers/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52495 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52496 - "GET /api/v1/menu/modifiers/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52705 - "POST /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52732 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52757 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52781 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52802 - "POST /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52828 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52856 - "POST /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52880 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52975 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/menu/modifiers/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52975 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/24/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:52984 - "GET /api/v1/menu/menu-items/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52975 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/menu/menu-items/1/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:52977 - "GET /api/v1/menu/menu-items/1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "OPTIONS /api/v1/orders/24/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "PUT /api/v1/orders/24/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:52977 - "OPTIONS /api/v1/orders/24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "PUT /api/v1/orders/24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/24/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/24 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52975 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52991 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52985 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52977 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53068 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53067 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53071 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53071 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53076 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53071 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53071 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53073 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53126 - "GET /api/v1/dashboard/stats/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:53127 - "GET /api/v1/dashboard/recent-orders/ HTTP/1.1" 307 Temporary Redirect
+INFO:     127.0.0.1:53126 - "GET /api/v1/dashboard/recent-orders HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/dashboard/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53126 - "GET /api/v1/menu/modifiers/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53126 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53127 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53126 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53303 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53304 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53304 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53303 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53415 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53414 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53428 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53428 - "GET /api/v1/menu/categories/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/menu/menu-items/?skip=0&limit=12 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53431 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53428 - "GET /api/v1/orders/24/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53428 - "GET /api/v1/orders/23/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/22/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/21/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/20/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/19/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/18/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/17/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/12/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53424 - "GET /api/v1/orders/9/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53467 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53467 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'app/api/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 14:15:48,023 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [59192]
+INFO:     Started server process [60438]
+INFO:     Waiting for application startup.
+2025-08-01 14:15:48,457 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app/api/settings.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2025-08-01 14:15:58,772 - sushi_pos - INFO - Shutting down Sushi POS API...
+INFO:     Application shutdown complete.
+INFO:     Finished server process [60438]
+INFO:     Started server process [60473]
+INFO:     Waiting for application startup.
+2025-08-01 14:15:59,099 - sushi_pos - INFO - Starting Sushi POS API...
+INFO:     Application startup complete.
+INFO:     127.0.0.1:53726 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53784 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53784 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53784 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53811 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53811 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53846 - "GET /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53910 - "PATCH /api/v1/settings/meal-period?meal_period=LUNCH HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53917 - "PATCH /api/v1/settings/meal-period?meal_period=DINNER HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53964 - "POST /api/v1/orders/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53991 - "PATCH /api/v1/settings/meal-period?meal_period=LUNCH HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54021 - "GET /api/v1/orders/25/total HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54152 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54284 - "OPTIONS /api/v1/settings/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54284 - "PATCH /api/v1/settings/ HTTP/1.1" 200 OK

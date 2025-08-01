@@ -14,6 +14,7 @@ from decimal import Decimal
 from app.core.database import get_db
 from app.models.order import Order, OrderItem, Table, TableStatus, OrderStatus, Discount
 from app.models.menu import MenuItem, menu_item_modifiers
+from app.models.settings import Settings, MealPeriod
 from app.schemas.order import (
     OrderCreate,
     OrderUpdate,
@@ -36,6 +37,37 @@ from enum import Enum
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def get_current_ayce_price(db: Session) -> Decimal:
+    """
+    Get the current AYCE price based on the meal period setting.
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        Decimal: Current AYCE price (lunch or dinner)
+    """
+    try:
+        # Get the current settings
+        settings = db.query(Settings).filter(Settings.id == 1).first()
+        
+        if not settings:
+            logger.warning("No settings found, using default dinner price")
+            return Decimal('25.00')
+        
+        # Return appropriate price based on current meal period
+        if settings.current_meal_period == MealPeriod.LUNCH:
+            return settings.ayce_lunch_price
+        else:  # DINNER
+            return settings.ayce_dinner_price
+            
+    except Exception as e:
+        logger.error(f"Error getting AYCE price: {str(e)}")
+        # Fallback to default dinner price
+        return Decimal('25.00')
+
 
 class OrderItemsCreate(BaseModel):
     """Schema for creating multiple order items."""
@@ -325,7 +357,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
             status=order.status,  # Use the status from the request
             notes=order.notes,
             ayce_order=order.ayce_order,
-            ayce_price=order.ayce_price or Decimal('25.00'),
+            ayce_price=get_current_ayce_price(db) if order.ayce_order else Decimal('0.00'),
             total_amount=Decimal('0.00')  # Will be calculated after items are added
         )
         db.add(db_order)
@@ -353,7 +385,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         
         # Calculate initial total
         if db_order.ayce_order:
-            db_order.total_amount = db_order.ayce_price
+            db_order.total_amount = get_current_ayce_price(db)
         else:
             # Calculate total from items
             total = Decimal('0.00')
@@ -629,8 +661,8 @@ def calculate_order_total(
             
         # Calculate subtotal based on order type
         if order.ayce_order:
-            # AYCE orders have a fixed price of $25.00
-            subtotal = Decimal('25.00')
+            # AYCE orders use price based on current meal period from settings
+            subtotal = get_current_ayce_price(db)
         else:
             # Regular orders calculate from items and modifiers
             subtotal = Decimal('0')
@@ -667,7 +699,7 @@ def calculate_order_total(
             subtotal=subtotal,
             discount_amount=discount_amount,
             total=total,
-            ayce_price=Decimal('25.00') if order.ayce_order else None,
+            ayce_price=get_current_ayce_price(db) if order.ayce_order else None,
             is_ayce=order.ayce_order
         )
     except Exception as e:
@@ -750,6 +782,17 @@ def add_items_to_order(
         # Update order status if needed
         if order.status == OrderStatus.PENDING:
             order.status = OrderStatus.PREPARING
+            
+        # Recalculate order total
+        if order.ayce_order:
+            # For AYCE orders, total is based on current meal period from settings
+            order.total_amount = get_current_ayce_price(db)
+        else:
+            # For regular orders, recalculate from items
+            total = Decimal('0.00')
+            for item in order.items:
+                total += Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
+            order.total_amount = total
             
         db.commit()
         db.refresh(order)
@@ -851,6 +894,19 @@ def delete_order_item(
             raise RecordNotFoundError("OrderItem", item_id)
             
         db.delete(item)
+        
+        # Recalculate order total after item deletion
+        if order.ayce_order:
+            # For AYCE orders, total is based on current meal period from settings
+            order.total_amount = get_current_ayce_price(db)
+        else:
+            # For regular orders, recalculate from remaining items
+            total = Decimal('0.00')
+            for remaining_item in order.items:
+                if remaining_item.id != item_id:  # Exclude the deleted item
+                    total += Decimal(str(remaining_item.unit_price)) * Decimal(str(remaining_item.quantity))
+            order.total_amount = total
+        
         db.commit()
         
         return {"message": "Item deleted successfully"}
