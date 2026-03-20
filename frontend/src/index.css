@@ -1,3 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
-@tailwind utilities; 
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light mode surface tokens */
+    --surface-bg:        theme('colors.washi.100');
+    --surface-card:      theme('colors.white');
+    --surface-sidebar:   theme('colors.white');
+    --surface-header:    theme('colors.white');
+    --accent-primary:    theme('colors.akabeni.600');
+    --accent-primary-hover: theme('colors.akabeni.700');
+  }
+
+  .dark {
+    /* Dark mode surface tokens */
+    --surface-bg:        theme('colors.sumi.900');
+    --surface-card:      theme('colors.sumi.800');
+    --surface-sidebar:   theme('colors.sumi.800');
+    --surface-header:    theme('colors.sumi.800');
+  }
+
+  html {
+    font-family: 'Noto Sans JP', Inter, ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Subtle torii-red left-border on active nav items */
+@layer components {
+  .nav-active-bar {
+    @apply border-l-4 border-akabeni-600;
+  }
+}
