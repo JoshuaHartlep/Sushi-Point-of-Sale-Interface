@@ -39,9 +39,8 @@ Important implementation caveat (gap):
   - Before expanding QR/customer flows, we should consolidate table modeling so there is one canonical `Table` schema/model everywhere.
 
 ### 2.2 Frontend (React)
-There are currently two React apps in the repository:
+There is currently one React app in the repository:
 
-- `sushi-pos-frontend/`: a simpler manager UI with routes like `/`, `/menu`, `/orders`, `/settings`.
 - `frontend/`: a more developed manager UI that includes theme/meal-period contexts and richer admin workflows (menu filtering by meal period, settings UI, order editing view, etc.).
 
 Both currently present a manager/admin experience rather than a customer-facing one.
