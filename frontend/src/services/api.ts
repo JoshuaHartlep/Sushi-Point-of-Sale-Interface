@@ -118,6 +118,15 @@ export interface SettingsUpdate {
   ayce_dinner_price?: string | number;
 }
 
+export interface MenuItemImage {
+  id: number;
+  menu_item_id: number;
+  image_url: string;
+  uploaded_at: string;
+  report_count: number;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const api = axios.create({
@@ -282,6 +291,25 @@ export const tablesApi = {
   updateStatus: (id: number, status: TableStatus): Promise<TableData> =>
     api.put(`/orders/tables/${id}/status`, null, { params: { status } }).then(res => res.data),
   delete: (id: number): Promise<void> => api.delete(`/orders/tables/${id}`).then(res => res.data),
+};
+
+// User-generated menu item images API
+export const menuItemImagesApi = {
+  getImages: (menuItemId: number): Promise<MenuItemImage[]> =>
+    api.get(`/menu-items/${menuItemId}/images`).then(res => res.data),
+  uploadImage: (menuItemId: number, file: File): Promise<MenuItemImage> => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post(`/menu-items/${menuItemId}/images`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(res => res.data);
+  },
+  reportImage: (imageId: number, reason?: string): Promise<any> =>
+    api.post(`/images/${imageId}/report`, { reason }).then(res => res.data),
+  deleteImage: (imageId: number): Promise<void> =>
+    api.delete(`/images/${imageId}`).then(res => res.data),
+  getReported: (): Promise<MenuItemImage[]> =>
+    api.get('/images/reported').then(res => res.data),
 };
 
 export default api;

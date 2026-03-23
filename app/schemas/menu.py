@@ -8,7 +8,7 @@ including menu items, categories, and modifiers.
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from datetime import datetime
-from app.models.menu import MealPeriodEnum
+from app.models.menu import MealPeriodEnum, ImageStatusEnum
 
 class MenuItemBase(BaseModel):
     """Base schema for menu items."""
@@ -93,4 +93,33 @@ class ModifierResponse(ModifierBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+
+class MenuItemImageResponse(BaseModel):
+    """Schema for user-uploaded menu item image responses."""
+    id: int
+    menu_item_id: int
+    image_url: str
+    uploaded_at: datetime
+    report_count: int
+    status: ImageStatusEnum
+
+    class Config:
+        from_attributes = True
+
+
+class ImageReportCreate(BaseModel):
+    """Schema for creating an image report."""
+    reason: Optional[str] = None
+
+
+class ImageReportResponse(BaseModel):
+    """Schema for image report responses."""
+    id: int
+    image_id: int
+    created_at: datetime
+    reason: Optional[str] = None
+
+    class Config:
+        from_attributes = True

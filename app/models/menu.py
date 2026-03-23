@@ -147,4 +147,39 @@ class MenuItem(Base):
     # connect this item to its category, modifiers, and orders
     category = relationship("Category", back_populates="menu_items")
     modifiers = relationship("Modifier", secondary=menu_item_modifiers, back_populates="menu_items")
-    order_items = relationship("OrderItem", back_populates="menu_item") 
+    order_items = relationship("OrderItem", back_populates="menu_item")
+    user_images = relationship("MenuItemImage", back_populates="menu_item", cascade="all, delete-orphan")
+
+
+# status for user-uploaded images (pending review, approved, or rejected by manager)
+class ImageStatusEnum(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+# a user-uploaded photo of a menu item (like a real photo from a customer)
+class MenuItemImage(Base):
+    __tablename__ = "menu_item_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    menu_item_id = Column(Integer, ForeignKey("menu_items.id"), nullable=False)
+    image_url = Column(String(255), nullable=False)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+    report_count = Column(Integer, default=0)
+    status = Column(SQLEnum(ImageStatusEnum), nullable=False, default=ImageStatusEnum.PENDING)
+
+    menu_item = relationship("MenuItem", back_populates="user_images")
+    reports = relationship("ImageReport", back_populates="image", cascade="all, delete-orphan")
+
+
+# a report submitted by a user saying an image is inappropriate or wrong
+class ImageReport(Base):
+    __tablename__ = "image_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    image_id = Column(Integer, ForeignKey("menu_item_images.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    reason = Column(Text, nullable=True)
+
+    image = relationship("MenuItemImage", back_populates="reports")
