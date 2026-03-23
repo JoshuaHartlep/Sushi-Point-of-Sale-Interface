@@ -39,11 +39,11 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# Configure CORS
+# Configure CORS — allow all origins in development (fine for local network testing)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,  # must be False when allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )

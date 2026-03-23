@@ -1,9 +1,9 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, API_ORIGIN } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 
-const IMAGE_BASE = 'http://localhost:8000';
+const IMAGE_BASE = API_ORIGIN;
 
 const ITEMS_PER_PAGE = 12;
 

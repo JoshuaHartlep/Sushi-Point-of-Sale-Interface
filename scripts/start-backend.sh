@@ -23,4 +23,4 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install -r requirements.txt
 python -m pip install pydantic-settings
 
-exec python -m uvicorn app.main:app --reload
+exec python -m uvicorn app.main:app --reload --host 0.0.0.0

@@ -58,6 +58,56 @@ npm install
 npm run dev
 ```
 
+The app opens at `http://localhost:5173` and talks to the backend at `http://localhost:8000`.
+
+---
+
+## Phone / Local Network Testing
+
+Use this when you want to open the app on your phone or another device on the same Wi-Fi.
+
+### Step 1 — Find your machine's LAN IP
+```bash
+ipconfig getifaddr en0
+# e.g. 10.197.255.151
+```
+
+### Step 2 — Set the IP in the network env file
+Edit `frontend/.env.network` and set your IP:
+```
+VITE_API_URL=http://<YOUR_LAN_IP>:8000
+```
+
+### Step 3 — Start the frontend in network mode
+```bash
+cd frontend
+npm run dev:network
+```
+Vite binds to all interfaces and prints something like:
+```
+  ➜  Network: http://10.197.255.151:5173/
+```
+
+### Step 4 — Open that URL on your phone
+Make sure your phone is on the same Wi-Fi, then navigate to the Network URL printed by Vite.
+
+> The backend already binds to `0.0.0.0:8000` (via `scripts/start-backend.sh`) and CORS allows all origins, so no extra backend changes are needed.
+
+> **Network warning:** This only works on a trusted home/personal Wi-Fi network. Networks like **DukeBlue** (and most university/enterprise Wi-Fi) block device-to-device communication even though they assign private IPs (e.g. `10.x.x.x`). If your phone can't reach the backend, the network is the likely cause — switch to a personal hotspot or home Wi-Fi instead.
+
+---
+
+## Environment Files
+
+| File | Used when | Purpose |
+|---|---|---|
+| `frontend/.env.local` | `npm run dev` | Standard localhost dev |
+| `frontend/.env.network` | `npm run dev:network` | LAN / phone testing |
+
+`VITE_API_URL` controls which backend the frontend hits. If the variable is missing, it falls back to `http://localhost:8000`. The active URL is logged to the browser console on startup.
+
+---
+
 ## API Documentation
 
 Once the backend server is running, you can access the API documentation at:
