@@ -9,16 +9,18 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { path: '/',          icon: 'dashboard',      label: 'Dashboard' },
-  { path: '/orders',    icon: 'receipt_long',   label: 'Orders'    },
-  { path: '/menu',      icon: 'menu_book',      label: 'Menu'      },
-  { path: '/modifiers', icon: 'tune',           label: 'Modifiers' },
-  { path: '/settings',  icon: 'settings',       label: 'Settings'  },
+  { path: '/',          icon: 'dashboard',         label: 'Dashboard' },
+  { path: '/orders',    icon: 'receipt_long',      label: 'Orders'    },
+  { path: '/tables',    icon: 'table_restaurant',  label: 'Tables'    },
+  { path: '/menu',      icon: 'menu_book',         label: 'Menu'      },
+  { path: '/modifiers', icon: 'tune',              label: 'Modifiers' },
+  { path: '/settings',  icon: 'settings',          label: 'Settings'  },
 ];
 
 const pageTitles: Record<string, string> = {
   '/':          'Dashboard',
   '/orders':    'Orders',
+  '/tables':    'Tables',
   '/menu':      'Menu',
   '/modifiers': 'Modifiers',
   '/settings':  'Settings',

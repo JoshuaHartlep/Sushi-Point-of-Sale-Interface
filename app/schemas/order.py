@@ -134,6 +134,11 @@ class TableCreate(TableBase):
     """Schema for creating a table."""
     pass
 
+class TableUpdate(BaseModel):
+    """Schema for updating a table's details."""
+    number: Optional[int] = None
+    capacity: Optional[int] = None
+
 class TableResponse(TableBase):
     """Schema for table responses."""
     id: int

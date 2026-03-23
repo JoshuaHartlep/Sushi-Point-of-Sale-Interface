@@ -61,6 +61,21 @@ export interface Order {
   items?: OrderItem[];
 }
 
+export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning';
+
+export interface TableData {
+  id: number;
+  number: number;
+  capacity: number;
+  status: TableStatus;
+  party_size?: number | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'completed';
 
 export interface OrderCreate {
@@ -256,4 +271,16 @@ export const settingsApi = {
   },
 };
 
-export default api; 
+// Tables API
+export const tablesApi = {
+  getAll: (): Promise<TableData[]> => api.get('/orders/tables/').then(res => res.data),
+  create: (data: { number: number; capacity: number }): Promise<TableData> =>
+    api.post('/orders/tables/', data).then(res => res.data),
+  update: (id: number, data: { number?: number; capacity?: number }): Promise<TableData> =>
+    api.patch(`/orders/tables/${id}`, data).then(res => res.data),
+  updateStatus: (id: number, status: TableStatus): Promise<TableData> =>
+    api.put(`/orders/tables/${id}/status`, null, { params: { status } }).then(res => res.data),
+  delete: (id: number): Promise<void> => api.delete(`/orders/tables/${id}`).then(res => res.data),
+};
+
+export default api;

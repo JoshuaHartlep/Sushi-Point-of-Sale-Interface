@@ -22,6 +22,7 @@ from app.schemas.order import (
     OrderItemCreate,
     OrderItemResponse,
     TableCreate,
+    TableUpdate,
     TableResponse,
     DiscountCreate,
     DiscountResponse,
@@ -138,6 +139,23 @@ def get_table(table_id: int, db: Session = Depends(get_db)):
     table = db.query(Table).filter(Table.id == table_id).first()
     if not table:
         raise RecordNotFoundError("Table", table_id)
+    return table
+
+@router.patch("/tables/{table_id}", response_model=TableResponse)
+def update_table(table_id: int, data: TableUpdate, db: Session = Depends(get_db)):
+    """Update a table's number and/or capacity."""
+    table = db.query(Table).filter(Table.id == table_id).first()
+    if not table:
+        raise RecordNotFoundError("Table", table_id)
+    if data.number is not None:
+        existing = db.query(Table).filter(Table.number == data.number, Table.id != table_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Table number {data.number} already exists")
+        table.number = data.number
+    if data.capacity is not None:
+        table.capacity = data.capacity
+    db.commit()
+    db.refresh(table)
     return table
 
 @router.put("/tables/{table_id}/status", response_model=TableResponse)
