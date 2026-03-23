@@ -10,6 +10,7 @@ import Orders from './pages/Orders';
 import Settings from './pages/Settings';
 import Modifiers from './pages/Modifiers';
 import EditOrder from './pages/EditOrder';
+import Tables from './pages/Tables';
 import CustomerApp from './pages/customer/CustomerApp';
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function App() {
                         <Route path="/modifiers" element={<Modifiers />} />
                         <Route path="/orders" element={<Orders />} />
                         <Route path="/orders/:id/edit" element={<EditOrder />} />
+                        <Route path="/tables" element={<Tables />} />
                         <Route path="/settings" element={<Settings />} />
                       </Routes>
                     </Layout>
