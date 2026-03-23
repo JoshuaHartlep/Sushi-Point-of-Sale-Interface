@@ -10,6 +10,7 @@ import Orders from './pages/Orders';
 import Settings from './pages/Settings';
 import Modifiers from './pages/Modifiers';
 import EditOrder from './pages/EditOrder';
+import CustomerApp from './pages/customer/CustomerApp';
 
 const queryClient = new QueryClient();
 
@@ -20,16 +21,27 @@ function App() {
         <MealPeriodProvider>
           <BrowserRouter>
             <RestaurantProvider>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/menu" element={<Menu />} />
-                  <Route path="/modifiers" element={<Modifiers />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route path="/orders/:id/edit" element={<EditOrder />} />
-                  <Route path="/settings" element={<Settings />} />
-                </Routes>
-              </Layout>
+              <Routes>
+                {/* Customer-facing route — no admin Layout */}
+                <Route path="/customer" element={<CustomerApp />} />
+
+                {/* Admin / manager routes — wrapped in sidebar Layout */}
+                <Route
+                  path="*"
+                  element={
+                    <Layout>
+                      <Routes>
+                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/menu" element={<Menu />} />
+                        <Route path="/modifiers" element={<Modifiers />} />
+                        <Route path="/orders" element={<Orders />} />
+                        <Route path="/orders/:id/edit" element={<EditOrder />} />
+                        <Route path="/settings" element={<Settings />} />
+                      </Routes>
+                    </Layout>
+                  }
+                />
+              </Routes>
             </RestaurantProvider>
           </BrowserRouter>
         </MealPeriodProvider>
@@ -38,4 +50,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

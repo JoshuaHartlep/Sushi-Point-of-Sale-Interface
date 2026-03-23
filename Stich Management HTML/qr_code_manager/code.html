@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QR Code Manager | Zen Sushi Izakaya</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Sans+JP:wght@300;400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary": "#655e50",
+                        "on-surface": "#1c1c19",
+                        "on-secondary-fixed-variant": "#4c4639",
+                        "primary-fixed": "#ffdad4",
+                        "secondary-fixed": "#ece1d0",
+                        "on-primary-fixed": "#410100",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "surface-bright": "#fcf9f4",
+                        "on-secondary-container": "#696254",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#31302d",
+                        "tertiary": "#005e77",
+                        "surface-dim": "#dcdad5",
+                        "on-primary-container": "#ffeeec",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f6f3ee",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1c1c19",
+                        "tertiary-fixed-dim": "#7cd2f4",
+                        "primary": "#a2281a",
+                        "surface-container-highest": "#e5e2dd",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#59413d",
+                        "surface-variant": "#e5e2dd",
+                        "on-tertiary-container": "#e3f5ff",
+                        "on-primary-fixed-variant": "#8c170c",
+                        "inverse-on-surface": "#f3f0eb",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#007897",
+                        "surface-container": "#f0ede9",
+                        "outline-variant": "#e1bfb9",
+                        "inverse-primary": "#ffb4a8",
+                        "on-secondary-fixed": "#201b10",
+                        "error": "#ba1a1a",
+                        "background": "#fcf9f4",
+                        "secondary-container": "#e9decd",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "on-tertiary-fixed": "#001f29",
+                        "surface": "#fcf9f4",
+                        "surface-container-high": "#ebe8e3",
+                        "outline": "#8d716c",
+                        "surface-tint": "#ae3021",
+                        "primary-container": "#c4402f",
+                        "secondary-fixed-dim": "#cfc5b5",
+                        "tertiary-fixed": "#baeaff"
+                    },
+                    fontFamily: {
+                        "headline": ["Instrument Serif", "serif"],
+                        "body": ["Noto Sans JP", "sans-serif"],
+                        "label": ["Noto Sans JP", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: #fcf9f4; }
+        .font-serif { font-family: 'Instrument Serif', serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- SideNavBar Shell -->
+<aside class="w-[224px] h-screen sticky left-0 top-0 bg-[#f6f3ee] dark:bg-stone-900 flex flex-col py-8 h-full space-y-6 z-50">
+<div class="px-8 mb-4">
+<h1 class="text-xl font-serif italic text-[#a2281a] dark:text-[#c4402f]">Editorial Zen</h1>
+<p class="text-[0.70rem] uppercase tracking-wider text-on-surface-variant opacity-70">Sushi POS</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Dashboard -->
+<a class="flex items-center text-[#59413d] dark:text-stone-400 pl-5 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50 py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="dashboard">dashboard</span>
+<span class="text-[0.75rem] uppercase tracking-wider">Dashboard</span>
+</a>
+<!-- Orders -->
+<a class="flex items-center text-[#59413d] dark:text-stone-400 pl-5 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50 py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="receipt_long">receipt_long</span>
+<span class="text-[0.75rem] uppercase tracking-wider">Orders</span>
+</a>
+<!-- Menu -->
+<a class="flex items-center text-[#59413d] dark:text-stone-400 pl-5 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50 py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="text-[0.75rem] uppercase tracking-wider">Menu</span>
+</a>
+<!-- Tables -->
+<a class="flex items-center text-[#59413d] dark:text-stone-400 pl-5 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50 py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="grid_view">grid_view</span>
+<span class="text-[0.75rem] uppercase tracking-wider">Tables</span>
+</a>
+<!-- QR Codes (ACTIVE) -->
+<a class="flex items-center text-[#a2281a] dark:text-[#c4402f] border-l-4 border-[#a2281a] pl-4 font-bold transition-all translate-x-1 py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="qr_code_2">qr_code_2</span>
+<span class="text-[0.75rem] uppercase tracking-wider">QR Codes</span>
+</a>
+</nav>
+<div class="px-6 pt-6 mt-auto">
+<div class="flex items-center gap-3 p-3 bg-surface-container-highest/30 rounded-lg">
+<div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-on-primary font-serif italic text-xs">Z</div>
+<div class="overflow-hidden">
+<p class="text-[0.75rem] font-bold truncate text-on-surface">Owner Account</p>
+<p class="text-[0.65rem] text-on-surface-variant truncate">Zen Sushi Izakaya</p>
+</div>
+</div>
+</div>
+</aside>
+<main class="flex-1 relative">
+<!-- TopNavBar Shell -->
+<header class="fixed top-0 right-0 w-[calc(100%-224px)] z-40 bg-[#fcf9f4]/80 dark:bg-stone-950/80 backdrop-blur-xl flex justify-between items-center h-20 px-10">
+<div class="flex items-center space-x-4">
+<h2 class="text-2xl font-serif text-[#59413d] dark:text-stone-200">QR Code Manager</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<span class="material-symbols-outlined text-[#59413d] cursor-pointer hover:text-[#a2281a] transition-colors" data-icon="notifications">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
+</div>
+<span class="material-symbols-outlined text-[#59413d] cursor-pointer hover:text-[#a2281a] transition-colors" data-icon="settings">settings</span>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="pt-28 px-10 pb-20">
+<!-- Hero / Batch Actions Section -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="max-w-xl">
+<p class="text-[0.75rem] uppercase tracking-[0.2em] text-primary font-bold mb-2">Digital Orchestration</p>
+<h3 class="text-5xl font-serif text-on-surface leading-tight">Table QR Identification</h3>
+<p class="mt-4 text-on-surface-variant leading-relaxed">Generated secure access points for each table. All codes are high-resolution vector ready for print or digital display.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-6 py-3 bg-surface-container-high text-on-surface-variant rounded hover:bg-surface-container-highest transition-colors group">
+<span class="material-symbols-outlined text-[20px]" data-icon="download">download</span>
+<span class="text-[0.75rem] uppercase tracking-wider font-bold">Download All PDF</span>
+</button>
+<button class="flex items-center gap-2 px-6 py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all scale-100 active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+<span class="text-[0.75rem] uppercase tracking-wider font-bold">Print All Sheets</span>
+</button>
+</div>
+</div>
+<!-- Filter Tabs -->
+<div class="flex gap-8 mb-10 border-b border-outline-variant/10">
+<button class="pb-4 text-primary font-bold border-b-2 border-primary text-[0.75rem] uppercase tracking-widest">All Tables</button>
+<button class="pb-4 text-on-surface-variant hover:text-primary transition-colors text-[0.75rem] uppercase tracking-widest">Main Hall</button>
+<button class="pb-4 text-on-surface-variant hover:text-primary transition-colors text-[0.75rem] uppercase tracking-widest">Sushi Bar</button>
+<button class="pb-4 text-on-surface-variant hover:text-primary transition-colors text-[0.75rem] uppercase tracking-widest">Private Rooms</button>
+</div>
+<!-- Bento Grid of Table QR Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+<!-- Card 1: T-1 -->
+<div class="group bg-surface-container-lowest p-6 rounded-lg transition-all duration-300 hover:-translate-y-1 relative">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-serif">T-1</h4>
+<p class="text-[0.65rem] text-on-surface-variant uppercase tracking-tighter">Capacity: 4 Seating</p>
+</div>
+<span class="px-2 py-1 bg-tertiary/10 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded">Active</span>
+</div>
+<div class="aspect-square bg-white border border-outline-variant/10 p-6 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-surface-container-low transition-colors">
+<img alt="QR Code for Table 1" class="w-full h-full object-contain mix-blend-multiply" data-alt="High quality QR code for dining table T-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAKS96-NAVWI30UDiD5rSTdVrLH3oL0pnk_7vKQ44UQQPoAiXlSWel5xxfIq31GW2XMgQvVSSx-vmYohJl2iGaWIeylZxlm_82wQFiNIKn3bmFz3m6Spj4CFeY3VdHxreLHYNWN9Mn5b1nVLtmCXOK7C3EmnF2WCY2_KJTOyqV3yOSSyivCQeiH7W_VAdKj4-9Iu6n8pFRy7F-yAt9RY8S7-MJe-n1hGfM9KcUpAR1pDdQo1QVpzkfSpj9u3ODpsK5JtSF3_MTxOc"/>
+<!-- Tiny central logo simulation -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-8 h-8 bg-white p-1 rounded-sm shadow-sm flex items-center justify-center">
+<span class="text-[8px] font-serif font-bold text-primary">ZEN</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span> Download
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="print">print</span> Print
+                        </button>
+</div>
+</div>
+<!-- Card 2: T-2 -->
+<div class="group bg-surface-container-lowest p-6 rounded-lg transition-all duration-300 hover:-translate-y-1 relative">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-serif">T-2</h4>
+<p class="text-[0.65rem] text-on-surface-variant uppercase tracking-tighter">Capacity: 2 Seating</p>
+</div>
+<span class="px-2 py-1 bg-tertiary/10 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded">Active</span>
+</div>
+<div class="aspect-square bg-white border border-outline-variant/10 p-6 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-surface-container-low transition-colors">
+<img alt="QR Code for Table 2" class="w-full h-full object-contain mix-blend-multiply" data-alt="High quality QR code for dining table T-2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA93Q4u3ny5wTK4Cea8bPBMpoGBNHJt_zyqa_WbwgZ2U-lLaSgVreRUN485zimtbay8TuvXJE-LbcbQQstMxwnqaHzGnW8ZuxmOSpzDP9pRiHf_ORISwVZy54WCRcqx-gsQN1Sn5hF2b77xgziWJUxsyesIpfT3aQ1u9F4C2c0Cyv0vaozYvnJ7TSKmjZjpQvZyqtN5bE2GswIht08A3vbhJUA3Ui7ZVU9CtcmSFefdaqkoclpdPBxlk0c_bUzyt4Ch91_4qjHrPUA"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-8 h-8 bg-white p-1 rounded-sm shadow-sm flex items-center justify-center">
+<span class="text-[8px] font-serif font-bold text-primary">ZEN</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span> Download
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="print">print</span> Print
+                        </button>
+</div>
+</div>
+<!-- Card 3: Bar-1 -->
+<div class="group bg-surface-container-lowest p-6 rounded-lg transition-all duration-300 hover:-translate-y-1 relative">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-serif">Bar-1</h4>
+<p class="text-[0.65rem] text-on-surface-variant uppercase tracking-tighter">Capacity: 1 Seating</p>
+</div>
+<span class="px-2 py-1 bg-tertiary/10 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded">Active</span>
+</div>
+<div class="aspect-square bg-white border border-outline-variant/10 p-6 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-surface-container-low transition-colors">
+<img alt="QR Code for Bar 1" class="w-full h-full object-contain mix-blend-multiply" data-alt="High quality QR code for bar seat 1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmzVjphzfTXE5lhgK9WoywfKADQBEYy3o3r6yJZpKEhgdATSgDnivo-Vn2I8A3o2mjhCqFZHi97RdFL6GwdFYv0BjCVe6f4rZptanF3VLYsU1x4iYKHQ65VFlgF6GlS5MCnNvqitj67QRogYPYtwGI1xR6d_cvKnGgPGpPKXHWpj76Xj5NZTnKRDo9x1P9IaddiK8h2Lk5Y8zXW_LfGtvOiKlkLxZg8Zx64rf_6XYjqVXOrFqxwOC27F6iI1PWoy82P9je817CMJw"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-8 h-8 bg-white p-1 rounded-sm shadow-sm flex items-center justify-center">
+<span class="text-[8px] font-serif font-bold text-primary">ZEN</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span> Download
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="print">print</span> Print
+                        </button>
+</div>
+</div>
+<!-- Card 4: Bar-2 -->
+<div class="group bg-surface-container-lowest p-6 rounded-lg transition-all duration-300 hover:-translate-y-1 relative border-l-2 border-primary/20">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-serif">Bar-2</h4>
+<p class="text-[0.65rem] text-on-surface-variant uppercase tracking-tighter">Capacity: 1 Seating</p>
+</div>
+<span class="px-2 py-1 bg-secondary/10 text-secondary text-[10px] uppercase font-bold tracking-widest rounded">Draft</span>
+</div>
+<div class="aspect-square bg-white border border-outline-variant/10 p-6 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-surface-container-low transition-colors grayscale opacity-60">
+<img alt="QR Code for Bar 2" class="w-full h-full object-contain mix-blend-multiply" data-alt="High quality QR code for bar seat 2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOodB9nmWeCZxFfANfSKvMsvvrfNJAvDeZ9SVxtZGdZCbLvvgup8opUAuu0qSfu_0V-D5eR-4ISvX8Kcd7gyLB0qDt07d6lzR7dmKDSd4sM-2qJ5U3Xc1eAlDomCcnyfNxjzpydZmiB3sIFJs5c_zlbB0CohTcY09df6yvCJtcDg7wzd5Fnf_fc4oxSMdICkBW1nYDPXcPsRFuE1QMgPLRuM8MhUv5JsRsaVbzZO298oshk87gahiOR_rVD8w6Vh8IPiZgQb1fp_Q"/>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span> Download
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="print">print</span> Print
+                        </button>
+</div>
+</div>
+<!-- Card 5: T-3 -->
+<div class="group bg-surface-container-lowest p-6 rounded-lg transition-all duration-300 hover:-translate-y-1 relative">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h4 class="text-2xl font-serif">T-3</h4>
+<p class="text-[0.65rem] text-on-surface-variant uppercase tracking-tighter">Capacity: 6 Seating</p>
+</div>
+<span class="px-2 py-1 bg-tertiary/10 text-tertiary text-[10px] uppercase font-bold tracking-widest rounded">Active</span>
+</div>
+<div class="aspect-square bg-white border border-outline-variant/10 p-6 mb-6 flex items-center justify-center relative overflow-hidden group-hover:bg-surface-container-low transition-colors">
+<img alt="QR Code for Table 3" class="w-full h-full object-contain mix-blend-multiply" data-alt="High quality QR code for dining table T-3" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa6myS33to6X2mEIliAar-ZI9z6qb4u69V4HEIdyWx1VUt1gv0o55EXEGpAo-azAoNzS800-X554BnTJqC0MQeKVQwYyEwvt94KGJQ65xsbKyVVspuvBmh80W-1L1ABcQjXiekQx_ea8KGut2YQlqVjEWrZer8Csukna4DkghdOq_lWeiLUeq0xl0gsiEJTXbEMzhA_0sIZqg_iwsR1-P-5BI9VIpFAHI2zel4gAwWH5a-33DS0xMXnWSr5gGk65CRXMkzLzBm8O8"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-8 h-8 bg-white p-1 rounded-sm shadow-sm flex items-center justify-center">
+<span class="text-[8px] font-serif font-bold text-primary">ZEN</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span> Download
+                        </button>
+<button class="flex-1 flex items-center justify-center gap-1 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-on-surface-variant border border-outline-variant/20 rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="print">print</span> Print
+                        </button>
+</div>
+</div>
+<!-- Add New Table Placeholder -->
+<div class="group border-2 border-dashed border-outline-variant/30 p-6 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer hover:border-primary/50 transition-colors">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-4 text-on-surface-variant group-hover:bg-primary group-hover:text-on-primary transition-all">
+<span class="material-symbols-outlined text-[24px]" data-icon="add">add</span>
+</div>
+<h4 class="text-xl font-serif">Add New Table</h4>
+<p class="text-[0.65rem] text-on-surface-variant uppercase tracking-wider mt-1">Configure &amp; Generate QR</p>
+</div>
+</div>
+<!-- Bottom Context Info -->
+<div class="mt-16 p-8 bg-[#f6f3ee] rounded-xl flex items-center gap-8">
+<div class="w-16 h-16 bg-primary-container/20 rounded-lg flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[32px]" data-icon="qr_code_scanner">qr_code_scanner</span>
+</div>
+<div>
+<h5 class="font-serif text-xl">Universal Order Access</h5>
+<p class="text-on-surface-variant text-sm mt-1 max-w-2xl">Scanning these codes redirects guests to your mobile menu automatically. The table ID is embedded, allowing for instant kitchen-routing without manual table selection by staff.</p>
+</div>
+<div class="ml-auto">
+<button class="text-[0.75rem] uppercase tracking-widest font-bold text-primary border-b border-primary hover:opacity-70 transition-opacity">View Scanner Logs</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Contextual FAB (Hidden as per hierarchy on details pages, but let's assume this is a top-level dash destination) -->
+<button class="fixed bottom-10 right-10 w-16 h-16 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-50">
+<span class="material-symbols-outlined text-[32px]" data-icon="add_box">add_box</span>
+</button>
+</body></html>

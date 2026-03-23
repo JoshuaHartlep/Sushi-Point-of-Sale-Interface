@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SUSHIZEN | High-End Sushi Menu</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Serif:wght@400;700&amp;family=Manrope:wght@300;400;600;800&amp;family=Noto+Sans+JP:wght@300;400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed-variant": "#4c4639",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdad4",
+                        "surface-container-low": "#f6f3ee",
+                        "surface": "#fcf9f4",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "primary-container": "#c4402f",
+                        "surface-tint": "#ae3021",
+                        "on-tertiary-fixed": "#001f29",
+                        "surface-container-highest": "#e5e2dd",
+                        "background": "#fcf9f4",
+                        "secondary": "#655e50",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#ffb4a8",
+                        "outline": "#8d716c",
+                        "on-tertiary-container": "#e3f5ff",
+                        "on-tertiary": "#ffffff",
+                        "inverse-surface": "#31302d",
+                        "tertiary-container": "#007897",
+                        "secondary-container": "#e9decd",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#7cd2f4",
+                        "surface-bright": "#fcf9f4",
+                        "surface-container-high": "#ebe8e3",
+                        "surface-dim": "#dcdad5",
+                        "on-primary-fixed-variant": "#8c170c",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#410100",
+                        "tertiary": "#005e77",
+                        "secondary-fixed-dim": "#cfc5b5",
+                        "on-primary-container": "#ffeeec",
+                        "inverse-on-surface": "#f3f0eb",
+                        "tertiary-fixed": "#baeaff",
+                        "surface-container": "#f0ede9",
+                        "secondary-fixed": "#ece1d0",
+                        "primary": "#a2281a",
+                        "on-secondary-container": "#696254",
+                        "surface-variant": "#e5e2dd",
+                        "on-secondary-fixed": "#201b10",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-background": "#1c1c19",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#e1bfb9",
+                        "on-surface": "#1c1c19",
+                        "on-surface-variant": "#59413d"
+                    },
+                    fontFamily: {
+                        "headline": ["Noto Serif", "serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"],
+                        "display": ["Instrument Serif", "serif"],
+                        "japanese": ["Noto Sans JP", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    display: inline-block;
+    line-height: 1
+    }
+.vertical-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed
+    }
+.washi-texture {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuD18FAIt9cgZC2o_autzMhDQ-xUUEwGAvVtayY1OnZI9mviuV7B5bAfBTNzHnbGfWUKHyxqnRZ-XkMrlNLdBcqv3byCNND5YeqcxwsJ4jGzvs6cLEtWVCHVvMW3hBBQbBhid0eJe-k5iu1Mh3eOPV2bAKF_xOXYINzREs9UjjZ2pRz4_UDDkkZtxKTW-0Exgf9tbFjEZuMi-5nxfikSfVdbu5wuABd5Vi6fAye1bE8qj7v5FOz8LoLDrVAIpMFPHldJLt7niuEoNDiw)
+    }
+.hide-scrollbar::-webkit-scrollbar {
+    display: none
+    }
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body text-on-surface washi-texture min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fcf9f4] dark:bg-stone-950/80 backdrop-blur-md flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#a2281a] dark:text-[#c4402f]">restaurant_menu</span>
+<h1 class="text-2xl font-['Instrument_Serif'] italic text-[#59413d] dark:text-stone-200">SUSHIZEN</h1>
+</div>
+<div class="px-3 py-1 rounded-full bg-primary-container/10 border border-primary/20">
+<span class="text-[10px] font-bold tracking-[0.2em] text-[#a2281a] dark:text-[#c4402f] uppercase">LUNCH</span>
+</div>
+</header>
+<main class="pt-20 px-6">
+<!-- Vertical Accent Decor -->
+<div class="fixed right-2 top-32 pointer-events-none opacity-20">
+<p class="vertical-text font-display italic text-4xl text-on-surface-variant tracking-widest">Menu</p>
+</div>
+<div class="fixed left-2 bottom-32 pointer-events-none opacity-10">
+<p class="vertical-text font-japanese font-bold text-2xl text-primary tracking-[0.5em]">旬の味覚</p>
+</div>
+<!-- Service Selector -->
+<section class="mt-6 flex bg-surface-container-low rounded-xl p-1.5 relative">
+<button class="flex-1 py-3 text-sm font-bold tracking-wider text-on-primary bg-primary rounded-lg shadow-sm z-10">AYCE Available</button>
+<button class="flex-1 py-3 text-sm font-semibold tracking-wider text-on-surface-variant opacity-60">A La Carte</button>
+</section>
+<!-- Category Scroll -->
+<nav class="mt-8 flex gap-6 overflow-x-auto hide-scrollbar -mx-6 px-6">
+<button class="flex-shrink-0 flex flex-col items-center gap-1 group">
+<span class="text-sm font-bold text-primary border-b-2 border-primary pb-1">Nigiri</span>
+<span class="text-[9px] font-japanese text-on-surface-variant opacity-40">握り</span>
+</button>
+<button class="flex-shrink-0 flex flex-col items-center gap-1 group">
+<span class="text-sm font-medium text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">Sashimi</span>
+<span class="text-[9px] font-japanese text-on-surface-variant opacity-40">刺身</span>
+</button>
+<button class="flex-shrink-0 flex flex-col items-center gap-1 group">
+<span class="text-sm font-medium text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">Maki</span>
+<span class="text-[9px] font-japanese text-on-surface-variant opacity-40">巻き</span>
+</button>
+<button class="flex-shrink-0 flex flex-col items-center gap-1 group">
+<span class="text-sm font-medium text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">Temaki</span>
+<span class="text-[9px] font-japanese text-on-surface-variant opacity-40">手巻き</span>
+</button>
+<button class="flex-shrink-0 flex flex-col items-center gap-1 group">
+<span class="text-sm font-medium text-on-surface-variant opacity-60 group-hover:opacity-100 transition-opacity">Drinks</span>
+<span class="text-[9px] font-japanese text-on-surface-variant opacity-40">飲み物</span>
+</button>
+</nav>
+<!-- Featured Section Header -->
+<header class="mt-10 mb-6 flex items-end justify-between">
+<div>
+<h2 class="font-display text-4xl text-on-surface tracking-tight">Chef's Selection</h2>
+<p class="text-xs uppercase tracking-[0.2em] text-on-surface-variant mt-1">Premium Seasonal Cut</p>
+</div>
+<div class="h-[1px] flex-1 mx-4 mb-3 bg-outline-variant opacity-20"></div>
+</header>
+<!-- Bento Grid Menu Items -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Item 1: Large Feature -->
+<div class="col-span-2 bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<div class="relative h-48 overflow-hidden">
+<img alt="Otoro Nigiri" class="w-full h-full object-cover" data-alt="Close up of premium fatty tuna otoro nigiri sushi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAu3PdyxT7SU9Wi5bkLxYTCOEA_XS4-E4h-jgYwHNPQTaDKm6cGR8bdTcHneclRwLymvhM_V-_N3cQVkvR_Lt-7_MSeI86mHY_QbdBxdwOapSzxj4K0e7NRcEwFA-tfc9BsT5UEsfLd9pb0lmr1cIlRh85KYO8Mc0G4B-C6UV6DM0li2ATJFUYWCu-WpaacvjO0pxgkaW1e4mmZGQYTMJJVZPxzx59L1J_OyXTM0mGLIxMHaXID7edHxnrn5Jdc3tvboKiCPjGOl-qQ"/>
+<div class="absolute top-4 left-4 bg-primary px-3 py-1 rounded-full">
+<span class="text-[10px] text-on-primary font-bold tracking-widest uppercase">Signature</span>
+</div>
+</div>
+<div class="p-5 flex justify-between items-end">
+<div>
+<h3 class="font-headline text-xl font-normal text-on-surface">Bluefin Otoro</h3>
+<p class="text-xs text-on-surface-variant/70 mt-1 italic">Fatty belly, aged 3 days</p>
+<p class="text-primary font-bold mt-2">$24.00</p>
+</div>
+<button class="bg-surface-container-high p-3 rounded-full hover:bg-primary hover:text-on-primary transition-all duration-300">
+<span class="material-symbols-outlined text-lg">add</span>
+</button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<div class="h-32 overflow-hidden">
+<img alt="Sake Nigiri" class="w-full h-full object-cover" data-alt="Two pieces of fresh salmon nigiri sushi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYRI4Cf9RXuziKSgbGcmTEVJyYoAQCI_sZjMx_BfKGACViM6BV7EOXharb767cEfr3b-TvPYTGhlylS7pHmL1JmjUPeEyQhSHwpnS18jdgDxUxrte8Da7N9Kem_U9twB0vtXWgkioaBEYEyPp8d-rQws15bUOuMEmEWM_oez8nb0vc8-sSVhFXeHiA4IILmIzW2oYoLLXPYMPJOmBj6nkTQjczmPM9DY6P3PKtq4uvrdDSlQZu867FXYSPRSqoOC9jxTJWP_wPspNw"/>
+</div>
+<div class="p-4">
+<h3 class="font-headline text-lg text-on-surface">Scottish Salmon</h3>
+<div class="flex justify-between items-center mt-3">
+<span class="text-primary font-bold text-sm">$12.00</span>
+<button class="bg-surface-container-high p-2 rounded-full">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<div class="h-32 overflow-hidden">
+<img alt="Hamachi Nigiri" class="w-full h-full object-cover" data-alt="Slices of yellowtail hamachi nigiri on wooden plate" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeSzooKN2jFG9kwJBeEgeTK5z1oums5JwGwLbHga5Zfx_FqyEc3o-C5bXzByq6iYkaSBwO6NkonqVdHX1SlYKbkO9Nv55nrQo_8gw7o2-CISV7iJbLwG_4pIX_Bs4XwdlytwYQrhrrRtwBzlJS2Hht3Plv8_CbPOfT3Rie7nwy8HpHrfxsO9XEIWVbg-lVl9HSbM08ohOsnZYVaWHyNd41Eor0AUKQBos5O5LCfXLPKJ7sToLfIO9831T0OssljdL_4Wg4Wf14DQ3G"/>
+</div>
+<div class="p-4">
+<h3 class="font-headline text-lg text-on-surface">Yellowtail</h3>
+<div class="flex justify-between items-center mt-3">
+<span class="text-primary font-bold text-sm">$14.00</span>
+<button class="bg-surface-container-high p-2 rounded-full">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="col-span-2 flex bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<div class="w-1/3 overflow-hidden">
+<img alt="Uni Nigiri" class="w-full h-full object-cover" data-alt="Hokkaido sea urchin uni wrapped in nori" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBma0aE6XATHtczREJLrgOBg4vKmsukUHv_9s_m-6eCq8JvMkjek0XsFTIgWBjOU_Orv9B30B-yrzj2fy70e1QlgBiUSkXGxeypACL2AVf1KRCv6AY099RizqPwTodB8cjDK2LrJWtLFNIXLMp6hbQSu-0APY1mP-nOZobHZEbzwKw99zdQiyrTvjB_NOP3kXaGfG0H39j3DxgZs93vwi3_PjbJhaL3S3uflTTv6KuX2T6Ebhcnp7cCzF-uY8GlTfbvDehRdsenkfIf"/>
+</div>
+<div class="p-5 flex-1 flex flex-col justify-center">
+<h3 class="font-headline text-lg text-on-surface">Hokkaido Uni</h3>
+<p class="text-[10px] text-on-surface-variant/60 uppercase tracking-widest mt-1">Limited Supply</p>
+<div class="flex justify-between items-center mt-3">
+<span class="text-primary font-bold">$28.00</span>
+<button class="bg-primary text-on-primary px-4 py-1.5 rounded-full text-xs font-bold tracking-tighter">ADD</button>
+</div>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<div class="h-32 overflow-hidden">
+<img alt="Ebi Nigiri" class="w-full h-full object-cover" data-alt="Steamed tiger shrimp ebi sushi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH-FbQCqq0zvUqKpt32aTV5GDtz_-bj2X2TCD2m8LpWzxNGR4LSZlFDohZW3d58QPjQ06XDLVx8LGdEBcJB2vB76D5-jPUXFDLoItTBKxVgRJxkgzltMC-deP3Q6tGQVt3hvjeUzVzOoPpPFSo0RAh6ypPu26qQMzRyh2XdY4y7Nea36Gp8XQDNWzbdJMCaLXinwMFmfrhlbwmLgIzWhdIHWrzCTPJPBHRFHQZ1AxpAyfFQBkDjwpd0BEkcNFs94twh4v2mt8DseZA"/>
+</div>
+<div class="p-4">
+<h3 class="font-headline text-lg text-on-surface">Tiger Shrimp</h3>
+<div class="flex justify-between items-center mt-3">
+<span class="text-primary font-bold text-sm">$10.00</span>
+<button class="bg-surface-container-high p-2 rounded-full">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 6 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-outline-variant/10">
+<div class="h-32 overflow-hidden">
+<img alt="Unagi Nigiri" class="w-full h-full object-cover" data-alt="Grilled freshwater eel unagi sushi with sweet sauce" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGD-8YFkwDpTVC-zFN6LIOjH2SKBd2m2hdbEdZeIlvNHX0Gl2898-d_Ql8q5cglBlqEHbQXowsQ0PtQbIV6fl4LtYlx-QVEO6Kyzz0kLhGvtQuMKpcNGf28VecwQC9sO-xQgOkWy57YBtmMuaMu1Vsl3vcsMCIsIhfx0FjlhKu4GgvxwQQVXiVIF_P9r3pFb5ksUNYlP7Ke_aXTRETh4wCPIBaTCQ-pCfCmvXmEuqAyNy85RqmTcZz45meX8UIML_Qy-vNyeQAUty6"/>
+</div>
+<div class="p-4">
+<h3 class="font-headline text-lg text-on-surface">Grilled Unagi</h3>
+<div class="flex justify-between items-center mt-3">
+<span class="text-primary font-bold text-sm">$13.00</span>
+<button class="bg-surface-container-high p-2 rounded-full">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Footnote section -->
+<div class="mt-12 mb-8 text-center px-8 opacity-40">
+<p class="font-japanese text-sm leading-relaxed">
+                素材の味を最大限に活かすため、<br/>
+                当店では新鮮な魚介のみを使用しております。
+            </p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-8 pb-6 pt-2 bg-[#fcf9f4]/90 dark:bg-stone-950/90 backdrop-blur-xl shadow-[0_-4px_40px_rgba(162,40,26,0.04)] rounded-t-2xl z-50">
+<!-- Menu Tab (Active) -->
+<a class="flex flex-col items-center justify-center text-[#a2281a] border-t-2 border-[#a2281a] pt-2 transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="restaurant" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+<span class="font-['Noto_Serif'] text-[10px] uppercase tracking-widest mt-1">Menu</span>
+</a>
+<!-- My Order Tab -->
+<a class="flex flex-col items-center justify-center text-[#59413d] opacity-50 pt-2 hover:text-[#a2281a] transition-colors duration-500" href="#">
+<div class="relative">
+<span class="material-symbols-outlined text-2xl" data-icon="shopping_bag">shopping_bag</span>
+<span class="absolute -top-1 -right-1 bg-primary text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full font-bold">2</span>
+</div>
+<span class="font-['Noto_Serif'] text-[10px] uppercase tracking-widest mt-1">My Order</span>
+</a>
+<!-- History Tab -->
+<a class="flex flex-col items-center justify-center text-[#59413d] opacity-50 pt-2 hover:text-[#a2281a] transition-colors duration-500" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="history">history</span>
+<span class="font-['Noto_Serif'] text-[10px] uppercase tracking-widest mt-1">History</span>
+</a>
+</nav>
+</body></html>

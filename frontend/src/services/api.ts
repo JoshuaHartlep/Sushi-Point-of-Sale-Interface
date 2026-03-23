@@ -24,6 +24,7 @@ export interface MenuItem {
   category_id: number;
   is_available: boolean;
   meal_period: 'BOTH' | 'LUNCH' | 'DINNER'; // Meal period support - required field
+  image_url?: string | null;
 }
 
 export interface Category {
@@ -182,8 +183,8 @@ export const ordersApi = {
     const response = await api.get(`/orders/${orderId}/total`);
     return response.data;
   },
-  addItem: (orderId: number, data: { menu_item_id: number; quantity: number }): Promise<OrderItem> => 
-    api.post(`/orders/${orderId}/items/`, data).then(res => res.data),
+  addItem: (orderId: number, data: { menu_item_id: number; quantity: number }): Promise<Order> =>
+    api.post(`/orders/${orderId}/items/`, { items: [data] }).then(res => res.data),
   deleteItem: (orderId: number, itemId: number): Promise<void> => 
     api.delete(`/orders/${orderId}/items/${itemId}/`).then(res => res.data),
 };
@@ -198,6 +199,15 @@ export const menuApi = {
   updateItem: (id: number, data: Partial<MenuItem>): Promise<MenuItem> => 
     api.patch(`/menu/menu-items/${id}/`, data).then(res => res.data),
   deleteItem: (id: number): Promise<void> => api.delete(`/menu/menu-items/${id}/`).then(res => res.data),
+  uploadImage: (id: number, file: File): Promise<MenuItem> => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post(`/menu/menu-items/${id}/upload-image`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(res => res.data);
+  },
+  deleteImage: (id: number): Promise<MenuItem> =>
+    api.delete(`/menu/menu-items/${id}/image`).then(res => res.data),
   getModifiers: (params?: { skip?: number; limit?: number; category_id?: number }): Promise<Modifier[]> => 
     api.get('/menu/modifiers/', { params }).then(res => res.data),
   updateModifier: (id: number, data: Partial<Modifier>): Promise<Modifier> => 

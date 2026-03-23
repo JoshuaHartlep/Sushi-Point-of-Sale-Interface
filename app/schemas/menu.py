@@ -18,6 +18,7 @@ class MenuItemBase(BaseModel):
     category_id: Optional[int] = None
     is_available: bool = True
     meal_period: MealPeriodEnum = MealPeriodEnum.BOTH
+    image_url: Optional[str] = None
 
 class MenuItemCreate(MenuItemBase):
     """Schema for creating a menu item."""

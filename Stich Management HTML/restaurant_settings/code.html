@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Sans+JP:wght@300;400;500;700&amp;family=Manrope:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "error": "#ba1a1a",
+          "on-primary": "#ffffff",
+          "primary-fixed-dim": "#ffb4a8",
+          "on-secondary": "#ffffff",
+          "surface-variant": "#e5e2dd",
+          "surface-bright": "#fcf9f4",
+          "surface": "#fcf9f4",
+          "secondary-fixed-dim": "#cfc5b5",
+          "on-error": "#ffffff",
+          "on-secondary-fixed-variant": "#4c4639",
+          "on-error-container": "#93000a",
+          "surface-container": "#f0ede9",
+          "background": "#fcf9f4",
+          "secondary-container": "#e9decd",
+          "tertiary-fixed-dim": "#7cd2f4",
+          "tertiary-fixed": "#baeaff",
+          "primary-fixed": "#ffdad4",
+          "on-secondary-container": "#696254",
+          "inverse-surface": "#31302d",
+          "tertiary-container": "#007897",
+          "outline": "#8d716c",
+          "error-container": "#ffdad6",
+          "inverse-primary": "#ffb4a8",
+          "secondary": "#655e50",
+          "primary-container": "#c4402f",
+          "on-tertiary-fixed": "#001f29",
+          "surface-container-low": "#f6f3ee",
+          "surface-tint": "#ae3021",
+          "inverse-on-surface": "#f3f0eb",
+          "on-primary-container": "#ffeeec",
+          "surface-container-lowest": "#ffffff",
+          "surface-dim": "#dcdad5",
+          "secondary-fixed": "#ece1d0",
+          "on-tertiary": "#ffffff",
+          "on-background": "#1c1c19",
+          "on-tertiary-container": "#e3f5ff",
+          "surface-container-high": "#ebe8e3",
+          "on-primary-fixed-variant": "#8c170c",
+          "on-primary-fixed": "#410100",
+          "on-surface": "#1c1c19",
+          "surface-container-highest": "#e5e2dd",
+          "on-surface-variant": "#59413d",
+          "on-tertiary-fixed-variant": "#004d62",
+          "on-secondary-fixed": "#201b10",
+          "outline-variant": "#e1bfb9",
+          "tertiary": "#005e77",
+          "primary": "#a2281a"
+        },
+        fontFamily: {
+          "serif": ["Instrument Serif", "serif"],
+          "sans": ["Noto Sans JP", "Manrope", "sans-serif"],
+          "headline": ["Instrument Serif", "serif"],
+          "body": ["Noto Sans JP", "sans-serif"],
+          "label": ["Manrope", "sans-serif"]
+        },
+        borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+      },
+    },
+  }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.washi-texture {
+    background-color: #fcf9f4;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAG7Kiyrs2VlLYbY8-N0gcoTU1ws8E5erCg-x7k3RlOMkFPNhVHgSCqJKri4Xk4MkZJPwQJsRCrR12X1lcuDoV-IabWYvoeXOGyXeCKUG_-F8UgrNaMsr2d-T4LJdZAZoyYSFvfoS-RCJKF_2jQy9wXSSz6fG18na0BGO4HrMpl2SfbJ59ynD5hn7rVyq-8g1i7ahp_DuJ3Prz7cz48FcCiFwlb1BOZQoJJI0xpyY2rE1certThNLMyJvGh5yILnkW_CZ1-aJHA4Xk)
+    }</style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/20">
+<div class="flex min-h-screen washi-texture">
+<!-- SideNavBar (EDITORIAL ZEN SIDEBAR) -->
+<aside class="w-[224px] h-screen sticky left-0 top-0 flex flex-col py-8 px-4 gap-6 bg-[#f6f3ee] dark:bg-stone-900 border-none">
+<div class="flex flex-col px-4 mb-4">
+<span class="text-xl font-serif italic text-[#59413d] dark:text-stone-200">Sumi Sushi</span>
+<span class="uppercase tracking-widest text-[10px] text-[#59413d] opacity-60">Kyoto District</span>
+</div>
+<nav class="flex flex-col gap-2">
+<!-- Tab: General (ACTIVE) -->
+<a class="group relative flex items-center gap-3 px-4 py-2 transition-transform duration-300 translate-x-1 relative text-[#a2281a] dark:text-[#c4402f] font-bold before:absolute before:left-0 before:top-1/4 before:h-1/2 before:w-1 before:bg-[#a2281a]" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="settings">settings</span>
+<span class="uppercase tracking-widest text-[10px]">General</span>
+</a>
+<!-- Tab: Notifications -->
+<a class="group flex items-center gap-3 px-4 py-2 text-[#59413d] dark:text-stone-400 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="notifications">notifications</span>
+<span class="uppercase tracking-widest text-[10px]">Notifications</span>
+</a>
+<!-- Tab: Security -->
+<a class="group flex items-center gap-3 px-4 py-2 text-[#59413d] dark:text-stone-400 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="security">security</span>
+<span class="uppercase tracking-widest text-[10px]">Security</span>
+</a>
+<!-- Tab: Users -->
+<a class="group flex items-center gap-3 px-4 py-2 text-[#59413d] dark:text-stone-400 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="group">group</span>
+<span class="uppercase tracking-widest text-[10px]">Users</span>
+</a>
+<!-- Tab: Billing -->
+<a class="group flex items-center gap-3 px-4 py-2 text-[#59413d] dark:text-stone-400 hover:text-[#a2281a] transition-colors hover:bg-[#fcf9f4]/50 dark:hover:bg-stone-800/50" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="payments">payments</span>
+<span class="uppercase tracking-widest text-[10px]">Billing</span>
+</a>
+</nav>
+<div class="mt-auto px-4 py-4 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center overflow-hidden">
+<img alt="Sushi POS Admin" class="w-full h-full object-cover" data-alt="Sushi chef portrait profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkD5EX0QlOmGHEhgOCmJnXseIvD2C2gqyl83EFWDEwk9aw3aqTaR-FRLatJsnWisXEGK8UfgJ9W8ksq7EWkNlhLznZlFm02B8U7WEe-p9HXjIzCwspIKN1xWJFI0KBUXf_JsQnkTkBWwjaNZ9pvVoj094LS7R5xi4AzWivIj5RGcCNhm6R3tiGkh-8Hf5xbBqPBHIQCkrPa6lGzp0QKzqWWud9MunRWZfWqET--RKFBZ-O3eGP1H6vjIYWuKM7Hq_2yjnG439kaeI"/>
+</div>
+<div class="flex flex-col">
+<span class="font-sans tracking-tight text-sm font-bold">Admin</span>
+<span class="text-[10px] uppercase opacity-50">Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 px-12 py-10 max-w-5xl mx-auto">
+<!-- Header -->
+<header class="flex justify-between items-end mb-16">
+<div>
+<h1 class="font-serif italic text-5xl text-[#1a1a1a] mb-2">Restaurant Settings</h1>
+<p class="font-sans text-sm text-on-surface-variant tracking-tight">Configure your flagship Kyoto location's core operational parameters.</p>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined p-2 text-on-surface-variant hover:text-primary transition-colors" data-icon="help">help</button>
+</div>
+</header>
+<div class="grid grid-cols-12 gap-12">
+<!-- Section 1: General Information -->
+<section class="col-span-12 lg:col-span-7 flex flex-col gap-8">
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-sm">
+<h2 class="font-serif italic text-2xl mb-6 text-primary">General Information</h2>
+<div class="space-y-6">
+<!-- Restaurant Name -->
+<div class="group">
+<label class="block uppercase tracking-widest text-[10px] text-on-surface-variant mb-2">Restaurant Name</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-3 focus:outline-none focus:ring-0 focus:border-primary transition-all font-sans text-on-surface" placeholder="Enter restaurant name" type="text" value="Sumi Sushi Kyoto"/>
+</div>
+<!-- Timezone -->
+<div class="group">
+<label class="block uppercase tracking-widest text-[10px] text-on-surface-variant mb-2">Timezone</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-lowest border border-outline-variant/30 rounded-lg px-4 py-3 focus:outline-none focus:ring-0 focus:border-primary transition-all font-sans text-on-surface">
+<option selected="">Japan Standard Time (JST)</option>
+<option>Pacific Standard Time (PST)</option>
+<option>Eastern Standard Time (EST)</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-sm" data-icon="unfold_more">unfold_more</span>
+</div>
+</div>
+<!-- Meal Period Toggle -->
+<div>
+<label class="block uppercase tracking-widest text-[10px] text-on-surface-variant mb-2">Active Meal Period</label>
+<div class="flex p-1 bg-surface-container-low rounded-xl w-fit">
+<button class="px-6 py-2 rounded-lg text-xs font-bold tracking-widest uppercase transition-all text-on-surface-variant hover:text-primary">LUNCH</button>
+<button class="px-6 py-2 rounded-lg text-xs font-bold tracking-widest uppercase transition-all bg-primary-container text-on-primary-container shadow-sm">DINNER</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Actions (Desktop/Contextual positioning) -->
+<div class="flex justify-start pt-4">
+<button class="group flex items-center gap-3 bg-primary-container hover:bg-primary text-on-primary-container px-8 py-4 rounded-lg transition-all duration-300 shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined font-bold" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-sans font-bold uppercase tracking-widest text-xs">Save Settings</span>
+</button>
+</div>
+</section>
+<!-- Section 2: AYCE Pricing -->
+<aside class="col-span-12 lg:col-span-5">
+<div class="bg-surface-container-low p-8 rounded-lg border-l-4 border-primary/20 sticky top-24">
+<h2 class="font-serif italic text-2xl mb-2 text-primary">AYCE Pricing</h2>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-8 opacity-70">All-You-Can-Eat Tiers</p>
+<div class="space-y-8">
+<!-- Lunch Price -->
+<div class="relative">
+<label class="block uppercase tracking-widest text-[10px] text-on-surface-variant mb-3">Lunch Session</label>
+<div class="flex items-center">
+<span class="absolute left-4 font-serif italic text-lg text-primary">$</span>
+<input class="w-full bg-surface-container-lowest border-none rounded-lg pl-10 pr-4 py-6 font-serif text-3xl text-on-surface focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" step="0.01" type="number" value="18.99"/>
+</div>
+</div>
+<!-- Dinner Price -->
+<div class="relative">
+<label class="block uppercase tracking-widest text-[10px] text-on-surface-variant mb-3">Dinner Session</label>
+<div class="flex items-center">
+<span class="absolute left-4 font-serif italic text-lg text-primary">$</span>
+<input class="w-full bg-surface-container-lowest border-none rounded-lg pl-10 pr-4 py-6 font-serif text-3xl text-on-surface focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" step="0.01" type="number" value="26.99"/>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant/10">
+<div class="flex items-start gap-3 p-4 bg-primary/5 rounded-lg border border-primary/10">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="info">info</span>
+<p class="text-[11px] leading-relaxed text-on-surface-variant font-sans">Pricing updates take effect immediately for all active POS terminals. Ensure synchronization before peak hours.</p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Footer Decorative Element -->
+<footer class="mt-20 flex justify-center opacity-10">
+<div class="w-16 h-16 rounded-full border-4 border-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="restaurant">restaurant</span>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

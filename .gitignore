@@ -27,4 +27,6 @@ pnpm-debug.log*
 .env.*
 
 # TypeScript incremental build info
-*.tsbuildinfo
+*.tsbuildinfo.venv/
+__pycache__/
+.venv/

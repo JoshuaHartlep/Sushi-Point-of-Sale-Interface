@@ -8,11 +8,13 @@ It includes:
 - Type annotations for better IDE support
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, condecimal
 from decimal import Decimal
 from datetime import datetime
 from typing import Optional
 from app.models.settings import MealPeriod
+
+PriceDecimal = condecimal(ge=0, decimal_places=2)
 
 
 class SettingsBase(BaseModel):
@@ -20,8 +22,8 @@ class SettingsBase(BaseModel):
     restaurant_name: str = Field(..., min_length=1, max_length=255, description="Restaurant name")
     timezone: str = Field(..., min_length=1, max_length=100, description="Restaurant timezone (e.g., 'America/New_York')")
     current_meal_period: MealPeriod = Field(..., description="Current meal period (LUNCH or DINNER)")
-    ayce_lunch_price: Decimal = Field(..., ge=0, decimal_places=2, description="All-you-can-eat lunch price")
-    ayce_dinner_price: Decimal = Field(..., ge=0, decimal_places=2, description="All-you-can-eat dinner price")
+    ayce_lunch_price: PriceDecimal = Field(..., description="All-you-can-eat lunch price")
+    ayce_dinner_price: PriceDecimal = Field(..., description="All-you-can-eat dinner price")
 
     @validator('ayce_lunch_price', 'ayce_dinner_price')
     def validate_price(cls, v):
@@ -55,8 +57,8 @@ class SettingsUpdate(BaseModel):
     restaurant_name: Optional[str] = Field(None, min_length=1, max_length=255, description="Restaurant name")
     timezone: Optional[str] = Field(None, min_length=1, max_length=100, description="Restaurant timezone")
     current_meal_period: Optional[MealPeriod] = Field(None, description="Current meal period (LUNCH or DINNER)")
-    ayce_lunch_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="All-you-can-eat lunch price")
-    ayce_dinner_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2, description="All-you-can-eat dinner price")
+    ayce_lunch_price: Optional[PriceDecimal] = Field(None, description="All-you-can-eat lunch price")
+    ayce_dinner_price: Optional[PriceDecimal] = Field(None, description="All-you-can-eat dinner price")
 
     class Config:
         schema_extra = {

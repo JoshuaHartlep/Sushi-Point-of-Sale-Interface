@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sushi POS - Orders</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Sans+JP:wght@300;400;500;700&amp;family=Noto+Serif:ital,wght@0,400;0,700;1,400&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-container": "#e9decd",
+              "on-tertiary-container": "#e3f5ff",
+              "primary-fixed-dim": "#ffb4a8",
+              "surface-variant": "#e5e2dd",
+              "on-primary-container": "#ffeeec",
+              "surface-container": "#f0ede9",
+              "on-primary": "#ffffff",
+              "on-secondary-fixed": "#201b10",
+              "on-surface-variant": "#59413d",
+              "primary": "#a2281a",
+              "surface-container-high": "#ebe8e3",
+              "on-tertiary-fixed-variant": "#004d62",
+              "tertiary-fixed-dim": "#7cd2f4",
+              "secondary-fixed-dim": "#cfc5b5",
+              "surface-container-low": "#f6f3ee",
+              "on-primary-fixed": "#410100",
+              "tertiary": "#005e77",
+              "on-background": "#1c1c19",
+              "error": "#ba1a1a",
+              "outline": "#8d716c",
+              "on-tertiary": "#ffffff",
+              "on-error-container": "#93000a",
+              "surface-tint": "#ae3021",
+              "error-container": "#ffdad6",
+              "tertiary-container": "#007897",
+              "primary-container": "#c4402f",
+              "on-error": "#ffffff",
+              "surface-dim": "#dcdad5",
+              "on-secondary-container": "#696254",
+              "primary-fixed": "#ffdad4",
+              "inverse-primary": "#ffb4a8",
+              "on-surface": "#1c1c19",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed": "#001f29",
+              "on-secondary-fixed-variant": "#4c4639",
+              "background": "#fcf9f4",
+              "secondary-fixed": "#ece1d0",
+              "tertiary-fixed": "#baeaff",
+              "secondary": "#655e50",
+              "surface-container-highest": "#e5e2dd",
+              "on-secondary": "#ffffff",
+              "inverse-on-surface": "#f3f0eb",
+              "surface-bright": "#fcf9f4",
+              "inverse-surface": "#31302d",
+              "on-primary-fixed-variant": "#8c170c",
+              "outline-variant": "#e1bfb9",
+              "surface": "#fcf9f4"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif"],
+              "body": ["Manrope"],
+              "label": ["Manrope"],
+              "serif-display": ["Instrument Serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #fcf9f4;
+        }
+        .editorial-shadow {
+            box-shadow: 0 40px 40px -20px rgba(162, 40, 26, 0.04);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen text-on-surface">
+<!-- SideNavBar Component -->
+<aside class="w-[224px] h-screen sticky top-0 left-0 flex flex-col h-full py-8 px-0 bg-[#f6f3ee] dark:bg-stone-900 overflow-y-auto">
+<div class="px-8 mb-12">
+<h1 class="text-xl font-serif italic text-[#a2281a] dark:text-[#fcf9f4] leading-tight">Sushi POS</h1>
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant/60 mt-1">Premium Management</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 text-stone-500 hover:text-[#a2281a] pl-4 py-2 transition-colors hover:bg-stone-200/50 group" href="#">
+<span class="material-symbols-outlined text-lg">dashboard</span>
+<span class="text-[10px] uppercase tracking-wider">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 border-l-4 border-[#a2281a] text-[#a2281a] font-bold pl-4 py-2 transition-all group" href="#">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+<span class="text-[10px] uppercase tracking-wider">Orders</span>
+</a>
+<a class="flex items-center gap-3 text-stone-500 hover:text-[#a2281a] pl-4 py-2 transition-colors hover:bg-stone-200/50 group" href="#">
+<span class="material-symbols-outlined text-lg">restaurant_menu</span>
+<span class="text-[10px] uppercase tracking-wider">Tables</span>
+</a>
+<a class="flex items-center gap-3 text-stone-500 hover:text-[#a2281a] pl-4 py-2 transition-colors hover:bg-stone-200/50 group" href="#">
+<span class="material-symbols-outlined text-lg">menu_book</span>
+<span class="text-[10px] uppercase tracking-wider">Menu</span>
+</a>
+<a class="flex items-center gap-3 text-stone-500 hover:text-[#a2281a] pl-4 py-2 transition-colors hover:bg-stone-200/50 group" href="#">
+<span class="material-symbols-outlined text-lg">tune</span>
+<span class="text-[10px] uppercase tracking-wider">Modifiers</span>
+</a>
+<a class="flex items-center gap-3 text-stone-500 hover:text-[#a2281a] pl-4 py-2 transition-colors hover:bg-stone-200/50 group" href="#">
+<span class="material-symbols-outlined text-lg">qr_code_2</span>
+<span class="text-[10px] uppercase tracking-wider">QR Codes</span>
+</a>
+<a class="flex items-center gap-3 text-stone-500 hover:text-[#a2281a] pl-4 py-2 transition-colors hover:bg-stone-200/50 group" href="#">
+<span class="material-symbols-outlined text-lg">settings</span>
+<span class="text-[10px] uppercase tracking-wider">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 pt-8">
+<div class="flex items-center gap-3 text-stone-400 py-4 border-t border-outline-variant/10">
+<span class="material-symbols-outlined text-sm">spa</span>
+<span class="text-[9px] tracking-[0.2em] uppercase whitespace-nowrap">― いらっしゃいませ ―</span>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 bg-background">
+<!-- TopNavBar Component -->
+<header class="h-[57px] w-full sticky top-0 z-50 flex justify-between items-center px-8 bg-[#fcf9f4]/80 backdrop-blur-xl mb-8">
+<div class="flex items-center gap-6">
+<span class="text-sm font-sans text-[#a2281a] font-semibold">Lunch Service</span>
+</div>
+<div class="flex items-center gap-6">
+<button class="text-stone-600 hover:text-[#a2281a] transition-colors">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+<button class="text-stone-600 hover:text-[#a2281a] transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-1.5 h-1.5 bg-primary rounded-full"></span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-stone-200 border border-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="User profile avatar for administrative head" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJWsFfVz1T990v_IlcjCUXZBJvSYy4h6VNqv7UrnLSJOF0GfffSAnMqa-Tz1syUVTDKgweJLj5XY5rmuJnR3LKa-BIGlARSs6JAJ-wWv4yamO-otKClekOsNq9AjqCbRKiyoi0abAvJe-K9CToRLe8DhUYOM1Y0ay7bi5pkuKAzMcycU3Vo62QwCw3tl18uuc27KJH3GuVD__35koBKs4i5g4O4CTsq23pFU3_NYCi_XtPLcJBPH58gsw5NlYnDKjNk2oKveWALdE"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<div class="px-12 pb-12 max-w-7xl mx-auto w-full">
+<!-- Header Section -->
+<section class="flex justify-between items-end mb-12">
+<div>
+<h2 class="text-5xl font-serif-display text-on-surface leading-none mb-2">Orders</h2>
+<p class="text-sm text-on-surface-variant/70 font-body">Manage live orders and service status</p>
+</div>
+<button class="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-3 rounded-[10px] font-semibold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-sm">add</span>
+<span class="text-sm tracking-wide">New Order</span>
+</button>
+</section>
+<!-- Order Cards Grid (3-column) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-[10px] border border-outline-variant/20 p-6 editorial-shadow group transition-all hover:-translate-y-1">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Order ID</span>
+<h3 class="text-xl font-headline font-bold text-on-surface">#101</h3>
+</div>
+<span class="px-2 py-1 bg-tertiary-container/10 text-tertiary text-[10px] font-bold uppercase tracking-wider rounded">AYCE</span>
+</div>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Table</span>
+<span class="font-bold text-lg">5</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Status</span>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low text-xs font-bold py-1.5 px-3 pr-8 rounded border-none focus:ring-1 focus:ring-primary text-secondary">
+<option selected="">Pending</option>
+<option>Preparing</option>
+<option>Served</option>
+<option>Paid</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">Total</span>
+<span class="text-xl font-headline font-bold text-primary">$45.50</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+<div class="flex gap-2">
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+</div>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-error/10 text-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-[10px] border border-outline-variant/20 p-6 editorial-shadow group transition-all hover:-translate-y-1">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Order ID</span>
+<h3 class="text-xl font-headline font-bold text-on-surface">#102</h3>
+</div>
+<span class="px-2 py-1 bg-tertiary-container/10 text-tertiary text-[10px] font-bold uppercase tracking-wider rounded">AYCE</span>
+</div>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Table</span>
+<span class="font-bold text-lg">12</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Status</span>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low text-xs font-bold py-1.5 px-3 pr-8 rounded border-none focus:ring-1 focus:ring-primary text-primary">
+<option>Pending</option>
+<option selected="">Preparing</option>
+<option>Served</option>
+<option>Paid</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">Total</span>
+<span class="text-xl font-headline font-bold text-primary">$128.00</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+<div class="flex gap-2">
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+</div>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-error/10 text-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-[10px] border border-outline-variant/20 p-6 editorial-shadow group transition-all hover:-translate-y-1">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Order ID</span>
+<h3 class="text-xl font-headline font-bold text-on-surface">#103</h3>
+</div>
+</div>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Table</span>
+<span class="font-bold text-lg">Bar-3</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Status</span>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low text-xs font-bold py-1.5 px-3 pr-8 rounded border-none focus:ring-1 focus:ring-primary text-secondary">
+<option selected="">Pending</option>
+<option>Preparing</option>
+<option>Served</option>
+<option>Paid</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">Total</span>
+<span class="text-xl font-headline font-bold text-primary">$32.25</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+<div class="flex gap-2">
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+</div>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-error/10 text-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest rounded-[10px] border border-outline-variant/20 p-6 editorial-shadow group transition-all hover:-translate-y-1 opacity-90">
+<div class="flex justify-between items-start mb-6">
+<div>
+<span class="text-[10px] uppercase tracking-widest text-on-surface-variant mb-1 block">Order ID</span>
+<h3 class="text-xl font-headline font-bold text-on-surface">#098</h3>
+</div>
+<span class="px-2 py-1 bg-tertiary-container/10 text-tertiary text-[10px] font-bold uppercase tracking-wider rounded">AYCE</span>
+</div>
+<div class="space-y-4 mb-8">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Table</span>
+<span class="font-bold text-lg">8</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Status</span>
+<div class="relative">
+<select class="appearance-none bg-surface-container-low text-xs font-bold py-1.5 px-3 pr-8 rounded border-none focus:ring-1 focus:ring-primary text-tertiary">
+<option>Pending</option>
+<option>Preparing</option>
+<option selected="">Served</option>
+<option>Paid</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-xs pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant text-sm">Total</span>
+<span class="text-xl font-headline font-bold text-primary">$89.10</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/10">
+<div class="flex gap-2">
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">visibility</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-stone-100 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg">edit</span>
+</button>
+</div>
+<button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-error/10 text-error transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<!-- Empty State Placeholder / New Order Card -->
+<button class="border-2 border-dashed border-outline-variant/30 rounded-[10px] p-6 flex flex-col items-center justify-center text-on-surface-variant/40 hover:border-primary/40 hover:text-primary transition-all group min-h-[320px]">
+<div class="w-12 h-12 rounded-full border-2 border-dashed border-current flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl">add_circle</span>
+</div>
+<span class="text-xs uppercase tracking-[0.2em] font-bold">Initiate Order</span>
+</button>
+</div>
+</div>
+</main>
+</body></html>

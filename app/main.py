@@ -15,6 +15,7 @@ The application includes:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.api import menu, order, dashboard, settings as settings_api
 from app.core.config import settings
 from app.core.database import engine, Base, init_db
@@ -22,6 +23,7 @@ from app.core.logging import setup_logging
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models import *
 import logging
+import os
 
 # Set up logging
 logger = setup_logging()
@@ -45,6 +47,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve uploaded images as static files
+UPLOADS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+os.makedirs(os.path.join(UPLOADS_DIR, "menu-images"), exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
 
 # Include routers
 app.include_router(menu.router, prefix="/api/v1/menu", tags=["Menu"])

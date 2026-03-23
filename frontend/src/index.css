@@ -1,38 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Light mode surface tokens */
-    --surface-bg:        theme('colors.washi.100');
-    --surface-card:      theme('colors.white');
-    --surface-sidebar:   theme('colors.white');
-    --surface-header:    theme('colors.white');
-    --accent-primary:    theme('colors.akabeni.600');
-    --accent-primary-hover: theme('colors.akabeni.700');
-  }
-
-  .dark {
-    /* Dark mode surface tokens */
-    --surface-bg:        theme('colors.sumi.900');
-    --surface-card:      theme('colors.sumi.800');
-    --surface-sidebar:   theme('colors.sumi.800');
-    --surface-header:    theme('colors.sumi.800');
-  }
-
   html {
-    font-family: 'Noto Sans JP', Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Noto Sans JP', 'Manrope', ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  body {
+    background-color: #fcf9f4;
+    color: #1c1c19;
+  }
+
+  .dark body {
+    background-color: #14141c;
+    color: #f3f0eb;
+  }
 }
 
-/* Subtle torii-red left-border on active nav items */
 @layer components {
+  /* Active sidebar nav item — left border accent */
   .nav-active-bar {
-    @apply border-l-4 border-akabeni-600;
+    @apply border-l-4 border-primary;
   }
+
+  /* Material Symbols baseline alignment */
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Subtle editorial card shadow (warm primary tint) */
+  .card-shadow {
+    box-shadow: 0 4px 20px rgba(162, 40, 26, 0.04);
+  }
+
+  /* Primary gradient button */
+  .btn-primary {
+    @apply bg-gradient-to-br from-primary to-primary-container text-white px-5 py-2.5 rounded font-label font-medium hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 text-sm;
+  }
+
+  /* Secondary/ghost button */
+  .btn-secondary {
+    @apply bg-surface-container-high text-on-surface px-5 py-2.5 rounded font-label font-medium hover:bg-surface-variant transition-all text-sm;
+  }
+}
+
+@layer utilities {
+  /* Custom scrollbar */
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e1bfb9; border-radius: 10px; }
+
+  /* Hide scrollbar for horizontal category scroll */
+  .hide-scrollbar::-webkit-scrollbar { display: none; }
+  .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 }
