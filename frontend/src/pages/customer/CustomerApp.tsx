@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UtensilsCrossed, BookOpen, ShoppingBag, Loader2, AlertCircle } from 'lucide-react';
-import { settingsApi, Settings } from '../../services/api';
+import { UtensilsCrossed, BookOpen, ShoppingBag, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { settingsApi, tablesApi, Settings, TableData } from '../../services/api';
 import { CustomerOrderProvider, useCustomerOrder } from '../../contexts/CustomerOrderContext';
 import CustomerOnboarding from './CustomerOnboarding';
 import CustomerMenuTab from './CustomerMenuTab';
@@ -17,12 +17,18 @@ function CustomerInterface() {
 
   const { orderId, totalItemCount } = useCustomerOrder();
 
-  const { data: settings, isLoading, isError } = useQuery<Settings>({
+  const { data: settings, isLoading: settingsLoading, isError: settingsError } = useQuery<Settings>({
     queryKey: ['customer-settings'],
     queryFn: settingsApi.get,
   });
 
-  if (isLoading) {
+  const { data: tableData, isLoading: tableLoading, isError: tableError, refetch: refetchTable } = useQuery<TableData>({
+    queryKey: ['customer-table', tableId],
+    queryFn: () => tablesApi.getById(tableId),
+    refetchInterval: 15000, // poll every 15s so customer sees when table is freed
+  });
+
+  if (settingsLoading || tableLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="animate-spin text-primary" size={32} />
@@ -30,7 +36,7 @@ function CustomerInterface() {
     );
   }
 
-  if (isError || !settings) {
+  if (settingsError || !settings || tableError || !tableData) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center gap-3">
         <AlertCircle className="text-error" size={36} />
@@ -38,6 +44,27 @@ function CustomerInterface() {
         <p className="text-sm text-on-surface-variant opacity-60">
           Please ask your server for assistance.
         </p>
+      </div>
+    );
+  }
+
+  if (tableData.status === 'occupied') {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center gap-4">
+        <UtensilsCrossed className="text-on-surface-variant opacity-30" size={48} />
+        <div className="flex flex-col gap-2">
+          <p className="font-headline text-xl text-on-surface">This table is currently occupied</p>
+          <p className="text-sm text-on-surface-variant opacity-60 max-w-xs">
+            If you believe this is a mistake, please ask your server for assistance.
+          </p>
+        </div>
+        <button
+          onClick={() => refetchTable()}
+          className="flex items-center gap-2 mt-2 px-4 py-2 rounded-full border border-outline-variant/30 text-sm text-on-surface-variant hover:bg-surface-variant/20 transition-colors"
+        >
+          <RefreshCw size={14} />
+          Refresh
+        </button>
       </div>
     );
   }
