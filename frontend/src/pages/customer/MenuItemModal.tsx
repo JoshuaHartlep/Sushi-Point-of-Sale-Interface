@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Minus, Camera, Flag } from 'lucide-react';
+import { X, Plus, Minus, Camera, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 
@@ -20,8 +20,8 @@ export default function MenuItemModal({ item, onClose }: Props) {
   const qty = cartItem?.quantity ?? 0;
   const [note, setNote] = useState(cartItem?.notes ?? '');
 
-  // which user image is currently expanded (null = show main restaurant image)
-  const [expandedImg, setExpandedImg] = useState<string | null>(null);
+  // lightbox: which index is open (null = closed)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   // report modal state
   const [reportingImageId, setReportingImageId] = useState<number | null>(null);
@@ -31,6 +31,9 @@ export default function MenuItemModal({ item, onClose }: Props) {
   // upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // swipe tracking
+  const touchStartX = useRef(0);
 
   const displayPrice = isAyce ? 0 : Number(item.price);
 
@@ -65,18 +68,25 @@ export default function MenuItemModal({ item, onClose }: Props) {
     },
   });
 
+  const goTo = (idx: number) =>
+    setExpandedIndex(Math.max(0, Math.min(userImages.length - 1, idx)));
+
   // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (reportingImageId !== null) { setReportingImageId(null); return; }
-        if (expandedImg) { setExpandedImg(null); return; }
+        if (expandedIndex !== null) { setExpandedIndex(null); return; }
         onClose();
+      }
+      if (expandedIndex !== null) {
+        if (e.key === 'ArrowLeft') goTo(expandedIndex - 1);
+        if (e.key === 'ArrowRight') goTo(expandedIndex + 1);
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose, reportingImageId, expandedImg]);
+  }, [onClose, reportingImageId, expandedIndex, userImages.length]);
 
   // Lock body scroll while open
   useEffect(() => {
@@ -95,34 +105,101 @@ export default function MenuItemModal({ item, onClose }: Props) {
     e.target.value = '';
   };
 
+  // current image in the lightbox
+  const currentImg = expandedIndex !== null ? userImages[expandedIndex] : null;
+  const alreadyReported = currentImg ? reportedIds.has(currentImg.id) : false;
+
   return (
     <>
-      {/* Expanded image lightbox */}
-      {expandedImg && (
+      {/* ── Lightbox ── */}
+      {expandedIndex !== null && currentImg && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.85)' }}
-          onClick={() => setExpandedImg(null)}
+          className="fixed inset-0 z-[70] flex flex-col"
+          style={{ backgroundColor: 'rgba(0,0,0,0.92)' }}
+          onTouchStart={e => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={e => {
+            const delta = e.changedTouches[0].clientX - touchStartX.current;
+            if (delta < -50) goTo(expandedIndex + 1);
+            else if (delta > 50) goTo(expandedIndex - 1);
+          }}
         >
-          <img
-            src={expandedImg}
-            alt="Full size"
-            className="max-w-[90vw] max-h-[85vh] object-contain rounded-2xl shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          />
-          <button
-            onClick={() => setExpandedImg(null)}
-            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/60 flex items-center justify-center text-white"
-          >
-            <X size={20} />
-          </button>
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
+            {/* counter */}
+            <span className="text-white/60 text-sm font-medium">
+              {expandedIndex + 1} / {userImages.length}
+            </span>
+            <button
+              onClick={() => setExpandedIndex(null)}
+              className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Image + side arrows */}
+          <div className="flex-1 flex items-center justify-center relative px-12 min-h-0">
+            {/* prev */}
+            <button
+              onClick={() => goTo(expandedIndex - 1)}
+              disabled={expandedIndex === 0}
+              className="absolute left-2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white disabled:opacity-20 active:bg-white/20 transition-colors"
+            >
+              <ChevronLeft size={22} />
+            </button>
+
+            <img
+              key={currentImg.id}
+              src={`${API_ORIGIN}${currentImg.image_url}`}
+              alt="Customer photo"
+              className="max-w-full max-h-full object-contain rounded-2xl select-none"
+              draggable={false}
+            />
+
+            {/* next */}
+            <button
+              onClick={() => goTo(expandedIndex + 1)}
+              disabled={expandedIndex === userImages.length - 1}
+              className="absolute right-2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white disabled:opacity-20 active:bg-white/20 transition-colors"
+            >
+              <ChevronRight size={22} />
+            </button>
+          </div>
+
+          {/* Bottom bar: dot indicators + report */}
+          <div className="shrink-0 flex items-center justify-between px-4 py-4">
+            {/* dot indicators */}
+            <div className="flex items-center gap-1.5">
+              {userImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setExpandedIndex(i)}
+                  className={`rounded-full transition-all ${
+                    i === expandedIndex
+                      ? 'w-4 h-2 bg-white'
+                      : 'w-2 h-2 bg-white/30'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* report */}
+            <button
+              onClick={() => !alreadyReported && setReportingImageId(currentImg.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-semibold transition-colors
+                ${alreadyReported ? 'bg-error text-white' : 'bg-white/10 text-white/70'}`}
+            >
+              <Flag size={13} />
+              {alreadyReported ? 'Reported' : 'Report'}
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Report reason modal */}
+      {/* ── Report reason modal ── */}
       {reportingImageId !== null && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
           onClick={() => setReportingImageId(null)}
         >
@@ -157,18 +234,17 @@ export default function MenuItemModal({ item, onClose }: Props) {
         </div>
       )}
 
-      {/* Main backdrop */}
+      {/* ── Main modal ── */}
       <div
         className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
         onClick={onClose}
         style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
       >
-        {/* Sheet / modal */}
         <div
           className="relative w-full sm:max-w-md bg-background rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl animate-modal-up"
           onClick={e => e.stopPropagation()}
         >
-          {/* Main image area */}
+          {/* Main restaurant image */}
           <div className="relative w-full h-48 bg-surface-container flex items-center justify-center overflow-hidden">
             {mainImageUrl ? (
               <img
@@ -180,8 +256,6 @@ export default function MenuItemModal({ item, onClose }: Props) {
             ) : (
               <span className="text-7xl opacity-15 select-none">🍣</span>
             )}
-
-            {/* Close button */}
             <button
               onClick={onClose}
               className="absolute top-3 right-3 w-9 h-9 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors"
@@ -210,7 +284,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
               </p>
             )}
 
-            {/* User-uploaded photos section */}
+            {/* Customer photos */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant/50">
@@ -243,32 +317,27 @@ export default function MenuItemModal({ item, onClose }: Props) {
                 </p>
               ) : (
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
-                  {/* uploading placeholder */}
                   {uploadMutation.isPending && (
-                    <div className="relative shrink-0 w-24 h-24 rounded-xl bg-surface-container-high flex items-center justify-center snap-start">
+                    <div className="shrink-0 w-24 h-24 rounded-xl bg-surface-container-high flex items-center justify-center snap-start">
                       <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
-                  {userImages.map(img => {
+                  {userImages.map((img, idx) => {
                     const url = `${API_ORIGIN}${img.image_url}`;
-                    const alreadyReported = reportedIds.has(img.id);
+                    const alreadyRep = reportedIds.has(img.id);
                     return (
-                      <div key={img.id} className="relative shrink-0 w-24 h-24 rounded-xl overflow-hidden snap-start group">
+                      <div key={img.id} className="relative shrink-0 w-24 h-24 rounded-xl overflow-hidden snap-start">
                         <img
                           src={url}
                           alt="Customer photo"
                           className="w-full h-full object-cover cursor-pointer"
-                          onClick={() => setExpandedImg(url)}
+                          onClick={() => setExpandedIndex(idx)}
                         />
-                        {/* report button */}
                         <button
-                          onClick={() => !alreadyReported && setReportingImageId(img.id)}
-                          title={alreadyReported ? 'Reported' : 'Report this photo'}
-                          className={`absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center shadow transition-opacity
-                            ${alreadyReported
-                              ? 'bg-error/80 text-on-error opacity-100'
-                              : 'bg-black/50 text-white opacity-0 group-hover:opacity-100 active:opacity-100'
-                            }`}
+                          onClick={e => { e.stopPropagation(); if (!alreadyRep) setReportingImageId(img.id); }}
+                          title={alreadyRep ? 'Reported' : 'Report this photo'}
+                          className={`absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center shadow
+                            ${alreadyRep ? 'bg-error text-white' : 'bg-black/50 text-white'}`}
                         >
                           <Flag size={11} />
                         </button>
@@ -329,7 +398,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
               </div>
             </div>
 
-            {/* Add to cart controls */}
+            {/* Add to cart */}
             <div className="flex items-center gap-3">
               {qty === 0 ? (
                 <button

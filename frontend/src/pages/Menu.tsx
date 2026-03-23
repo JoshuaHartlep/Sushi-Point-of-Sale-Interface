@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, categoriesApi, MenuItem, Category } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 
 const IMAGE_BASE = 'http://localhost:8000';
@@ -28,6 +28,10 @@ export default function Menu() {
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
+
+  // user photo gallery
+  const [galleryItem, setGalleryItem] = useState<MenuItem | null>(null);
+  const [confirmDeleteUserImageId, setConfirmDeleteUserImageId] = useState<number | null>(null);
 
   const queryClient = useQueryClient();
   const { isLunch } = useMealPeriod();
@@ -75,6 +79,22 @@ export default function Menu() {
   const deleteItemMutation = useMutation({
     mutationFn: (id: number) => menuApi.deleteItem(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['menuItems'] }); setIsDeleteModalOpen(false); setSelectedItem(null); },
+  });
+
+  const { data: galleryImages = [] } = useQuery<MenuItemImage[]>({
+    queryKey: ['user-images', galleryItem?.id],
+    queryFn: () => menuItemImagesApi.getImages(galleryItem!.id),
+    enabled: !!galleryItem,
+    staleTime: 30 * 1000,
+  });
+
+  const deleteUserImageMutation = useMutation({
+    mutationFn: (imageId: number) => menuItemImagesApi.deleteImage(imageId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-images', galleryItem?.id] });
+      queryClient.invalidateQueries({ queryKey: ['reported-images'] });
+      setConfirmDeleteUserImageId(null);
+    },
   });
 
   const handleCreateItem = () => {
@@ -251,6 +271,13 @@ export default function Menu() {
 
               {/* Actions */}
               <div className="flex justify-end gap-1 pt-3 border-t border-outline-variant/10">
+                <button
+                  onClick={() => setGalleryItem(item)}
+                  title="View customer photos"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container text-on-surface-variant hover:text-secondary transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">photo_library</span>
+                </button>
                 <button onClick={() => handleEditItem(item)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors">
                   <span className="material-symbols-outlined text-[16px]">edit</span>
                 </button>
@@ -409,6 +436,88 @@ export default function Menu() {
               <button onClick={handleUpdateItem} disabled={updateItemMutation.isPending} className="btn-primary disabled:opacity-50">
                 {updateItemMutation.isPending ? 'Saving…' : 'Save Changes'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customer Photo Gallery Modal */}
+      {galleryItem && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl w-full max-w-lg border border-outline-variant/20 dark:border-sumi-700 shadow-2xl flex flex-col max-h-[80vh]">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-outline-variant/10">
+              <div>
+                <h2 className="text-xl font-headline text-on-surface">Customer Photos</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">{galleryItem.name} · {galleryImages.length} photo{galleryImages.length !== 1 ? 's' : ''}</p>
+              </div>
+              <button onClick={() => { setGalleryItem(null); setConfirmDeleteUserImageId(null); }} className="text-on-surface-variant hover:text-on-surface">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto flex-1 p-6">
+              {galleryImages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant/40">
+                  <span className="material-symbols-outlined text-[48px] mb-3 opacity-30">photo_library</span>
+                  <p className="text-sm">No customer photos yet for this item.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {galleryImages.map(img => (
+                    <div key={img.id} className="relative rounded-xl overflow-hidden border border-outline-variant/10 bg-surface-container">
+                      <div className="w-full h-32 overflow-hidden">
+                        <img
+                          src={`${IMAGE_BASE}${img.image_url}`}
+                          alt="Customer photo"
+                          className="w-full h-full object-cover"
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3'; }}
+                        />
+                      </div>
+                      {/* meta + actions */}
+                      <div className="px-2.5 py-2">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] text-on-surface-variant/50">
+                            {new Date(img.uploaded_at).toLocaleDateString()}
+                          </span>
+                          {img.report_count > 0 && (
+                            <span className="flex items-center gap-0.5 text-[10px] text-error font-bold">
+                              <span className="material-symbols-outlined text-[12px]">flag</span>
+                              {img.report_count}
+                            </span>
+                          )}
+                        </div>
+                        {confirmDeleteUserImageId === img.id ? (
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => setConfirmDeleteUserImageId(null)}
+                              className="flex-1 py-1 text-[10px] rounded-lg border border-outline-variant/30 text-on-surface-variant"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => deleteUserImageMutation.mutate(img.id)}
+                              disabled={deleteUserImageMutation.isPending}
+                              className="flex-1 py-1 text-[10px] rounded-lg bg-error text-on-error font-bold disabled:opacity-50"
+                            >
+                              {deleteUserImageMutation.isPending ? '…' : 'Delete'}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteUserImageId(img.id)}
+                            className="w-full flex items-center justify-center gap-1 py-1 text-[10px] rounded-lg border border-error/30 text-error hover:bg-error/5 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">delete</span>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
