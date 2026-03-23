@@ -11,6 +11,7 @@ import Settings from './pages/Settings';
 import Modifiers from './pages/Modifiers';
 import EditOrder from './pages/EditOrder';
 import Tables from './pages/Tables';
+import ReportedImages from './pages/ReportedImages';
 import CustomerApp from './pages/customer/CustomerApp';
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ function App() {
                         <Route path="/orders/:id/edit" element={<EditOrder />} />
                         <Route path="/tables" element={<Tables />} />
                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/reported-images" element={<ReportedImages />} />
                       </Routes>
                     </Layout>
                   }
