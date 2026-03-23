@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Modifier Management | Editorial Zen Sushi POS</title>
+<!-- Google Fonts: Instrument Serif & Noto Sans JP (Mapped to Manrope for this config) -->
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Sans+JP:wght@300;400;500;700&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-surface": "#31302d",
+                        "on-primary-fixed": "#410100",
+                        "surface-tint": "#ae3021",
+                        "surface-bright": "#fcf9f4",
+                        "on-primary-container": "#ffeeec",
+                        "surface-variant": "#e5e2dd",
+                        "on-background": "#1c1c19",
+                        "tertiary": "#005e77",
+                        "on-secondary-fixed-variant": "#4c4639",
+                        "secondary-fixed-dim": "#cfc5b5",
+                        "tertiary-fixed": "#baeaff",
+                        "surface-container-high": "#ebe8e3",
+                        "on-primary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#007897",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e5e2dd",
+                        "on-surface": "#1c1c19",
+                        "surface-container-low": "#f6f3ee",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-primary-fixed-variant": "#8c170c",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#dcdad5",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#ffb4a8",
+                        "primary-container": "#c4402f",
+                        "on-error-container": "#93000a",
+                        "outline": "#8d716c",
+                        "on-tertiary-container": "#e3f5ff",
+                        "surface-container": "#f0ede9",
+                        "background": "#fcf9f4",
+                        "inverse-on-surface": "#f3f0eb",
+                        "surface": "#fcf9f4",
+                        "primary-fixed": "#ffdad4",
+                        "on-tertiary-fixed": "#001f29",
+                        "on-surface-variant": "#59413d",
+                        "primary": "#a2281a",
+                        "secondary-container": "#e9decd",
+                        "secondary": "#655e50",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#ece1d0",
+                        "tertiary-fixed-dim": "#7cd2f4",
+                        "outline-variant": "#e1bfb9",
+                        "on-tertiary-fixed-variant": "#004d62",
+                        "on-secondary-container": "#696254",
+                        "on-secondary-fixed": "#201b10"
+                    },
+                    fontFamily: {
+                        "headline": ["Instrument Serif", "serif"],
+                        "body": ["Manrope", "sans-serif"],
+                        "label": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .font-serif { font-family: 'Instrument Serif', serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex min-h-screen">
+<!-- Shared Component: SideNavBar -->
+<aside class="w-[224px] h-screen sticky top-0 left-0 flex flex-col py-8 z-40 bg-surface-container-low dark:bg-stone-900 border-none gap-8 tonal-shift">
+<div class="px-8">
+<h1 class="text-xl font-serif italic text-primary dark:text-[#c4402f]">Editorial Zen</h1>
+<p class="text-[10px] tracking-widest uppercase text-on-surface-variant/60 mt-1">Sushi POS</p>
+</div>
+<nav class="flex flex-col gap-2 mt-4">
+<!-- Navigation Items Mapping from JSON -->
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-stone-400 pl-5 hover:text-primary transition-colors py-2 group" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-sans text-xs tracking-wider uppercase">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-stone-400 pl-5 hover:text-primary transition-colors py-2 group" href="#">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+<span class="font-sans text-xs tracking-wider uppercase">Orders</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-stone-400 pl-5 hover:text-primary transition-colors py-2 group" href="#">
+<span class="material-symbols-outlined text-[20px]">table_restaurant</span>
+<span class="font-sans text-xs tracking-wider uppercase">Tables</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-stone-400 pl-5 hover:text-primary transition-colors py-2 group" href="#">
+<span class="material-symbols-outlined text-[20px]">restaurant_menu</span>
+<span class="font-sans text-xs tracking-wider uppercase">Menu</span>
+</a>
+<!-- Active State: Modifiers -->
+<a class="flex items-center gap-4 text-primary dark:text-[#c4402f] border-l-4 border-primary dark:border-[#c4402f] pl-4 transition-all py-2 translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined text-[20px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">tune</span>
+<span class="font-sans text-xs tracking-wider uppercase">Modifiers</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-stone-400 pl-5 hover:text-primary transition-colors py-2 group" href="#">
+<span class="material-symbols-outlined text-[20px]">qr_code_2</span>
+<span class="font-sans text-xs tracking-wider uppercase">QR Codes</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-stone-400 pl-5 hover:text-primary transition-colors py-2 group" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-sans text-xs tracking-wider uppercase">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-8">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Sushi Restaurant Minimalist Logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwmCy9AdXOsMWxCW2mQ3pSiztr4XsqtmZuz91POGT__ABXSgVxgeeBAeT4iJVyhWUXxHonetyDUT-PC6CZnHYcGnpWG09XvWL5M7xu_H02LVimE8Dry4kY7clNK-yvVKx0uWC7aCMV7_SMJ4C6yN9gImBZsyLxo0PA43WUBs2bLI6HOS_hOxMxWrjOhyyyvwu54x-ORNQw1HA2lkukePJM_cgT_tab8_4wRYAen14qOwVrAp2ljzMPZwyjLw7LATLziBU52G_6gfo"/>
+</div>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0">
+<!-- Shared Component: TopNavBar -->
+<header class="docked full-width top-0 sticky flex justify-between items-center w-full px-12 py-6 z-50 bg-[#fcf9f4]/80 dark:bg-stone-950/80 backdrop-blur-xl">
+<div class="flex items-center gap-4">
+<h2 class="font-serif text-2xl text-primary">Modifier Management</h2>
+<span class="text-xs bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-medium">Lunch Period</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity scale-95 active:scale-100">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:opacity-80 transition-opacity scale-95 active:scale-100">account_circle</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<div class="p-12 max-w-7xl">
+<!-- Hero Header Section -->
+<section class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+<div class="max-w-xl">
+<h2 class="font-serif text-6xl italic leading-tight text-on-surface mb-4">Crafting the <br/>Perfect Bite</h2>
+<p class="text-on-surface-variant text-lg font-light leading-relaxed">Manage add-ons, spice levels, and special requests to ensure every guest receives their sushi exactly how they intended.</p>
+</div>
+<div>
+<button class="px-8 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-lg flex items-center gap-3 shadow-xl shadow-primary/10 hover:opacity-90 transition-all scale-100 active:scale-95">
+<span class="material-symbols-outlined">add</span>
+<span class="font-sans font-medium">Add New Modifier</span>
+</button>
+</div>
+</section>
+<!-- Filters Section (No-Line Tonal Shift) -->
+<section class="mb-10 overflow-x-auto pb-4">
+<div class="flex items-center gap-3">
+<button class="px-6 py-2 bg-primary text-white rounded-full text-sm font-medium transition-all shadow-md shadow-primary/20">All</button>
+<button class="px-6 py-2 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-all">Condiments</button>
+<button class="px-6 py-2 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-all">Spice Level</button>
+<button class="px-6 py-2 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-all">Dietary</button>
+<button class="px-6 py-2 bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high rounded-full text-sm font-medium transition-all">Add-ons</button>
+</div>
+</section>
+<!-- Modifiers Grid (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Card 1: Extra Wasabi -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between group relative overflow-hidden transition-all hover:translate-y-[-4px]">
+<div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+<div>
+<div class="flex justify-between items-start mb-6">
+<span class="text-[10px] tracking-[0.15em] uppercase font-bold text-primary/60">Condiments</span>
+<span class="font-serif italic text-2xl text-on-surface">$0.50</span>
+</div>
+<h3 class="font-serif text-3xl mb-3 text-on-surface">Extra Wasabi</h3>
+<p class="text-on-surface-variant text-sm font-light leading-relaxed mb-8">A generous portion of freshly grated Shizuoka wasabi for a sharp, clean heat.</p>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-6">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-all">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant/40">Active</span>
+</div>
+</div>
+<!-- Card 2: Spicy Mayo -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between group relative overflow-hidden transition-all hover:translate-y-[-4px]">
+<div class="absolute top-0 right-0 w-24 h-24 bg-secondary-container/20 rounded-bl-full -mr-8 -mt-8"></div>
+<div>
+<div class="flex justify-between items-start mb-6">
+<span class="text-[10px] tracking-[0.15em] uppercase font-bold text-primary/60">Spice Level</span>
+<span class="font-serif italic text-2xl text-on-surface">$1.00</span>
+</div>
+<h3 class="font-serif text-3xl mb-3 text-on-surface">Spicy Mayo</h3>
+<p class="text-on-surface-variant text-sm font-light leading-relaxed mb-8">House-made Sriracha-infused creamy Kewpie mayo. A crowd favorite.</p>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-6">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-all">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant/40">Active</span>
+</div>
+</div>
+<!-- Card 3: Gluten Free Soy -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between group relative overflow-hidden transition-all hover:translate-y-[-4px]">
+<div class="absolute top-0 right-0 w-24 h-24 bg-tertiary-container/10 rounded-bl-full -mr-8 -mt-8"></div>
+<div>
+<div class="flex justify-between items-start mb-6">
+<span class="text-[10px] tracking-[0.15em] uppercase font-bold text-primary/60">Dietary</span>
+<span class="font-serif italic text-2xl text-on-surface">Free</span>
+</div>
+<h3 class="font-serif text-3xl mb-3 text-on-surface">GF Soy Sauce</h3>
+<p class="text-on-surface-variant text-sm font-light leading-relaxed mb-8">Tamari-based soy sauce, brewed without wheat for gluten-sensitive guests.</p>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-6">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-all">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant/40">Active</span>
+</div>
+</div>
+<!-- Card 4: Masago Topping -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between group relative overflow-hidden transition-all hover:translate-y-[-4px]">
+<div>
+<div class="flex justify-between items-start mb-6">
+<span class="text-[10px] tracking-[0.15em] uppercase font-bold text-primary/60">Add-ons</span>
+<span class="font-serif italic text-2xl text-on-surface">$2.50</span>
+</div>
+<h3 class="font-serif text-3xl mb-3 text-on-surface">Masago</h3>
+<p class="text-on-surface-variant text-sm font-light leading-relaxed mb-8">Fresh capelin roe. Adds a subtle salty crunch to any classic roll.</p>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-6">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-all">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant/40">Active</span>
+</div>
+</div>
+<!-- Card 5: Tempura Flakes -->
+<div class="bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between group relative overflow-hidden transition-all hover:translate-y-[-4px]">
+<div>
+<div class="flex justify-between items-start mb-6">
+<span class="text-[10px] tracking-[0.15em] uppercase font-bold text-primary/60">Add-ons</span>
+<span class="font-serif italic text-2xl text-on-surface">$0.75</span>
+</div>
+<h3 class="font-serif text-3xl mb-3 text-on-surface">Tenkasu</h3>
+<p class="text-on-surface-variant text-sm font-light leading-relaxed mb-8">Crunchy bits of deep-fried tempura batter for added texture.</p>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant/10 pt-6">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-all">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error/10 hover:text-error transition-all">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant/40">Active</span>
+</div>
+</div>
+<!-- Empty/New Placeholder Card -->
+<button class="border-2 border-dashed border-outline-variant/30 rounded-xl p-8 flex flex-col items-center justify-center group hover:bg-surface-container-low transition-all">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-4 group-hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">add_circle</span>
+</div>
+<p class="font-serif italic text-xl text-on-surface-variant">Create New Modifier</p>
+</button>
+</section>
+<!-- Decorative Visual: Asymmetric Graphic Element -->
+<div class="mt-24 pointer-events-none opacity-20">
+<div class="flex items-center gap-8">
+<div class="h-[1px] flex-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+<span class="font-serif italic text-4xl text-primary">Ma</span>
+<div class="h-[1px] flex-1 bg-gradient-to-r from-transparent via-primary to-transparent"></div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

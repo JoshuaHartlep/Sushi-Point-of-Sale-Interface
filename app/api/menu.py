@@ -5,7 +5,7 @@ This module provides endpoints for managing menu items and categories.
 """
 
 # all the stuff we need to make the API work
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
@@ -24,6 +24,9 @@ from app.schemas.menu import (
 from app.schemas.bulk_operations import BulkMenuItemOperation, BulkMenuItemResponse, BulkOperationType
 from app.core.error_handling import RecordNotFoundError
 import logging
+import os
+import uuid
+import shutil
 
 # set up logging so we can see what's going wrong
 logger = logging.getLogger(__name__)
@@ -35,7 +38,7 @@ router = APIRouter()
 @router.get("/menu-items/", response_model=List[MenuItemResponse])
 def get_menu_items(
     skip: int = Query(0, ge=0),  # how many items to skip (for pagination)
-    limit: int = Query(12, ge=1, le=100),  # how many items to show per page
+    limit: int = Query(12, ge=1, le=500),  # how many items to show per page
     category_id: Optional[int] = None,  # filter by category
     search: Optional[str] = None,  # search by name or description
     min_price: Optional[float] = None,  # minimum price filter
@@ -96,6 +99,68 @@ def patch_menu_item(item_id: int, item: MenuItemUpdate, db: Session = Depends(ge
     db.commit()
     db.refresh(db_item)
     return db_item
+
+# upload an image for a menu item and store it locally
+@router.post("/menu-items/{item_id}/upload-image", response_model=MenuItemResponse)
+def upload_menu_item_image(
+    item_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    # check the item exists
+    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    if not db_item:
+        raise RecordNotFoundError("MenuItem", item_id)
+
+    # only allow common image types
+    allowed_types = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, and GIF images are allowed")
+
+    # figure out where to save the file
+    ext = os.path.splitext(file.filename or "image.jpg")[1].lower() or ".jpg"
+    filename = f"{item_id}_{uuid.uuid4().hex}{ext}"
+    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "menu-images")
+    os.makedirs(uploads_dir, exist_ok=True)
+    filepath = os.path.join(uploads_dir, filename)
+
+    # delete old image file if one exists
+    if db_item.image_url:
+        old_filename = db_item.image_url.split("/uploads/menu-images/")[-1]
+        old_path = os.path.join(uploads_dir, old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+
+    # save the uploaded file to disk
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    # save the relative URL in the database
+    db_item.image_url = f"/uploads/menu-images/{filename}"
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+
+# remove the image from a menu item
+@router.delete("/menu-items/{item_id}/image", response_model=MenuItemResponse)
+def delete_menu_item_image(item_id: int, db: Session = Depends(get_db)):
+    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    if not db_item:
+        raise RecordNotFoundError("MenuItem", item_id)
+
+    if db_item.image_url:
+        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "menu-images")
+        old_filename = db_item.image_url.split("/uploads/menu-images/")[-1]
+        old_path = os.path.join(uploads_dir, old_filename)
+        if os.path.exists(old_path):
+            os.remove(old_path)
+        db_item.image_url = None
+        db.commit()
+        db.refresh(db_item)
+
+    return db_item
+
 
 # delete a menu item
 @router.delete("/menu-items/{item_id}")

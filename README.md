@@ -22,20 +22,23 @@ This project has taught me a ton about database design, backend API development,
 
 ### Backend Setup
 
-1. Create and activate virtual environment:
+1. Use Python 3.12 or 3.13 (3.14 is not supported by this repo's pinned deps).
+
+2. Create and activate virtual environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+python3.12 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
-2. Install dependencies:
+3. Install dependencies:
 ```bash
-pip install -r requirements.txt
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -r requirements.txt
 ```
 
-3. Start the backend server:
+4. Start the backend server:
 ```bash
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 ### Frontend Setup
@@ -58,8 +61,17 @@ npm run dev
 ## API Documentation
 
 Once the backend server is running, you can access the API documentation at:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:8000/api/docs
+- ReDoc: http://localhost:8000/api/redoc
+
+## Troubleshooting (Local Setup)
+
+- `ModuleNotFoundError: No module named 'pydantic_settings'`:
+  - Install it in the active venv with `python -m pip install pydantic-settings`.
+- `Form data requires "python-multipart" to be installed`:
+  - Run `python -m pip install python-multipart` in the same active venv used to run uvicorn.
+- If `venv/bin/activate` is missing:
+  - This project uses `.venv`, so activate with `source .venv/bin/activate`.
 
 ## Features
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, Plus, X, Loader2, AlertCircle, DollarSign, Clock } from 'lucide-react';
+import { Trash2, Plus, X, Loader2, AlertCircle, Clock } from 'lucide-react';
 import { menuApi, ordersApi, categoriesApi } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -30,8 +30,8 @@ interface Category {
 }
 
 interface OrderTotal {
-  subtotal: number;
-  discount_amount: number;
+  subtotal?: number;
+  discount_amount?: number;
   total: number;
 }
 
@@ -42,7 +42,7 @@ const EditOrder = () => {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<OrderItem | null>(null);
-  const { mealPeriod, isDinner, isLunch } = useMealPeriod();
+  const { isLunch } = useMealPeriod();
 
   // Helper function to check if an item is available during current meal period
   const isItemAvailable = (item: MenuItem): boolean => {
@@ -151,7 +151,7 @@ const EditOrder = () => {
   // Add item mutation
   const addItemMutation = useMutation({
     mutationFn: (menu_item_id: number) => 
-      ordersApi.addItem(Number(id), { items: [{ menu_item_id, quantity: 1 }] }),
+      ordersApi.addItem(Number(id), { menu_item_id, quantity: 1 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['orderTotal', id] });

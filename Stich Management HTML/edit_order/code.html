@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Washi &amp; Sumi - Edit Order</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Sans+JP:wght@300;400;500;700&amp;family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary-fixed-variant": "#004d62",
+              "on-error-container": "#93000a",
+              "primary-container": "#c4402f",
+              "primary-fixed": "#ffdad4",
+              "on-background": "#1c1c19",
+              "inverse-primary": "#ffb4a8",
+              "secondary": "#655e50",
+              "surface-container-low": "#f6f3ee",
+              "on-primary-fixed": "#410100",
+              "inverse-surface": "#31302d",
+              "on-tertiary-container": "#e3f5ff",
+              "error-container": "#ffdad6",
+              "primary": "#a2281a",
+              "tertiary": "#005e77",
+              "surface-dim": "#dcdad5",
+              "on-secondary-container": "#696254",
+              "surface-bright": "#fcf9f4",
+              "surface-tint": "#ae3021",
+              "background": "#fcf9f4",
+              "outline-variant": "#e1bfb9",
+              "tertiary-container": "#007897",
+              "on-tertiary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "on-primary-fixed-variant": "#8c170c",
+              "on-primary-container": "#ffeeec",
+              "error": "#ba1a1a",
+              "on-error": "#ffffff",
+              "inverse-on-surface": "#f3f0eb",
+              "surface-variant": "#e5e2dd",
+              "surface-container-high": "#ebe8e3",
+              "primary-fixed-dim": "#ffb4a8",
+              "outline": "#8d716c",
+              "on-surface-variant": "#59413d",
+              "secondary-fixed-dim": "#cfc5b5",
+              "surface-container-lowest": "#ffffff",
+              "on-surface": "#1c1c19",
+              "tertiary-fixed": "#baeaff",
+              "on-tertiary-fixed": "#001f29",
+              "on-secondary-fixed": "#201b10",
+              "surface-container-highest": "#e5e2dd",
+              "secondary-container": "#e9decd",
+              "on-secondary-fixed-variant": "#4c4639",
+              "surface": "#fcf9f4",
+              "secondary-fixed": "#ece1d0",
+              "tertiary-fixed-dim": "#7cd2f4",
+              "on-primary": "#ffffff",
+              "surface-container": "#f0ede9"
+            },
+            fontFamily: {
+              "headline": ["Noto Serif", "serif"],
+              "body": ["Manrope", "sans-serif"],
+              "label": ["Manrope", "sans-serif"],
+              "serif-display": ["Instrument Serif", "serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        .japanese-ui { font-family: 'Noto Sans JP', sans-serif; }
+        .editorial-title { font-family: 'Instrument Serif', serif; }
+        ::-webkit-scrollbar { height: 4px; width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e1bfb9; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+<!-- SideNavBar (Predicted) -->
+<aside class="w-[224px] h-screen fixed left-0 top-0 bg-[#f6f3ee] dark:bg-stone-900 flex flex-col py-8 z-50">
+<div class="px-8 mb-12">
+<h1 class="text-[#a2281a] font-serif text-xl italic">Washi &amp; Sumi</h1>
+<p class="text-[0.65rem] uppercase tracking-widest text-on-surface-variant opacity-70 mt-1">Crafted Daily</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center px-8 py-3 text-[#a2281a] border-l-4 border-[#a2281a] pl-4 font-bold transition-all japanese-ui text-sm tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="restaurant_menu">restaurant_menu</span>
+                Nigiri
+            </a>
+<a class="flex items-center px-8 py-3 text-[#59413d] dark:text-stone-500 pl-4 hover:bg-[#fcf9f4] dark:hover:bg-stone-800 transition-all japanese-ui text-sm tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="ramen_bowl">rice_bowl</span>
+                Sashimi
+            </a>
+<a class="flex items-center px-8 py-3 text-[#59413d] dark:text-stone-500 pl-4 hover:bg-[#fcf9f4] dark:hover:bg-stone-800 transition-all japanese-ui text-sm tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="layers">layers</span>
+                Maki
+            </a>
+<a class="flex items-center px-8 py-3 text-[#59413d] dark:text-stone-500 pl-4 hover:bg-[#fcf9f4] dark:hover:bg-stone-800 transition-all japanese-ui text-sm tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="water_drop">water_drop</span>
+                Temaki
+            </a>
+<a class="flex items-center px-8 py-3 text-[#59413d] dark:text-stone-500 pl-4 hover:bg-[#fcf9f4] dark:hover:bg-stone-800 transition-all japanese-ui text-sm tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="local_bar">local_bar</span>
+                Drinks
+            </a>
+</nav>
+<div class="px-8 mt-auto space-y-4">
+<button class="w-full py-3 bg-primary text-on-primary text-xs tracking-widest uppercase font-bold rounded-sm shadow-sm">
+                View Specials
+            </button>
+<div class="pt-6 space-y-2">
+<a class="flex items-center text-[#59413d] dark:text-stone-500 text-xs tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined text-lg mr-2" data-icon="settings">settings</span>
+                    Settings
+                </a>
+<a class="flex items-center text-[#59413d] dark:text-stone-500 text-xs tracking-widest uppercase" href="#">
+<span class="material-symbols-outlined text-lg mr-2" data-icon="help_outline">help_outline</span>
+                    Support
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[224px] flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar (Predicted) -->
+<header class="bg-[#fcf9f4]/80 dark:bg-stone-950/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 w-full sticky top-0 z-40">
+<div class="flex items-center gap-8">
+<span class="font-['Instrument_Serif'] italic text-2xl tracking-tight text-[#a2281a] dark:text-[#c4402f]">Edit Order</span>
+<nav class="hidden md:flex gap-6">
+<a class="text-[#a2281a] border-b-2 border-[#a2281a] pb-1 font-sans text-sm tracking-wide" href="#">Menu</a>
+<a class="text-[#59413d] dark:text-stone-400 font-sans text-sm tracking-wide hover:text-[#a2281a] transition-colors" href="#">Orders</a>
+<a class="text-[#59413d] dark:text-stone-400 font-sans text-sm tracking-wide hover:text-[#a2281a] transition-colors" href="#">Tables</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50" data-icon="search">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-lowest border-none rounded-full text-sm w-64 focus:ring-2 focus:ring-primary" placeholder="Search menu items..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Chef profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD67sNN_5Zw4hSfyTFtCB197d3WSTlX9u-NxZzqGZcGw4AIKpITz9pxAcVoJ7eqmLzw1k65MLddmKRW_CZTwdtzRFViXdRCz1uOT2XCr70WDfBCfK5OZYAiSlPKoLMuEA0sddU6CRZnWDMy0gkseHcjlHsAkaRj1rWzxmLhYw1JkXfTgxClH0wdlus1oLDggwo2dbRSq-0_6IjA-dEuzfFgJB4dC4LxvAiDiNRJAbKGkjDNxZqJCywmZY1Us2E168fpZF5QMGh6YC4"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Left Panel: Menu Browser -->
+<section class="flex-1 overflow-y-auto p-8 bg-surface">
+<!-- Category Filters -->
+<div class="flex overflow-x-auto gap-3 pb-8 no-scrollbar">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary text-xs font-bold tracking-widest uppercase whitespace-nowrap">All</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold tracking-widest uppercase whitespace-nowrap hover:bg-surface-container-high transition-colors">Nigiri</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold tracking-widest uppercase whitespace-nowrap hover:bg-surface-container-high transition-colors">Sashimi</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold tracking-widest uppercase whitespace-nowrap hover:bg-surface-container-high transition-colors">Maki</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold tracking-widest uppercase whitespace-nowrap hover:bg-surface-container-high transition-colors">Temaki</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-low text-on-surface-variant text-xs font-bold tracking-widest uppercase whitespace-nowrap hover:bg-surface-container-high transition-colors">Drinks</button>
+</div>
+<!-- Menu Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+<!-- Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col">
+<div class="relative h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Salmon Nigiri platter" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgoWJqxCB4nyeJdLPgHyu1ApSr6V5r5nA-wukDxesLkUW2B7w5TRN8EA9Hp-UuoCsoASEOkqi-6a03FKRd6fX_BYmwkMVmIcHi_FPtoWLOW-Hku87YB_LcDX-IogGVZQ6Wcyr9GzCIv9Xy_CkSeV0zjdRMos9fgTyxqZLXYzk7tg1tsiboLv6CpWoRav_n9-9-F8EZSoWbQPfQqdL-ksorar1A9vOdkd0n7rgPYuQjbU6fvBvOiZhg-8RyIn4320P3pSbteufHEz4"/>
+<span class="absolute top-3 right-3 px-3 py-1 bg-tertiary/90 text-on-tertiary text-[10px] font-bold tracking-widest uppercase rounded-full">Lunch Only</span>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="editorial-title text-xl text-on-surface">Sake Nigiri</h3>
+<span class="text-primary font-bold">$12.00</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed flex-1">Fresh Atlantic salmon over hand-pressed vinegared rice. Two pieces per serving.</p>
+<button class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Add to Order
+                            </button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col">
+<div class="relative h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Bluefin Tuna Sashimi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANb_YtiXHOeaJ0p50Z8wKjXpthvB9fnUmMbcte2T3Mqgn7vUdJJbKEUfNX-RcvS40LsmpBV6a-Iyd7lZuxVXGsK5R2awgOMo6E739F1Cz1dD7ZcKp3E3aPGfVw9heO0AN3rHoVBUEPDELAtZ-OT716ix63iE_cv1g3WY_vrg2f7Lav7wHuSGfckntMBWT0mR4TKVUZifwCystUKoEen03IFxqlf_O2qcMPyqb_uzGrsq9JLY3MRsTNFHrQ56ord-eQBuXjyoZBRlo"/>
+<span class="absolute top-3 right-3 px-3 py-1 bg-amber-600/90 text-white text-[10px] font-bold tracking-widest uppercase rounded-full">Dinner Only</span>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="editorial-title text-xl text-on-surface">Maguro Sashimi</h3>
+<span class="text-primary font-bold">$18.00</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed flex-1">Five slices of premium bluefin tuna, served with fresh wasabi and radish.</p>
+<button class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Add to Order
+                            </button>
+</div>
+</div>
+<!-- Item 3 (Unavailable) -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm transition-shadow flex flex-col opacity-60 grayscale-[0.5]">
+<div class="relative h-48 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Dragon Roll Sushi" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgCSUU4T5rAZHOKXE94tSjGnSJqUtBUOn_NGKr0oNpOQkgTM9mc09_ucMKmuP3M3PkZYaBle8QWCpbXYbkS0CLiJLKv_9eVuVxACwnr9-r5PCmAr5b_NP_Td6mOBllPrLU5oE_nIoYPNTE2joVrnnjqMD3P29-bScDXcKfTsKTs6MuTOJS5H5firCoXU1Q3m2NLQ4cSe9U7IoDMQOFeKqZqkrUUVm_AyNO6sqaO4LK12tC8qKeYotPXHYWJaA3FSJprCGhwPOG5O8"/>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="editorial-title text-xl text-on-surface">Dragon Roll</h3>
+<span class="text-primary font-bold">$22.00</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed flex-1">Eel, cucumber, and avocado topped with unagi sauce and sesame seeds.</p>
+<button class="w-full py-3 bg-surface-variant text-on-surface-variant rounded-lg text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2 cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-sm" data-icon="block">block</span>
+                                Unavailable
+                            </button>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col">
+<div class="relative h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Spicy Tuna Roll" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeg1pF_EKWI509xCIRoJJZ1B1iBEzTAv8x1vHseib7Wtd99dtzQ2QMqJx4a_AxiulkRbgt08gYRGaNRhvLXqNI9sMKIXzEcEWbwcTko4gcizqgoGaw444ASUG5KamRT_ggDXzXTbqXZ_VO21Dp1iS8cmzR-nSCzf5YVeKjH02sJ_s7fQYSCnSMLub-qwuyQfWN5YUyA0bTqmrxDlmXVx5_YvCPsqjz6riE7Eca1aGU6NYIZXiDwrfD8HmlIaJw0F8gWVpc-YLqff0"/>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="editorial-title text-xl text-on-surface">Spicy Tuna Maki</h3>
+<span class="text-primary font-bold">$14.00</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed flex-1">Spicy tuna mix, cucumber, topped with spicy mayo and scallions.</p>
+<button class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Add to Order
+                            </button>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col">
+<div class="relative h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Ebi Temaki Handroll" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7xencVxRwyW-LPBn5mSxzPOMH1S-1CFvOicz_frRjCbhB2PHXwL_JCz_oyKviPlnX3zrBMHxCuSqtvP-GRjClPlvrREtQD4w_JNJCNU-oO-NHiZfFKYmfvu6xz4bwhGRyRtariqASx3AqHwRjyh_ZiafudvIn5J4vEp1yzYJ2Rw4X9_rCLgGnANPXbnYw00wic8tTyANc5xtRfnnTK8JNAV3WBAmzfRJFhyD1jryohJJzGK8raZkuYkOIkC9yjrGMkzY1WFNJTUc"/>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="editorial-title text-xl text-on-surface">Ebi Temaki</h3>
+<span class="text-primary font-bold">$9.00</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed flex-1">Crispy shrimp tempura, cucumber, and mayo in a crisp nori cone.</p>
+<button class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Add to Order
+                            </button>
+</div>
+</div>
+<!-- Item 6 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col">
+<div class="relative h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Premium Matcha Green Tea" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATjU5vK-C5XOvpLr9boPlC8NR4fhzdCbClXluuhWTToM3KLNYSJZPAvLiUsQzfakim12CgH3BiEfzgU9nsbyt1m3mVSxsa5DNufE4TdtBR88Ycl5SlTHIr_QK_Vuzv8szRfx7ejCkxYkl6vMl2YWGCCN_ikpIherCFTDgZ3Gqmn5pQKSrTzJJ9u3gfvxusUCXGOKscyrx8OQ4Ou-8gBImwcwJBe6jmxUkoNYf-mrRDOVOOoLEz6sZom4P1YK7a3ykgHPL5IwcDsPs"/>
+</div>
+<div class="p-5 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="editorial-title text-xl text-on-surface">Matcha Ceremonial</h3>
+<span class="text-primary font-bold">$6.50</span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed flex-1">Hot ceremonial grade matcha whisked to perfection.</p>
+<button class="w-full py-3 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                                Add to Order
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Sidebar: Order Management -->
+<section class="w-[380px] bg-surface-container-low border-l border-outline-variant/10 flex flex-col h-full shadow-2xl relative z-10">
+<div class="p-6 border-b border-outline-variant/10">
+<div class="flex justify-between items-center mb-4">
+<h2 class="editorial-title text-2xl text-on-surface">Order #105</h2>
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold tracking-widest uppercase rounded">Active</span>
+</div>
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary appearance-none border-2 checked:bg-primary checked:border-primary transition-all" type="checkbox"/>
+<span class="material-symbols-outlined absolute text-white text-sm left-1/2 -translate-x-1/2 opacity-0 peer-checked:opacity-100 transition-opacity" data-icon="check">check</span>
+</div>
+<span class="japanese-ui text-xs font-bold tracking-widest uppercase text-on-surface-variant group-hover:text-primary transition-colors">AYCE Order</span>
+</label>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface-variant/60">Current Items</h3>
+<div class="space-y-4">
+<!-- Item Row 1 -->
+<div class="flex items-center gap-4 group">
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">Sake Nigiri</p>
+<p class="text-xs text-on-surface-variant">$12.00</p>
+</div>
+<div class="flex items-center bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/20 shadow-sm">
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors rounded">
+<span class="material-symbols-outlined text-lg" data-icon="remove">remove</span>
+</button>
+<span class="w-8 text-center text-sm font-bold">2</span>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors rounded">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+</button>
+</div>
+<button class="text-on-surface-variant/40 hover:text-error transition-colors">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+<!-- Item Row 2 -->
+<div class="flex items-center gap-4 group">
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">Spicy Tuna Maki</p>
+<p class="text-xs text-on-surface-variant">$14.00</p>
+</div>
+<div class="flex items-center bg-surface-container-lowest rounded-lg p-1 border border-outline-variant/20 shadow-sm">
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors rounded">
+<span class="material-symbols-outlined text-lg" data-icon="remove">remove</span>
+</button>
+<span class="w-8 text-center text-sm font-bold">1</span>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors rounded">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+</button>
+</div>
+<button class="text-on-surface-variant/40 hover:text-error transition-colors">
+<span class="material-symbols-outlined" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-8 bg-surface-container-highest/30 backdrop-blur-md">
+<div class="space-y-2 mb-8">
+<div class="flex justify-between text-sm">
+<span class="text-on-surface-variant">Subtotal</span>
+<span class="text-on-surface font-medium">$38.00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-on-surface-variant">Discount (AYCE)</span>
+<span class="text-tertiary font-medium">-$5.00</span>
+</div>
+<div class="pt-4 mt-4 border-t border-outline-variant/20 flex justify-between items-end">
+<span class="editorial-title text-xl">Total</span>
+<span class="editorial-title text-3xl text-primary">$33.00</span>
+</div>
+</div>
+<div class="space-y-3">
+<button class="w-full py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-xl text-xs font-bold tracking-widest uppercase shadow-xl shadow-primary/20 hover:scale-[0.98] transition-transform">
+                            Save Order
+                        </button>
+<button class="w-full py-3 bg-transparent text-on-surface-variant hover:text-error rounded-xl text-[10px] font-bold tracking-widest uppercase transition-colors">
+                            Discard Changes
+                        </button>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

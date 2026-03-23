@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Noto+Serif:wght@400;700&amp;family=Manrope:wght@400;500;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "on-secondary-fixed-variant": "#4c4639",
+                "on-error-container": "#93000a",
+                "primary-fixed": "#ffdad4",
+                "surface-container-low": "#f6f3ee",
+                "surface": "#fcf9f4",
+                "primary-fixed-dim": "#ffb4a8",
+                "on-tertiary-fixed-variant": "#004d62",
+                "primary-container": "#c4402f",
+                "surface-tint": "#ae3021",
+                "on-tertiary-fixed": "#001f29",
+                "surface-container-highest": "#e5e2dd",
+                "background": "#fcf9f4",
+                "secondary": "#655e50",
+                "error-container": "#ffdad6",
+                "inverse-primary": "#ffb4a8",
+                "outline": "#8d716c",
+                "on-tertiary-container": "#e3f5ff",
+                "on-tertiary": "#ffffff",
+                "inverse-surface": "#31302d",
+                "tertiary-container": "#007897",
+                "secondary-container": "#e9decd",
+                "on-secondary": "#ffffff",
+                "tertiary-fixed-dim": "#7cd2f4",
+                "surface-bright": "#fcf9f4",
+                "surface-container-high": "#ebe8e3",
+                "surface-dim": "#dcdad5",
+                "on-primary-fixed-variant": "#8c170c",
+                "on-primary": "#ffffff",
+                "on-primary-fixed": "#410100",
+                "tertiary": "#005e77",
+                "secondary-fixed-dim": "#cfc5b5",
+                "on-primary-container": "#ffeeec",
+                "inverse-on-surface": "#f3f0eb",
+                "tertiary-fixed": "#baeaff",
+                "surface-container": "#f0ede9",
+                "secondary-fixed": "#ece1d0",
+                "primary": "#a2281a",
+                "on-secondary-container": "#696254",
+                "surface-variant": "#e5e2dd",
+                "on-secondary-fixed": "#201b10",
+                "error": "#ba1a1a",
+                "surface-container-lowest": "#ffffff",
+                "on-background": "#1c1c19",
+                "on-error": "#ffffff",
+                "outline-variant": "#e1bfb9",
+                "on-surface": "#1c1c19",
+                "on-surface-variant": "#59413d"
+              },
+              fontFamily: {
+                "headline": ["Noto Serif"],
+                "body": ["Manrope"],
+                "label": ["Manrope"],
+                "display": ["Instrument Serif"],
+                "jp": ["Noto Sans JP"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+      </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.washi-texture {
+    background-color: #fcf9f4;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuC2ZkOPHc60jA7dDUUEGQuroXzjO-Moz6PCDG6NADmlfdWJFRxGY4x_6yNQHZemiiOmGeWiUp6oJw8rnc5hqikY0UkGVDLSbcUxWf8octVjrPigF8VIhyCrXY_WiuBOJmlcHCfvpjleod0fqR-QlmB-cqEnWNS8iHh83WJctoEJXaykqtD7rceKQc-Tj4ZGtDT4Otjsv3bQGzbLOLPB54Wo7PT7-HJHr1GNX839_fEAANAmgXSZl5fBFzYTQ8rb13kIMnItUpjmQmvP)
+    }
+.soft-fade-bottom {
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen">
+<!-- Top Navigation Bar (Shared Component Logic) -->
+<header class="fixed top-0 w-full z-50 bg-[#fcf9f4] dark:bg-stone-950/80 backdrop-blur-md flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<button class="text-[#59413d] opacity-70 hover:opacity-80 transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<span class="text-2xl font-['Instrument_Serif'] italic text-[#59413d] dark:text-stone-200">SUSHIZEN</span>
+</div>
+<div class="text-[#a2281a] dark:text-[#c4402f] font-['Noto_Serif'] font-normal tracking-tight">
+            LUNCH
+        </div>
+</header>
+<main class="pt-16 pb-32 washi-texture">
+<!-- Hero Section -->
+<div class="relative w-full h-80 overflow-hidden">
+<img alt="Salmon Nigiri" class="w-full h-full object-cover soft-fade-bottom" data-alt="Premium Salmon Nigiri on a black stone plate" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWNCwCrd_A1_2edfsA_1vYd9UR7O64LKU0QJzqD_7DjnV59SLCUQWL0LbU3M7OnbSqafCsT30cLwNbhrjT8ji7sfE-jZRQGA_RnPWk67tj-zT8YQ5N_7FCKcgYixwQlVpJ8H8PxE29C--RIAix0o8q7UmFSkgFmXjFl6aQDCj75HTmN2xUucf13p4_wKtPnyLKKMN65m6MKy3QsF7dideNmui0ZjCxfWua5oSdazJdppXX89Q56X200jrrjbLojqhGGFZ3Hgbd0pPZ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+</div>
+<!-- Product Header -->
+<section class="px-6 -mt-12 relative z-10">
+<div class="flex justify-between items-baseline mb-2">
+<h1 class="text-5xl font-display italic text-on-surface leading-tight">Salmon Nigiri</h1>
+<span class="text-xl font-headline text-primary">¥850</span>
+</div>
+<p class="text-on-surface-variant font-jp leading-relaxed max-w-sm">
+                Fresh Atlantic salmon over hand-pressed vinegared rice. Served with a touch of wasabi between the fish and rice. 
+                <span class="block mt-2 text-xs uppercase tracking-widest opacity-60">Sustainable Source • 2 Pieces</span>
+</p>
+</section>
+<!-- Modifiers Section -->
+<section class="px-6 mt-12 space-y-10">
+<!-- Condiments -->
+<div>
+<h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-6 flex items-center gap-2">
+<span class="w-8 h-[1px] bg-outline-variant opacity-30"></span>
+                    Choose Your Modifiers
+                </h2>
+<div class="space-y-3">
+<!-- Modifier Row: Extra Wasabi -->
+<label class="group flex items-center justify-between p-4 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary transition-all" type="checkbox"/>
+<span class="absolute hidden peer-checked:block text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="check" style="font-variation-settings: 'wght' 700;">check</span>
+</span>
+</div>
+<span class="text-on-surface font-jp">Extra Wasabi</span>
+</div>
+<span class="text-sm font-headline text-on-surface-variant opacity-60">+ ¥50</span>
+</label>
+<!-- Modifier Row: No Ginger -->
+<label class="group flex items-center justify-between p-4 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex items-center gap-4">
+<input class="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-on-surface font-jp">No Ginger</span>
+</div>
+<span class="text-sm font-headline text-on-surface-variant opacity-60">Free</span>
+</label>
+<!-- Modifier Row: Spicy Mayo -->
+<label class="group flex items-center justify-between p-4 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex items-center gap-4">
+<input class="h-5 w-5 rounded border-outline-variant text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-on-surface font-jp">Spicy Mayo Add-on</span>
+</div>
+<span class="text-sm font-headline text-on-surface-variant opacity-60">+ ¥100</span>
+</label>
+</div>
+</div>
+<!-- Selection Pills: Soy Sauce -->
+<div>
+<h2 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-4">Soy Sauce Type</h2>
+<div class="flex gap-3">
+<button class="flex-1 py-3 px-4 rounded-xl border-2 border-primary bg-surface-container-lowest text-primary font-medium text-sm text-center">
+                        Regular
+                    </button>
+<button class="flex-1 py-3 px-4 rounded-xl border-2 border-transparent bg-surface-container-lowest text-on-surface-variant font-medium text-sm text-center hover:bg-surface-container-high transition-all">
+                        Low Sodium
+                    </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-surface/90 backdrop-blur-xl px-6 pt-4 pb-8 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.03)]">
+<div class="max-w-md mx-auto flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<!-- Quantity Selector -->
+<div class="flex items-center bg-surface-container-low rounded-full px-2 py-1">
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+<span class="w-12 text-center font-headline text-xl">1</span>
+<button class="w-10 h-10 flex items-center justify-center text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+</div>
+<div class="text-right">
+<span class="block text-[10px] uppercase tracking-widest text-on-surface-variant opacity-60">Total Amount</span>
+<span class="text-2xl font-headline text-on-surface">¥900</span>
+</div>
+</div>
+<!-- Main CTA -->
+<button class="w-full bg-gradient-to-tr from-primary to-primary-container text-on-primary py-5 rounded-xl font-bold tracking-widest uppercase text-sm shadow-lg shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined text-lg" data-icon="shopping_bag">shopping_bag</span>
+                Add to Order
+            </button>
+</div>
+</div>
+<!-- Hidden Bottom Nav Bar Spacer (Responsive Logic) -->
+<div class="h-32 md:hidden"></div>
+</body></html>

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
 
 interface StatusDropdownProps {
   currentStatus: string;
@@ -9,28 +8,19 @@ interface StatusDropdownProps {
 }
 
 const statusOptions = [
-  { value: 'pending', label: 'Pending' },
+  { value: 'pending',   label: 'Pending'   },
   { value: 'preparing', label: 'Preparing' },
-  { value: 'ready', label: 'Ready' },
+  { value: 'ready',     label: 'Ready'     },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
-    case 'preparing':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300';
-    case 'ready':
-      return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300';
-    case 'completed':
-      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
-    case 'cancelled':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
-    default:
-      return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
-  }
+const statusStyles: Record<string, { pill: string; dot: string }> = {
+  pending:   { pill: 'bg-secondary/10 text-secondary',           dot: 'bg-secondary'   },
+  preparing: { pill: 'bg-primary/10 text-primary',               dot: 'bg-primary animate-pulse' },
+  ready:     { pill: 'bg-tertiary/10 text-tertiary',             dot: 'bg-tertiary'    },
+  completed: { pill: 'bg-surface-container-high text-on-surface-variant', dot: 'bg-on-surface-variant' },
+  cancelled: { pill: 'bg-error/10 text-error',                   dot: 'bg-error'       },
 };
 
 const StatusDropdown = ({ currentStatus, orderId, onStatusChange, isUpdating }: StatusDropdownProps) => {
@@ -38,52 +28,47 @@ const StatusDropdown = ({ currentStatus, orderId, onStatusChange, isUpdating }: 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
+    const handle = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setIsOpen(false);
     };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
   }, []);
 
-  const handleStatusSelect = (newStatus: string) => {
-    onStatusChange(orderId, newStatus);
-    setIsOpen(false);
-  };
+  const style = statusStyles[currentStatus] ?? { pill: 'bg-surface-container text-on-surface-variant', dot: 'bg-on-surface-variant' };
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`px-2 py-1 rounded-full text-sm ${getStatusColor(currentStatus)} flex items-center space-x-1`}
+        onClick={() => !isUpdating && setIsOpen(!isOpen)}
         disabled={isUpdating}
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${style.pill}`}
       >
-        <span>{currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}</span>
-        {!isUpdating && <ChevronDown className="w-4 h-4" />}
-        {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
+        {isUpdating ? (
+          <span className="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
+        ) : (
+          <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+        )}
+        {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+        {!isUpdating && <span className="material-symbols-outlined text-[12px]">expand_more</span>}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-600 z-10 border dark:border-gray-700">
-          <div className="py-1">
-            {statusOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handleStatusSelect(option.value)}
-                className={`block w-full text-left px-4 py-2 text-sm text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
-                  option.value === currentStatus ? 'bg-gray-100 dark:bg-gray-700' : ''
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+        <div className="absolute right-0 mt-1.5 w-44 rounded bg-surface-container-lowest dark:bg-sumi-800 border border-outline-variant/20 dark:border-sumi-700 shadow-lg z-20">
+          {statusOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onStatusChange(orderId, opt.value); setIsOpen(false); }}
+              className={`flex items-center gap-2 w-full text-left px-4 py-2.5 text-xs font-medium text-on-surface hover:bg-surface-container-low dark:hover:bg-sumi-700 transition-colors ${opt.value === currentStatus ? 'bg-surface-container-low dark:bg-sumi-700' : ''}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${(statusStyles[opt.value] ?? { dot: 'bg-on-surface-variant' }).dot}`} />
+              {opt.label}
+            </button>
+          ))}
         </div>
       )}
     </div>
   );
 };
 
-export default StatusDropdown; 
+export default StatusDropdown;

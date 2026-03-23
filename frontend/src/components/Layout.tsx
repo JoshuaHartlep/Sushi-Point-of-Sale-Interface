@@ -1,25 +1,27 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, List, Utensils, Settings, Tag, Moon, Sun, Monitor, Clock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import { useQuery } from '@tanstack/react-query';
 import { settingsApi } from '../services/api';
-import type { ThemeMode } from '../contexts/ThemeContext';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const THEME_ICONS: Record<ThemeMode, React.ReactNode> = {
-  light:  <Sun     className="w-4 h-4 text-amber-500" />,
-  dark:   <Moon    className="w-4 h-4 text-indigo-400" />,
-  system: <Monitor className="w-4 h-4 text-washi-500 dark:text-washi-400" />,
-};
+const navItems = [
+  { path: '/',          icon: 'dashboard',      label: 'Dashboard' },
+  { path: '/orders',    icon: 'receipt_long',   label: 'Orders'    },
+  { path: '/menu',      icon: 'menu_book',      label: 'Menu'      },
+  { path: '/modifiers', icon: 'tune',           label: 'Modifiers' },
+  { path: '/settings',  icon: 'settings',       label: 'Settings'  },
+];
 
-const THEME_LABELS: Record<ThemeMode, string> = {
-  light:  'Light',
-  dark:   'Dark',
-  system: 'System',
+const pageTitles: Record<string, string> = {
+  '/':          'Dashboard',
+  '/orders':    'Orders',
+  '/menu':      'Menu',
+  '/modifiers': 'Modifiers',
+  '/settings':  'Settings',
 };
 
 const Layout = ({ children }: LayoutProps) => {
@@ -27,110 +29,96 @@ const Layout = ({ children }: LayoutProps) => {
   const { mode, cycleTheme } = useTheme();
   const { isDinner } = useMealPeriod();
 
-  const { data: settings, isLoading, error } = useQuery({
+  const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: settingsApi.get,
   });
 
-  const displayTitle = (() => {
-    if (isLoading) return 'Hartlep POS';
-    if (error || !settings?.restaurant_name) return 'Hartlep POS – Restaurant';
-    return `Hartlep POS – ${settings.restaurant_name}`;
-  })();
+  const restaurantName = settings?.restaurant_name || 'Sushi POS';
 
-  const navItems = [
-    { path: '/',          icon: Home,     label: 'Dashboard' },
-    { path: '/orders',    icon: List,     label: 'Orders'    },
-    { path: '/menu',      icon: Utensils, label: 'Menu'      },
-    { path: '/modifiers', icon: Tag,      label: 'Modifiers' },
-    { path: '/settings',  icon: Settings, label: 'Settings'  },
-  ];
+  // derive page title — also handles /orders/:id/edit
+  const pageTitle = pageTitles[location.pathname]
+    ?? (location.pathname.startsWith('/orders') ? 'Orders' : 'Dashboard');
+
+  const themeIcon = mode === 'dark' ? 'light_mode' : 'dark_mode';
 
   return (
-    <div className="min-h-screen bg-washi-100 dark:bg-sumi-900 transition-colors">
-      {/* ── Header ── */}
-      <header className="bg-white dark:bg-sumi-800 shadow-sm border-b border-washi-200 dark:border-sumi-700 transition-colors">
-        <div className="px-6 py-3 flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            {displayTitle}
+    <div className="flex min-h-screen bg-background text-on-background antialiased dark:bg-sumi-900 dark:text-inverse-on-surface">
+
+      {/* ── Sidebar ──────────────────────────────────────────────── */}
+      <aside className="w-[224px] h-screen sticky top-0 left-0 flex flex-col py-8 px-0 bg-surface-container-low dark:bg-sumi-800 overflow-y-auto shrink-0 z-50 border-r border-outline-variant/10 dark:border-sumi-700">
+
+        {/* Brand */}
+        <div className="px-8 mb-10">
+          <h1 className="text-xl font-headline italic text-primary leading-none">
+            {restaurantName}
           </h1>
+          <p className="text-[10px] uppercase tracking-wider text-on-surface-variant mt-1 opacity-70">
+            Premium Management
+          </p>
+        </div>
 
-          <div className="flex items-center gap-3">
-            {/* Meal period badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-washi-100 dark:bg-sumi-700 rounded-full border border-washi-200 dark:border-sumi-600 transition-colors">
-              <Clock className="w-3.5 h-3.5 text-washi-500 dark:text-washi-400" />
-              <span className={`text-xs font-semibold tracking-wide ${
-                isDinner
-                  ? 'text-akabeni-600 dark:text-akabeni-400'
-                  : 'text-sky-600 dark:text-sky-400'
-              }`}>
-                {isDinner ? 'DINNER' : 'LUNCH'}
-              </span>
-            </div>
+        {/* Nav items */}
+        <nav className="flex-1 flex flex-col gap-0.5">
+          {navItems.map(({ path, icon, label }) => {
+            const isActive = path === '/'
+              ? location.pathname === '/'
+              : location.pathname.startsWith(path);
+            return (
+              <Link
+                key={path}
+                to={path}
+                className={
+                  isActive
+                    ? 'flex items-center gap-3 border-l-4 border-primary text-primary font-bold pl-7 py-2.5 bg-surface-container/50 dark:bg-sumi-700/50 transition-all'
+                    : 'flex items-center gap-3 text-on-surface-variant hover:text-primary pl-8 py-2.5 transition-colors hover:bg-surface-container-high dark:hover:bg-sumi-700'
+                }
+              >
+                <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                <span className="text-sm tracking-tight">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
 
-            {/* 3-way theme toggle */}
-            <button
-              onClick={cycleTheme}
-              title={`Theme: ${THEME_LABELS[mode]} — click to cycle`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-washi-100 dark:bg-sumi-700 border border-washi-200 dark:border-sumi-600 hover:bg-washi-200 dark:hover:bg-sumi-600 transition-colors text-xs font-medium text-gray-600 dark:text-gray-300"
-            >
-              {THEME_ICONS[mode]}
-              <span>{THEME_LABELS[mode]}</span>
-            </button>
+        {/* Footer ornament */}
+        <div className="px-8 mt-auto pt-8 border-t border-outline-variant/10 dark:border-sumi-700">
+          <div className="flex flex-col items-center gap-2 opacity-40">
+            <span className="material-symbols-outlined text-primary text-[18px]">spa</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-center leading-relaxed">
+              ― いらっしゃいませ ―
+            </span>
           </div>
         </div>
-      </header>
+      </aside>
 
-      <div className="flex" style={{ height: 'calc(100vh - 57px)' }}>
-        {/* ── Sidebar ── */}
-        <aside className="w-56 flex-shrink-0 bg-white dark:bg-sumi-800 border-r border-washi-200 dark:border-sumi-700 shadow-sm transition-colors flex flex-col">
-          {/* Sidebar brand */}
-          <div className="px-5 py-5 border-b border-washi-200 dark:border-sumi-700">
-            <div className="flex items-center gap-2">
-              {/* Subtle torii-red dot accent */}
-              <span className="w-2 h-2 rounded-full bg-akabeni-600 flex-shrink-0" />
-              <span className="text-lg font-bold text-gray-800 dark:text-white tracking-wide">
-                Sushi POS
-              </span>
-            </div>
-            <p className="mt-0.5 text-xs text-washi-500 dark:text-washi-400 pl-4 tracking-widest uppercase">
-              寿司 Management
-            </p>
+      {/* ── Main area ────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0">
+
+        {/* Top header */}
+        <header className="h-[57px] w-full sticky top-0 z-40 bg-background/80 dark:bg-sumi-900/80 backdrop-blur-xl flex justify-between items-center px-8 border-b border-outline-variant/10 dark:border-sumi-700">
+          <div className="flex items-center gap-6">
+            <span className="text-base font-headline italic text-primary">{pageTitle}</span>
+            <div className="h-4 w-px bg-outline-variant/30" />
+            <span className={`text-sm font-semibold ${isDinner ? 'text-primary' : 'text-tertiary'}`}>
+              {isDinner ? 'Dinner Service' : 'Lunch Service'}
+            </span>
           </div>
 
-          {/* Nav items */}
-          <nav className="flex-1 py-3 px-2 space-y-0.5">
-            {navItems.map(({ path, icon: Icon, label }) => {
-              const isActive = location.pathname === path;
-              return (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'nav-active-bar bg-akabeni-50 dark:bg-akabeni-950 text-akabeni-700 dark:text-akabeni-300'
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-washi-100 dark:hover:bg-sumi-700 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 mr-3 flex-shrink-0 ${
-                    isActive ? 'text-akabeni-600 dark:text-akabeni-400' : ''
-                  }`} />
-                  {label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Footer decoration */}
-          <div className="px-5 py-3 border-t border-washi-200 dark:border-sumi-700">
-            <p className="text-xs text-washi-400 dark:text-washi-600 text-center tracking-wider">
-              ― いらっしゃいませ ―
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Theme toggle */}
+            <button
+              onClick={cycleTheme}
+              title={`Theme: ${mode} — click to cycle`}
+              className="text-on-surface-variant hover:text-primary transition-colors"
+            >
+              <span className="material-symbols-outlined text-[22px]">{themeIcon}</span>
+            </button>
           </div>
-        </aside>
+        </header>
 
-        {/* ── Main content ── */}
-        <main className="flex-1 overflow-auto p-6">
+        {/* Page content */}
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>
