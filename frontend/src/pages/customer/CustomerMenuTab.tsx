@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Minus, Loader2 } from 'lucide-react';
-import { menuApi, categoriesApi, MenuItem, Category } from '../../services/api';
+import { menuApi, categoriesApi, MenuItem, Category, API_ORIGIN } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 import MenuItemModal from './MenuItemModal';
-
-const API_ORIGIN = 'http://localhost:8000';
 
 export default function CustomerMenuTab() {
   const { mealPeriod, addToCart, updateQty, cart, isAyce } = useCustomerOrder();

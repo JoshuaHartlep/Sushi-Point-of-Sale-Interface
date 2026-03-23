@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Minus, Camera, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
-import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage } from '../../services/api';
+import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, API_ORIGIN } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
-
-const API_ORIGIN = 'http://localhost:8000';
 const NOTE_MAX = 50;
 
 interface Props {

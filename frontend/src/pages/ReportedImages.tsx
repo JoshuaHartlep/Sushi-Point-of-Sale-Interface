@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Flag } from 'lucide-react';
-import { menuItemImagesApi, MenuItemImage } from '../services/api';
-
-const API_ORIGIN = 'http://localhost:8000';
+import { menuItemImagesApi, MenuItemImage, API_ORIGIN } from '../services/api';
 
 export default function ReportedImages() {
   const queryClient = useQueryClient();
