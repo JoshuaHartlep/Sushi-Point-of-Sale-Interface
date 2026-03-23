@@ -3,10 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, Minus, Loader2 } from 'lucide-react';
 import { menuApi, categoriesApi, MenuItem, Category } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
+import MenuItemModal from './MenuItemModal';
+
+const API_ORIGIN = 'http://localhost:8000';
 
 export default function CustomerMenuTab() {
   const { mealPeriod, addToCart, updateQty, cart, isAyce } = useCustomerOrder();
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [modalItem, setModalItem] = useState<MenuItem | null>(null);
 
   const { data: categories = [] } = useQuery<Category[]>({
     queryKey: ['customer-categories'],
@@ -47,6 +51,10 @@ export default function CustomerMenuTab() {
   }
 
   return (
+    <>
+    {modalItem && (
+      <MenuItemModal item={modalItem} onClose={() => setModalItem(null)} />
+    )}
     <div className="pb-28">
 
       {/* Category scroll */}
@@ -100,13 +108,23 @@ export default function CustomerMenuTab() {
                   return (
                     <div
                       key={item.id}
-                      className={`bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10 card-shadow flex flex-col ${
+                      onClick={() => setModalItem(item)}
+                      className={`bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/10 card-shadow flex flex-col cursor-pointer active:scale-[0.98] transition-transform ${
                         isFeature ? 'col-span-2' : ''
                       }`}
                     >
-                      {/* Image placeholder */}
-                      <div className={`bg-surface-container flex items-center justify-center flex-shrink-0 ${isFeature ? 'h-36' : 'h-28'}`}>
-                        <span className="text-4xl opacity-20 select-none">🍣</span>
+                      {/* Image */}
+                      <div className={`bg-surface-container flex items-center justify-center flex-shrink-0 overflow-hidden ${isFeature ? 'h-36' : 'h-28'}`}>
+                        {item.image_url ? (
+                          <img
+                            src={`${API_ORIGIN}${item.image_url}`}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <span className="text-4xl opacity-20 select-none">🍣</span>
+                        )}
                       </div>
 
                       <div className={`flex justify-between items-end gap-2 flex-1 ${isFeature ? 'p-4' : 'p-3'}`}>
@@ -128,13 +146,13 @@ export default function CustomerMenuTab() {
                         {/* Qty controls */}
                         {qty === 0 ? (
                           <button
-                            onClick={() => addToCart(item.id, item.name, Number(item.price))}
+                            onClick={e => { e.stopPropagation(); addToCart(item.id, item.name, Number(item.price)); }}
                             className={`flex-shrink-0 flex items-center justify-center rounded-full transition-all active:scale-90 bg-surface-container-high text-on-surface hover:bg-primary hover:text-on-primary ${isFeature ? 'w-10 h-10' : 'w-9 h-9'}`}
                           >
                             <Plus size={15} />
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
                             <button
                               onClick={() => updateQty(item.id, qty - 1)}
                               className="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center hover:bg-surface-container-highest transition-colors active:scale-90"
@@ -174,5 +192,6 @@ export default function CustomerMenuTab() {
         </div>
       </div>
     </div>
+    </>
   );
 }

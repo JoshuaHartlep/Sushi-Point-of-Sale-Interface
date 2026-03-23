@@ -6,6 +6,7 @@ export interface CartItem {
   name: string;
   price: number; // always the a la carte price; display as $0 for AYCE
   quantity: number;
+  notes?: string; // optional customer note (e.g. "no wasabi")
 }
 
 interface CustomerOrderContextType {
@@ -32,7 +33,7 @@ interface CustomerOrderContextType {
 
   // actions
   setupOrder: (tableId: number, isAyce: boolean, partySize: number, mealPeriod: 'LUNCH' | 'DINNER', aycePrice: number) => Promise<void>;
-  addToCart: (menuItemId: number, name: string, price: number) => void;
+  addToCart: (menuItemId: number, name: string, price: number, notes?: string) => void;
   updateQty: (menuItemId: number, quantity: number) => void;
   removeFromCart: (menuItemId: number) => void;
   submitOrder: () => Promise<void>;
@@ -84,16 +85,18 @@ export function CustomerOrderProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Add one unit of an item to the local cart
-  const addToCart = useCallback((menuItemId: number, name: string, price: number) => {
+  // Add one unit of an item to the local cart; also updates the note if provided
+  const addToCart = useCallback((menuItemId: number, name: string, price: number, notes?: string) => {
     setCart(prev => {
       const existing = prev.find(i => i.menuItemId === menuItemId);
       if (existing) {
         return prev.map(i =>
-          i.menuItemId === menuItemId ? { ...i, quantity: i.quantity + 1 } : i
+          i.menuItemId === menuItemId
+            ? { ...i, quantity: i.quantity + 1, ...(notes !== undefined && { notes }) }
+            : i
         );
       }
-      return [...prev, { menuItemId, name, price, quantity: 1 }];
+      return [...prev, { menuItemId, name, price, quantity: 1, notes }];
     });
   }, []);
 
@@ -119,7 +122,11 @@ export function CustomerOrderProvider({ children }: { children: ReactNode }) {
     try {
       const snapshot = [...cart]; // capture names/prices before clearing
       for (const item of cart) {
-        await ordersApi.addItem(orderId, { menu_item_id: item.menuItemId, quantity: item.quantity });
+        await ordersApi.addItem(orderId, {
+          menu_item_id: item.menuItemId,
+          quantity: item.quantity,
+          notes: item.notes,
+        });
       }
       const updated = await ordersApi.getById(orderId);
       setLastSubmittedOrder(updated);

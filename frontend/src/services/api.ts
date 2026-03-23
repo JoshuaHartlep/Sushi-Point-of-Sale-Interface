@@ -198,7 +198,7 @@ export const ordersApi = {
     const response = await api.get(`/orders/${orderId}/total`);
     return response.data;
   },
-  addItem: (orderId: number, data: { menu_item_id: number; quantity: number }): Promise<Order> =>
+  addItem: (orderId: number, data: { menu_item_id: number; quantity: number; notes?: string }): Promise<Order> =>
     api.post(`/orders/${orderId}/items/`, { items: [data] }).then(res => res.data),
   deleteItem: (orderId: number, itemId: number): Promise<void> => 
     api.delete(`/orders/${orderId}/items/${itemId}/`).then(res => res.data),
@@ -274,6 +274,7 @@ export const settingsApi = {
 // Tables API
 export const tablesApi = {
   getAll: (): Promise<TableData[]> => api.get('/orders/tables/').then(res => res.data),
+  getById: (id: number): Promise<TableData> => api.get(`/orders/tables/${id}`).then(res => res.data),
   create: (data: { number: number; capacity: number }): Promise<TableData> =>
     api.post('/orders/tables/', data).then(res => res.data),
   update: (id: number, data: { number?: number; capacity?: number }): Promise<TableData> =>

@@ -28,10 +28,15 @@ export default function CustomerOrderTab({ onGoToMenu }: { onGoToMenu: () => voi
           {lastSubmittedCart.map(item => (
             <div key={item.menuItemId} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-on-surface-variant bg-surface-container rounded-full w-6 h-6 flex items-center justify-center">
+                <span className="text-xs font-bold text-on-surface-variant bg-surface-container rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0">
                   {item.quantity}
                 </span>
-                <span className="font-headline text-on-surface text-sm">{item.name}</span>
+                <div>
+                  <span className="font-headline text-on-surface text-sm">{item.name}</span>
+                  {item.notes && (
+                    <p className="text-xs text-on-surface-variant/60 italic mt-0.5">{item.notes}</p>
+                  )}
+                </div>
               </div>
               {!isAyce && (
                 <span className="text-primary font-bold text-sm">
@@ -125,6 +130,9 @@ export default function CustomerOrderTab({ onGoToMenu }: { onGoToMenu: () => voi
 
             <div className="flex-1 min-w-0">
               <p className="font-headline text-on-surface text-sm leading-tight truncate">{item.name}</p>
+              {item.notes && (
+                <p className="text-xs text-on-surface-variant/55 italic mt-0.5 truncate">{item.notes}</p>
+              )}
             </div>
 
             {/* Price — $0.00 for AYCE, real price for a la carte */}
