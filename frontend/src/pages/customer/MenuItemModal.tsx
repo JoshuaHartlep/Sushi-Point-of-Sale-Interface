@@ -29,6 +29,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
   // upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedForReview, setUploadedForReview] = useState(false);
 
   // swipe tracking
   const touchStartX = useRef(0);
@@ -52,6 +53,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-images', item.id] });
       setUploadError(null);
+      setUploadedForReview(true);
     },
     onError: () => setUploadError('Upload failed. Please try again.'),
   });
@@ -309,9 +311,15 @@ export default function MenuItemModal({ item, onClose }: Props) {
                 <p className="text-xs text-error mb-2">{uploadError}</p>
               )}
 
+              {uploadedForReview && (
+                <p className="text-xs text-primary mb-2 font-medium">
+                  Your photo has been submitted for review and will appear once approved.
+                </p>
+              )}
+
               {userImages.length === 0 && !uploadMutation.isPending ? (
                 <p className="text-xs text-on-surface-variant/40 italic">
-                  No photos yet — be the first to share one!
+                  No approved photos yet — be the first to share one!
                 </p>
               ) : (
                 <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x">

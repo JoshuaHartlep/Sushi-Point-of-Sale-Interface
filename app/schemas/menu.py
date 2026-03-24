@@ -5,8 +5,8 @@ This module defines the Pydantic models for menu-related data structures,
 including menu items, categories, and modifiers.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from pydantic import BaseModel, Field, model_validator
+from typing import Optional, List, Literal, Any
 from datetime import datetime
 from app.models.menu import MealPeriodEnum, ImageStatusEnum
 
@@ -96,14 +96,32 @@ class ModifierResponse(ModifierBase):
         from_attributes = True
 
 
+class ImageStatusUpdate(BaseModel):
+    """Schema for approving an image."""
+    status: ImageStatusEnum
+
+
 class MenuItemImageResponse(BaseModel):
     """Schema for user-uploaded menu item image responses."""
     id: int
     menu_item_id: int
+    menu_item_name: Optional[str] = None
     image_url: str
     uploaded_at: datetime
+    reviewed_at: Optional[datetime] = None
     report_count: int
     status: ImageStatusEnum
+
+    @model_validator(mode='before')
+    @classmethod
+    def populate_menu_item_name(cls, data: Any) -> Any:
+        # when built from an ORM object, pull the related menu item name
+        if hasattr(data, 'menu_item') and data.menu_item is not None:
+            try:
+                data.menu_item_name = data.menu_item.name
+            except Exception:
+                pass
+        return data
 
     class Config:
         from_attributes = True

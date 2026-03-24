@@ -15,7 +15,7 @@ const navItems = [
   { path: '/menu',      icon: 'menu_book',         label: 'Menu'      },
   { path: '/modifiers', icon: 'tune',              label: 'Modifiers' },
   { path: '/settings',  icon: 'settings',          label: 'Settings'  },
-  { path: '/reported-images', icon: 'flag', label: 'Reports' },
+  { path: '/moderation', icon: 'shield_person', label: 'Moderation' },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -25,7 +25,7 @@ const pageTitles: Record<string, string> = {
   '/menu':      'Menu',
   '/modifiers': 'Modifiers',
   '/settings':  'Settings',
-  '/reported-images': 'Reported Images',
+  '/moderation': 'Image Moderation',
 };
 
 const Layout = ({ children }: LayoutProps) => {

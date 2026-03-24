@@ -5,12 +5,13 @@ Handles uploading, viewing, reporting, and deleting user photos for menu items.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.core.database import get_db
-from app.models.menu import MenuItemImage, ImageReport, MenuItem
-from app.schemas.menu import MenuItemImageResponse, ImageReportCreate, ImageReportResponse
+from app.models.menu import MenuItemImage, ImageReport, ImageStatusEnum, MenuItem
+from app.schemas.menu import MenuItemImageResponse, ImageReportCreate, ImageReportResponse, ImageStatusUpdate
 from app.core.error_handling import RecordNotFoundError
+from datetime import datetime, timezone
 import logging
 import os
 import uuid
@@ -66,7 +67,7 @@ def upload_user_image(
     return db_image
 
 
-# get all user-uploaded photos for a menu item, newest first
+# get approved user-uploaded photos for a menu item (customer-facing), newest first
 @router.get("/menu-items/{menu_item_id}/images", response_model=List[MenuItemImageResponse])
 def get_user_images(menu_item_id: int, db: Session = Depends(get_db)):
     item = db.query(MenuItem).filter(MenuItem.id == menu_item_id).first()
@@ -75,7 +76,23 @@ def get_user_images(menu_item_id: int, db: Session = Depends(get_db)):
 
     images = (
         db.query(MenuItemImage)
-        .filter(MenuItemImage.menu_item_id == menu_item_id)
+        .filter(
+            MenuItemImage.menu_item_id == menu_item_id,
+            MenuItemImage.status == ImageStatusEnum.APPROVED,
+        )
+        .order_by(MenuItemImage.uploaded_at.desc())
+        .all()
+    )
+    return images
+
+
+# get all pending images waiting for review (manager view) — must come before /{image_id}
+@router.get("/images/pending", response_model=List[MenuItemImageResponse])
+def get_pending_images(db: Session = Depends(get_db)):
+    images = (
+        db.query(MenuItemImage)
+        .options(joinedload(MenuItemImage.menu_item))
+        .filter(MenuItemImage.status == ImageStatusEnum.PENDING)
         .order_by(MenuItemImage.uploaded_at.desc())
         .all()
     )
@@ -87,11 +104,34 @@ def get_user_images(menu_item_id: int, db: Session = Depends(get_db)):
 def get_reported_images(db: Session = Depends(get_db)):
     images = (
         db.query(MenuItemImage)
+        .options(joinedload(MenuItemImage.menu_item))
         .filter(MenuItemImage.report_count > 0)
         .order_by(MenuItemImage.report_count.desc())
         .all()
     )
     return images
+
+
+# approve an image (manager only) — rejection is handled by the delete endpoint
+@router.patch("/images/{image_id}/status", response_model=MenuItemImageResponse)
+def update_image_status(image_id: int, update: ImageStatusUpdate, db: Session = Depends(get_db)):
+    image = (
+        db.query(MenuItemImage)
+        .options(joinedload(MenuItemImage.menu_item))
+        .filter(MenuItemImage.id == image_id)
+        .first()
+    )
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    image.status = update.status
+    image.reviewed_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(image)
+    # touch the relationship so it's loaded before the session closes
+    _ = image.menu_item
+    return image
 
 
 # report an image as inappropriate or incorrect

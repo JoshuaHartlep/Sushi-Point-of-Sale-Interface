@@ -1,99 +1,160 @@
-# Sushi POS API
+# Sushi POS
 
-A modern Point of Sale (POS) system built for restaurants, originally inspired by a local all-you-can-eat sushi place in Durham, NC. I started this project to explore full-stack development and build something useful that could streamline restaurant operations like menu customization, order processing, and table tracking. While it started with sushi in mind, it’s flexible enough to be used for any kind of restaurant.
+A modern Point of Sale system built for restaurants, originally inspired by a local all-you-can-eat sushi place in Durham, NC. Started as a personal project to explore full-stack development and build something actually useful — covers menu management, order processing, table tracking, and a full customer-facing ordering UI.
 
-This project has taught me a ton about database design, backend API development, and frontend UI integration. I'm continuing to build this out with the goal of making it a full-scale solution for small and mid-sized restaurants.
-## Project Structure
-
-- `app/`: Backend FastAPI application
-  - `api/`: API endpoints
-  - `models/`: Database models
-  - `schemas/`: Pydantic schemas
-  - `core/`: Core functionality
-  - `db/`: Database configuration
-- `frontend/`: React frontend application
-  - `src/`: Source code
-    - `components/`: Reusable UI components
-    - `pages/`: Page components
-    - `services/`: API service calls
-    - `contexts/`: React context providers
-
-## Setup Instructions
-
-### Backend Setup
-
-1. Use Python 3.12 or 3.13 (3.14 is not supported by this repo's pinned deps).
-
-2. Create and activate virtual environment:
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-3. Install dependencies:
-```bash
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install -r requirements.txt
-```
-
-4. Start the backend server:
-```bash
-python -m uvicorn app.main:app --reload
-```
-
-### Frontend Setup
-
-1. Navigate to frontend directory:
-```bash
-cd frontend
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-The app opens at `http://localhost:5173` and talks to the backend at `http://localhost:8000`.
+Flexible enough to be used for any restaurant, not just sushi.
 
 ---
 
-## Phone / Local Network Testing
+## Stack
 
-Use this when you want to open the app on your phone or another device on the same Wi-Fi.
+| Layer | Tech |
+|---|---|
+| Backend | FastAPI (Python 3.12/3.13) |
+| Database | PostgreSQL via **Supabase** (cloud-hosted) |
+| ORM | SQLAlchemy with Alembic for migrations |
+| Frontend | React + TypeScript, Vite, Tailwind CSS |
+| State | TanStack React Query + React contexts |
+| Image storage | Local disk (`/uploads/`) served as static files |
 
-### Step 1 — Find your machine's LAN IP
+---
+
+## Database
+
+The database is hosted on **Supabase** (not a local PostgreSQL instance). The connection string is configured in `app/core/config.py` and read from the environment.
+
+**Do not** try to run `alembic upgrade head` from scratch — the existing migration files are out of sync with the actual DB schema. The tables were created directly and the Supabase DB is the source of truth. For schema changes, either:
+
+- Apply DDL directly with a Python script using the SQLAlchemy engine, or
+- Use the Supabase dashboard SQL editor
+
+To inspect the live schema:
+```python
+# run from project root with the venv active
+python -c "
+import sys; sys.path.insert(0, '.')
+from app.core.database import engine
+from sqlalchemy import inspect
+for table in inspect(engine).get_table_names():
+    cols = inspect(engine).get_columns(table)
+    print(table, [c['name'] for c in cols])
+"
+```
+
+The venv used to run the app lives at `sushi_pos_api/venv/`, not `.venv`:
 ```bash
-ipconfig getifaddr en0
-# e.g. 10.197.255.151
+source sushi_pos_api/venv/bin/activate
 ```
 
-### Step 2 — Set the IP in the network env file
-Edit `frontend/.env.network` and set your IP:
+---
+
+## Project Structure
+
 ```
-VITE_API_URL=http://<YOUR_LAN_IP>:8000
+app/
+  api/          # FastAPI routers (menu, orders, images, dashboard, settings, tables)
+  models/       # SQLAlchemy ORM models
+  schemas/      # Pydantic request/response schemas
+  core/         # DB config, settings, error handling, logging
+
+frontend/
+  src/
+    components/ # Shared UI (Layout, sidebar nav)
+    contexts/   # ThemeContext, MealPeriodContext, RestaurantContext, CustomerOrderContext
+    pages/
+      customer/ # Customer-facing ordering UI (CustomerApp, MenuItemModal)
+      ...       # Manager pages: Dashboard, Menu, Orders, Tables, Modifiers, Settings,
+                #   ImageModeration, ReportedImages
+    services/   # api.ts — typed Axios client for all endpoints
+
+uploads/
+  menu-images/  # Official menu item images (uploaded by manager)
+  user-images/  # Customer-submitted photos (moderated before going public)
 ```
 
-### Step 3 — Start the frontend in network mode
+---
+
+## Setup
+
+### Backend
+
+Requires Python 3.12 or 3.13 (3.14 is not supported by pinned deps).
+
+```bash
+# activate the existing venv (already set up)
+source sushi_pos_api/venv/bin/activate
+
+# or create a fresh one
+python3.12 -m venv sushi_pos_api/venv
+source sushi_pos_api/venv/bin/activate
+pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+
+# start the server
+python -m uvicorn app.main:app --reload
+```
+
+Backend runs at `http://localhost:8000`. API docs at `/api/docs` (Swagger) and `/api/redoc`.
+
+### Frontend
+
 ```bash
 cd frontend
-npm run dev:network
-```
-Vite binds to all interfaces and prints something like:
-```
-  ➜  Network: http://10.197.255.151:5173/
+npm install
+npm run dev
 ```
 
-### Step 4 — Open that URL on your phone
-Make sure your phone is on the same Wi-Fi, then navigate to the Network URL printed by Vite.
+Frontend runs at `http://localhost:5173`.
 
-> The backend already binds to `0.0.0.0:8000` (via `scripts/start-backend.sh`) and CORS allows all origins, so no extra backend changes are needed.
+**Do not run `npm run dev` if the dev server is already running in an external terminal.**
 
-> **Network warning:** This only works on a trusted home/personal Wi-Fi network. Networks like **DukeBlue** (and most university/enterprise Wi-Fi) block device-to-device communication even though they assign private IPs (e.g. `10.x.x.x`). If your phone can't reach the backend, the network is the likely cause — switch to a personal hotspot or home Wi-Fi instead.
+---
+
+## Routes
+
+| Path | Interface |
+|---|---|
+| `/customer` | Customer ordering UI (no auth) |
+| `/` | Manager dashboard |
+| `/menu` | Menu item management |
+| `/modifiers` | Modifier management |
+| `/orders` | Order management |
+| `/tables` | Table status |
+| `/settings` | Restaurant settings |
+| `/moderation` | Image moderation (approve/reject customer photos) |
+| `/reported-images` | Images flagged by customers |
+
+---
+
+## Customer Photo Moderation
+
+Customer-uploaded images go through an approval workflow before becoming publicly visible:
+
+1. Customer uploads a photo → stored immediately with `status = 'pending'`
+2. Customer sees "submitted for review" — the image is **not** shown publicly yet
+3. Manager reviews in `/moderation` → Approve makes it visible; Reject deletes the file and DB record entirely (no storage waste)
+4. The customer-facing image endpoint only returns `status = 'approved'` images
+
+---
+
+## Phone / LAN Testing
+
+To open the app on a phone or another device on the same Wi-Fi:
+
+```bash
+# 1. find your LAN IP
+ipconfig getifaddr en0   # e.g. 10.0.0.42
+
+# 2. set it in the network env file
+# frontend/.env.network → VITE_API_URL=http://10.0.0.42:8000
+
+# 3. start frontend in network mode
+cd frontend && npm run dev:network
+```
+
+Open the Network URL printed by Vite on your phone. The backend already binds to `0.0.0.0:8000`.
+
+> **Note:** University/enterprise Wi-Fi (e.g. DukeBlue) blocks device-to-device traffic. Use a personal hotspot or home Wi-Fi instead.
 
 ---
 
@@ -104,37 +165,27 @@ Make sure your phone is on the same Wi-Fi, then navigate to the Network URL prin
 | `frontend/.env.local` | `npm run dev` | Standard localhost dev |
 | `frontend/.env.network` | `npm run dev:network` | LAN / phone testing |
 
-`VITE_API_URL` controls which backend the frontend hits. If the variable is missing, it falls back to `http://localhost:8000`. The active URL is logged to the browser console on startup.
+`VITE_API_URL` controls which backend the frontend hits. Falls back to `http://localhost:8000` if unset. Active URL is logged to the browser console on startup.
 
 ---
 
-## API Documentation
+## Common Troubleshooting
 
-Once the backend server is running, you can access the API documentation at:
-- Swagger UI: http://localhost:8000/api/docs
-- ReDoc: http://localhost:8000/api/redoc
+- **`ModuleNotFoundError: No module named 'pydantic_settings'`** — run `pip install pydantic-settings` in the active venv
+- **`Form data requires "python-multipart"`** — run `pip install python-multipart`
+- **Alembic `Target database is not up to date`** — ignore Alembic entirely; apply schema changes directly (see Database section above)
+- **Images not loading** — the backend must be running; `/uploads/` is served as a static mount by FastAPI, not a CDN
 
-## Troubleshooting (Local Setup)
-
-- `ModuleNotFoundError: No module named 'pydantic_settings'`:
-  - Install it in the active venv with `python -m pip install pydantic-settings`.
-- `Form data requires "python-multipart" to be installed`:
-  - Run `python -m pip install python-multipart` in the same active venv used to run uvicorn.
-- If `venv/bin/activate` is missing:
-  - This project uses `.venv`, so activate with `source .venv/bin/activate`.
+---
 
 ## Features
 
-- Menu Management: Add, edit, delete menu items, and organize them by category
-
-- Order Processing: Create and manage orders, apply discounts, support for AYCE pricing
-
-- Table Management: Assign and track table orders
-
-- Modifier System: Add-ons and substitutions tied to menu categories
-
-- Settings Panel: Update restaurant info like name (which reflects in the UI)
-
-- Live Updates: All data is fetched from real-time API responses, no page reloads needed
-
-More features coming soon like customer-facing views, analytics, authentication, and Toast-style payment integration.
+- **Menu management** — items, categories, modifiers, meal period (lunch/dinner/both), availability toggle
+- **Order processing** — regular pricing and AYCE (all-you-can-eat) mode
+- **Table management** — assign and track table status
+- **Customer ordering UI** — mobile-friendly, swipeable image lightbox, custom notes, cart
+- **Customer photo uploads** — with manager approval workflow before photos go public
+- **Image moderation** — pending queue, reported images tab, approve or delete from a fullscreen lightbox
+- **Dark/light/system theme** — persisted in localStorage
+- **Lunch/dinner mode** — dinner-only items are visually disabled during lunch service
+- **Settings panel** — restaurant name and other global config
