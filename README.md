@@ -81,17 +81,15 @@ uploads/
 Requires Python 3.12 or 3.13 (3.14 is not supported by pinned deps).
 
 ```bash
-# activate the existing venv (already set up)
-source sushi_pos_api/venv/bin/activate
+# recommended local startup helper
+./scripts/start-backend.sh
 
-# or create a fresh one
-python3.12 -m venv sushi_pos_api/venv
-source sushi_pos_api/venv/bin/activate
+# OR manual setup
+python3.12 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
-
-# start the server
-python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Backend runs at `http://localhost:8000`. API docs at `/api/docs` (Swagger) and `/api/redoc`.
@@ -169,12 +167,64 @@ Open the Network URL printed by Vite on your phone. The backend already binds to
 
 ---
 
+## Deployment (Vercel + Render)
+
+Current production split:
+
+- Frontend (React/Vite) on **Vercel**
+- Backend (FastAPI) on **Render**
+- Database on **Supabase Postgres**
+
+### Vercel (Frontend)
+
+Use a Vercel project rooted at `frontend/`.
+
+- **Root Directory:** `frontend`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Framework Preset:** Vite
+- **Environment Variable:** `VITE_API_URL=https://<your-render-backend-domain>`
+
+This repo includes SPA rewrites for React Router deep links (like `/customer?table=1`):
+
+```1:8:frontend/vercel.json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+```
+
+### Render (Backend)
+
+Use a Render Web Service rooted at repo root (do **not** set Root Directory to `backend` for this repo).
+
+- **Root Directory:** *(blank)*
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- **Environment Variable:** `PYTHON_VERSION=3.12.7` (or another 3.12.x)
+
+Why `PYTHON_VERSION` is required: pinned deps in `requirements.txt` (notably `pydantic==2.6.1`) can fail to build under Python 3.14 on Render.
+
+### Important Notes
+
+- Keep secrets (Render API keys, DB URLs, etc.) in platform environment variables, not in committed files.
+- `VITE_*` variables are public in frontend bundles; never put server secrets there.
+- Uploaded images are stored on backend disk (`/uploads/`). For long-term multi-instance scalability, move to object storage (S3/R2/etc.).
+
+---
+
 ## Common Troubleshooting
 
 - **`ModuleNotFoundError: No module named 'pydantic_settings'`** — run `pip install pydantic-settings` in the active venv
 - **`Form data requires "python-multipart"`** — run `pip install python-multipart`
 - **Alembic `Target database is not up to date`** — ignore Alembic entirely; apply schema changes directly (see Database section above)
 - **Images not loading** — the backend must be running; `/uploads/` is served as a static mount by FastAPI, not a CDN
+- **Render build fails while preparing `pydantic-core`** — set `PYTHON_VERSION=3.12.7` in Render environment variables and redeploy
+- **Vercel `/customer` returns 404** — confirm `frontend/vercel.json` exists and Vercel project Root Directory is `frontend`
 
 ---
 
