@@ -166,6 +166,7 @@ class MenuItemImage(Base):
     menu_item_id = Column(Integer, ForeignKey("menu_items.id"), nullable=False)
     image_url = Column(String(255), nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
     report_count = Column(Integer, default=0)
     status = Column(SQLEnum(ImageStatusEnum), nullable=False, default=ImageStatusEnum.PENDING)
 

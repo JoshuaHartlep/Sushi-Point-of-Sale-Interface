@@ -121,8 +121,10 @@ export interface SettingsUpdate {
 export interface MenuItemImage {
   id: number;
   menu_item_id: number;
+  menu_item_name: string | null;
   image_url: string;
   uploaded_at: string;
+  reviewed_at: string | null;
   report_count: number;
   status: 'pending' | 'approved' | 'rejected';
 }
@@ -304,6 +306,7 @@ export const tablesApi = {
 
 // User-generated menu item images API
 export const menuItemImagesApi = {
+  // customer-facing: returns only approved images
   getImages: (menuItemId: number): Promise<MenuItemImage[]> =>
     api.get(`/menu-items/${menuItemId}/images`).then(res => res.data),
   uploadImage: (menuItemId: number, file: File): Promise<MenuItemImage> => {
@@ -317,8 +320,14 @@ export const menuItemImagesApi = {
     api.post(`/images/${imageId}/report`, { reason }).then(res => res.data),
   deleteImage: (imageId: number): Promise<void> =>
     api.delete(`/images/${imageId}`).then(res => res.data),
+  // manager-facing: images awaiting moderation
+  getPending: (): Promise<MenuItemImage[]> =>
+    api.get('/images/pending').then(res => res.data),
   getReported: (): Promise<MenuItemImage[]> =>
     api.get('/images/reported').then(res => res.data),
+  // approve an image (rejection = delete)
+  approve: (imageId: number): Promise<MenuItemImage> =>
+    api.patch(`/images/${imageId}/status`, { status: 'approved' }).then(res => res.data),
 };
 
 export default api;
