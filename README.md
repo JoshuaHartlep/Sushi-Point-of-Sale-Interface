@@ -10,12 +10,15 @@ Flexible enough to be used for any restaurant, not just sushi.
 
 | Layer | Tech |
 |---|---|
-| Backend | FastAPI (Python 3.12/3.13) |
-| Database | PostgreSQL via **Supabase** (cloud-hosted) |
-| ORM | SQLAlchemy with Alembic for migrations |
+| Backend | FastAPI (Python 3.12/3.13), REST API under `/api/v1` |
+| Database | PostgreSQL (e.g. **Supabase** in production; configurable via `DATABASE_URL`) |
+| ORM | SQLAlchemy (Alembic files exist; see **Database** for current migration policy) |
 | Frontend | React + TypeScript, Vite, Tailwind CSS |
 | State | TanStack React Query + React contexts |
-| Image storage | Local disk (`/uploads/`) served as static files |
+| Image storage | Local disk (`uploads/`) served at `/uploads/` by FastAPI |
+| Hosting | Frontend **Vercel**, backend **Render** (see **Deployment**) |
+
+**Security note:** The manager and customer UIs are **not behind login** in the current codebase—treat deployments accordingly (network restrictions, auth gateway, or future app-level auth).
 
 ---
 
@@ -41,10 +44,7 @@ for table in inspect(engine).get_table_names():
 "
 ```
 
-The venv used to run the app lives at `sushi_pos_api/venv/`, not `.venv`:
-```bash
-source sushi_pos_api/venv/bin/activate
-```
+Local development typically uses `.venv` (see **Setup**) or `./scripts/start-backend.sh`, which creates `.venv` if missing.
 
 ---
 
@@ -52,20 +52,24 @@ source sushi_pos_api/venv/bin/activate
 
 ```
 app/
-  api/          # FastAPI routers (menu, orders, images, dashboard, settings, tables)
+  api/          # FastAPI routers (menu, orders, images, dashboard, settings)
   models/       # SQLAlchemy ORM models
   schemas/      # Pydantic request/response schemas
   core/         # DB config, settings, error handling, logging
 
 frontend/
   src/
-    components/ # Shared UI (Layout, sidebar nav)
+    components/ # Shared UI (Layout, sidebar nav, StatusDropdown, ConfirmationModal)
     contexts/   # ThemeContext, MealPeriodContext, RestaurantContext, CustomerOrderContext
     pages/
-      customer/ # Customer-facing ordering UI (CustomerApp, MenuItemModal)
-      ...       # Manager pages: Dashboard, Menu, Orders, Tables, Modifiers, Settings,
+      customer/ # Customer-facing ordering UI (CustomerApp, MenuItemModal, …)
+      ...       # Manager: Dashboard, Menu, Orders, EditOrder, Tables, Modifiers, Settings,
                 #   ImageModeration, ReportedImages
     services/   # api.ts — typed Axios client for all endpoints
+  vercel.json   # SPA rewrites for React Router (Vercel)
+
+scripts/
+  start-backend.sh   # Local backend: venv + deps + uvicorn
 
 uploads/
   menu-images/  # Official menu item images (uploaded by manager)
@@ -92,7 +96,7 @@ pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Backend runs at `http://localhost:8000`. API docs at `/api/docs` (Swagger) and `/api/redoc`.
+Backend runs at `http://localhost:8000`. Interactive API docs: `/api/docs` (Swagger), `/api/redoc`. JSON routes are under `/api/v1/...`.
 
 ### Frontend
 
@@ -112,15 +116,27 @@ Frontend runs at `http://localhost:5173`.
 
 | Path | Interface |
 |---|---|
-| `/customer` | Customer ordering UI (no auth) |
-| `/` | Manager dashboard |
-| `/menu` | Menu item management |
+| `/customer` | Customer ordering UI (optional query `?table=<id>`, default table `1`) |
+| `/` | Manager dashboard (KPIs + recent orders) |
+| `/menu` | Menu & categories: CRUD, official item photos, **customer photo gallery** per item |
 | `/modifiers` | Modifier management |
-| `/orders` | Order management |
-| `/tables` | Table status |
-| `/settings` | Restaurant settings |
-| `/moderation` | Image moderation (approve/reject customer photos) |
-| `/reported-images` | Images flagged by customers |
+| `/orders` | Order list and flows into order detail |
+| `/orders/:id/edit` | Order detail: line items, status, totals, discounts when present |
+| `/tables` | Table list: status, capacity, party / guest fields |
+| `/settings` | Restaurant settings (**General** tab wired to API; see below) |
+| `/moderation` | Image moderation: **Pending** queue + **Reported** tab (sidebar nav) |
+| `/reported-images` | Reported customer photos (same data as Moderation → Reported; **no sidebar link**—open by URL or bookmark) |
+
+### Customer flow (high level)
+
+- Table selection via `?table=`; checks table availability (e.g. occupied vs free).
+- Onboarding → menu → cart (**My Order**); AYCE vs regular pricing driven by settings and item choice.
+- Optional **customer photos** per menu item (upload, report); only **approved** images appear in the public gallery.
+
+### Settings page
+
+- **General** — persisted via API: restaurant name, timezone, lunch/dinner service, AYCE lunch/dinner prices.
+- **Notifications, Security, Users, Billing** — **UI placeholders only** (not connected to backend).
 
 ---
 
@@ -128,10 +144,11 @@ Frontend runs at `http://localhost:5173`.
 
 Customer-uploaded images go through an approval workflow before becoming publicly visible:
 
-1. Customer uploads a photo → stored immediately with `status = 'pending'`
-2. Customer sees "submitted for review" — the image is **not** shown publicly yet
-3. Manager reviews in `/moderation` → Approve makes it visible; Reject deletes the file and DB record entirely (no storage waste)
-4. The customer-facing image endpoint only returns `status = 'approved'` images
+1. Customer uploads a photo → stored with `status = pending`
+2. Pending images are **not** returned by the customer-facing list endpoint
+3. Manager uses **`/moderation`**: **Approve** sets `status = approved`; **reject/remove** uses **delete**, which removes the file from disk and the DB row
+4. **`/reported-images`** lists images with `report_count > 0` for review
+5. Public/customer views only show **`approved`** images
 
 ---
 
@@ -185,18 +202,7 @@ Use a Vercel project rooted at `frontend/`.
 - **Framework Preset:** Vite
 - **Environment Variable:** `VITE_API_URL=https://<your-render-backend-domain>`
 
-This repo includes SPA rewrites for React Router deep links (like `/customer?table=1`):
-
-```1:8:frontend/vercel.json
-{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
-}
-```
+This repo includes SPA rewrites for React Router deep links (for example `/customer?table=1`). See `frontend/vercel.json`.
 
 ### Render (Backend)
 
@@ -206,6 +212,7 @@ Use a Render Web Service rooted at repo root (do **not** set Root Directory to `
 - **Build Command:** `pip install -r requirements.txt`
 - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - **Environment Variable:** `PYTHON_VERSION=3.12.7` (or another 3.12.x)
+- **Database:** set `DATABASE_URL` to your Postgres connection string (e.g. Supabase)
 
 Why `PYTHON_VERSION` is required: pinned deps in `requirements.txt` (notably `pydantic==2.6.1`) can fail to build under Python 3.14 on Render.
 
@@ -230,12 +237,15 @@ Why `PYTHON_VERSION` is required: pinned deps in `requirements.txt` (notably `py
 
 ## Features
 
-- **Menu management** — items, categories, modifiers, meal period (lunch/dinner/both), availability toggle
-- **Order processing** — regular pricing and AYCE (all-you-can-eat) mode
-- **Table management** — assign and track table status
-- **Customer ordering UI** — mobile-friendly, swipeable image lightbox, custom notes, cart
-- **Customer photo uploads** — with manager approval workflow before photos go public
-- **Image moderation** — pending queue, reported images tab, approve or delete from a fullscreen lightbox
-- **Dark/light/system theme** — persisted in localStorage
-- **Lunch/dinner mode** — dinner-only items are visually disabled during lunch service
-- **Settings panel** — restaurant name and other global config
+- **Dashboard** — order/revenue stats, recent orders with per-order totals
+- **Menu management** — categories, items, meal period (lunch/dinner/both), availability, official item images
+- **Manager view of customer photos** — per-item gallery on Menu; delete inappropriate uploads
+- **Modifiers** — per-category modifiers and pricing
+- **Orders** — list, create/edit flow, status updates, line items, order notes, **AYCE** vs regular orders, discounts (when applied on an order)
+- **Tables** — CRUD-style table management, status (available / occupied / …), party size and guest fields
+- **Customer ordering UI** — table-aware, onboarding, menu + cart tabs, meal-period-aware item availability, item detail modal, optional customer photos and reporting
+- **Customer photo moderation** — pending queue, reported queue, approve (patch status) or delete (reject), fullscreen lightbox
+- **Themes** — light / dark / system, persisted (localStorage)
+- **Lunch/dinner service** — manager-controlled current period; dinner-only items constrained during lunch
+- **Settings (General)** — name, timezone, meal period, AYCE prices
+- **Backend extras** — bulk menu operations and bulk order status updates via API (see OpenAPI); not all are exposed in the UI yet
