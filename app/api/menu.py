@@ -6,6 +6,7 @@ This module provides endpoints for managing menu items and categories.
 
 # all the stuff we need to make the API work
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
@@ -33,6 +34,22 @@ logger = logging.getLogger(__name__)
 
 # this is where we define all our menu-related routes
 router = APIRouter()
+
+
+def _normalize_menu_item_meal_period_values(db: Session) -> None:
+    """
+    Normalize legacy lowercase meal_period values to current uppercase enum values.
+    """
+    db.execute(
+        text(
+            """
+            UPDATE menu_items
+            SET meal_period = CAST(UPPER(CAST(meal_period AS TEXT)) AS mealperiodenum)
+            WHERE LOWER(CAST(meal_period AS TEXT)) IN ('lunch', 'dinner', 'both')
+            """
+        )
+    )
+    db.commit()
 
 # get a list of menu items, with options to filter/search
 @router.get("/menu-items/", response_model=List[MenuItemResponse])
@@ -66,7 +83,16 @@ def get_menu_items(
     query = query.order_by(MenuItem.name.asc())
 
     # skip and limit for pagination, then get all matching items
-    return query.offset(skip).limit(limit).all()
+    try:
+        return query.offset(skip).limit(limit).all()
+    except LookupError as e:
+        # Auto-heal rows created before enum casing was standardized.
+        if "mealperiodenum" in str(e).lower():
+            logger.warning("Normalizing legacy meal_period enum values and retrying menu query once")
+            db.rollback()
+            _normalize_menu_item_meal_period_values(db)
+            return query.offset(skip).limit(limit).all()
+        raise
 
 # get one specific menu item by its ID
 @router.get("/menu-items/{item_id}", response_model=MenuItemResponse)
