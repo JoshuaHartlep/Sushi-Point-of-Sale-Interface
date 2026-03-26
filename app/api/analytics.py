@@ -3,6 +3,7 @@ Analytics API — "The Lens"
 
 Phase 1: /summary, /drill
 Phase 2: /decompose, /compare — built on shared filter + aggregation core
+Phase 3: /signals — rolling-window anomaly detection (z-score, no ML)
 
 Recommended indexes (run once in Supabase SQL editor):
     CREATE INDEX IF NOT EXISTS idx_orders_created_status
@@ -13,6 +14,7 @@ Recommended indexes (run once in Supabase SQL editor):
         ON menu_items (category_id);
 """
 
+import statistics as _stats
 from dataclasses import dataclass, field
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -722,3 +724,108 @@ def get_analytics_compare(
         )
 
     return CompareResponse(dimension=dimension, metric=metric, rows=compare_rows)
+
+
+# ---------------------------------------------------------------------------
+# GET /analytics/signals  — Phase 3: rolling-window anomaly detection
+# ---------------------------------------------------------------------------
+
+_SIGNAL_METRIC_LABELS: dict[str, str] = {
+    "total_revenue":   "Revenue",
+    "order_count":     "Order count",
+    "avg_order_value": "Avg order value",
+}
+
+
+class SignalResult(BaseModel):
+    metric: str
+    date: str
+    value: float
+    mean: float
+    z_score: float
+    severity: str   # "high" (|z| > 3) | "medium" (|z| > 2)
+    direction: str  # "increase" | "decrease"
+    message: str
+
+
+@router.get("/analytics/signals", response_model=List[SignalResult])
+def get_analytics_signals(
+    window_days: int = Query(14, ge=7, le=90),
+    meal_period: Optional[str] = Query(None),
+    order_type: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Scans daily metrics over a rolling window and returns anomalous days.
+
+    Approach (transparent, no black box):
+    - Fetch daily revenue, order count, and avg order value for the window.
+    - For each metric, compute the window mean and standard deviation.
+    - Flag any day where |z_score| > 2 (≈ top/bottom ~2.3% of a normal dist).
+    - z_score = (day_value − window_mean) / window_std
+
+    Edge cases handled:
+    - std == 0 (all days identical): skipped — no anomaly is possible.
+    - Fewer than 3 data points: returns empty (statistics are meaningless).
+    """
+    end_d = date.today()
+    start_d = end_d - timedelta(days=window_days)
+
+    window_filter = AnalyticsFilter(
+        start_date=start_d,
+        end_date=end_d,
+        meal_period=meal_period,
+        order_type=order_type,
+    )
+    fc = build_conditions(window_filter)
+    daily = _grouped_summary(db, "day", fc)
+
+    if len(daily) < 3:
+        return []
+
+    metric_series: dict[str, list[float]] = {
+        "total_revenue":   [float(r.total_revenue)   for r in daily],
+        "order_count":     [float(r.order_count)     for r in daily],
+        "avg_order_value": [float(r.avg_order_value) for r in daily],
+    }
+
+    signals: List[SignalResult] = []
+
+    for metric_key, values in metric_series.items():
+        mean = _stats.mean(values)
+        try:
+            std = _stats.stdev(values)
+        except _stats.StatisticsError:
+            continue
+        if std == 0:
+            continue  # No variance — every day was identical; nothing to flag.
+
+        for row, v in zip(daily, values):
+            z = (v - mean) / std
+            if abs(z) <= 2.0:
+                continue
+
+            severity = "high" if abs(z) > 3.0 else "medium"
+            direction = "increase" if z > 0 else "decrease"
+            pct = abs(v - mean) / mean * 100 if mean != 0 else 0
+            label = _SIGNAL_METRIC_LABELS[metric_key]
+
+            if direction == "increase":
+                msg = f"{label} was {pct:.0f}% above {window_days}-day average"
+            else:
+                msg = f"{label} dropped {pct:.0f}% below {window_days}-day average"
+
+            signals.append(SignalResult(
+                metric=metric_key,
+                date=row.group_key,
+                value=round(v, 2),
+                mean=round(mean, 2),
+                z_score=round(z, 2),
+                severity=severity,
+                direction=direction,
+                message=msg,
+            ))
+
+    # Strongest anomalies first
+    signals.sort(key=lambda s: abs(s.z_score), reverse=True)
+    return signals

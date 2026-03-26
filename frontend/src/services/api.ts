@@ -427,6 +427,23 @@ export interface CompareParams {
   item_id?: number;
 }
 
+export interface Signal {
+  metric: string;
+  date: string;
+  value: number;
+  mean: number;
+  z_score: number;
+  severity: 'high' | 'medium';
+  direction: 'increase' | 'decrease';
+  message: string;
+}
+
+export interface SignalParams {
+  window_days?: number;
+  meal_period?: string;
+  order_type?: string;
+}
+
 export const analyticsApi = {
   getSummary: (params: SummaryParams): Promise<AnalyticsSummary> =>
     api.get('/analytics/summary', { params }).then(r => r.data),
@@ -439,6 +456,9 @@ export const analyticsApi = {
 
   getCompare: (params: CompareParams): Promise<CompareResponse> =>
     api.get('/analytics/compare', { params }).then(r => r.data),
+
+  getSignals: (params?: SignalParams): Promise<Signal[]> =>
+    api.get('/analytics/signals', { params }).then(r => r.data),
 };
 
 export default api;
