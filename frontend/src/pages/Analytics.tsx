@@ -937,6 +937,15 @@ export default function Analytics() {
 
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1 flex-wrap text-sm">
+            {drillStack.length > 1 && (
+              <button
+                onClick={() => setDrillStack(prev => prev.slice(0, -1))}
+                className="flex items-center gap-1 mr-1 px-2 py-1 rounded text-xs font-semibold text-on-surface-variant hover:text-primary hover:bg-surface-container-low dark:hover:bg-sumi-700 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[15px]">arrow_back</span>
+                Back
+              </button>
+            )}
             {drillStack.map((step, idx) => (
               <span key={idx} className="flex items-center gap-1">
                 {idx > 0 && (
