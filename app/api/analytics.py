@@ -117,7 +117,10 @@ def get_analytics_summary(
     params: dict = {"start_dt": start_dt, "end_dt": end_dt}
 
     base_conditions = (
-        "o.status NOT IN ('cancelled')"
+        # Compare enum status as text to avoid enum-literal validation errors.
+        # This endpoint is using raw SQL, so casting prevents Postgres from rejecting
+        # unknown enum labels (e.g. due to enum drift/casing differences).
+        "LOWER(o.status::text) != 'cancelled'"
         " AND o.created_at >= :start_dt"
         " AND o.created_at <= :end_dt"
         + _meal_period_clause(meal_period)
@@ -301,7 +304,8 @@ def get_analytics_drill(
 
     # Build order-level filter conditions
     order_conditions = (
-        "o.status NOT IN ('cancelled')"
+        # Cast enum to text for the same reason as in the summary endpoint.
+        "LOWER(o.status::text) != 'cancelled'"
         " AND o.created_at >= :start_dt"
         " AND o.created_at <= :end_dt"
         + _meal_period_clause(meal_period)
