@@ -16,7 +16,7 @@ The application includes:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import menu, order, dashboard, settings as settings_api, images as images_api
+from app.api import menu, order, dashboard, settings as settings_api, images as images_api, analytics as analytics_api
 from app.core.config import settings
 from app.core.database import engine, Base, init_db
 from app.core.logging import setup_logging
@@ -60,6 +60,7 @@ app.include_router(order.router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboard"])
 app.include_router(settings_api.router, prefix="/api/v1", tags=["Settings"])
 app.include_router(images_api.router, prefix="/api/v1", tags=["Images"])
+app.include_router(analytics_api.router, prefix="/api/v1", tags=["Analytics"])
 
 @app.get("/")
 async def root():
