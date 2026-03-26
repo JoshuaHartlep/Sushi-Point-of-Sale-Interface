@@ -30,3 +30,6 @@ pnpm-debug.log*
 *.tsbuildinfo.venv/
 __pycache__/
 .venv/
+
+#All pems ignore
+*.pem
