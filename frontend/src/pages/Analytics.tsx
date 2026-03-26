@@ -5,6 +5,7 @@ import {
   type SummaryGroup,
   type DrillRow,
   type CompareRow,
+  type Signal,
   type AnalyticsMetric,
   type AnalyticsDimension,
   type AnalyticsGroupBy,
@@ -32,6 +33,7 @@ interface DrillStep {
 
 type TimeRange = '7d' | '30d' | 'custom';
 type SortKey = 'value' | 'order_count';
+type ActiveTab = 'overview' | 'signals';
 
 // ---------------------------------------------------------------------------
 // Constants / display maps
@@ -51,6 +53,12 @@ const DIMENSION_LABELS: Record<AnalyticsDimension, string> = {
   hour:        'Hour of Day',
   order_type:  'Order Type',
   table:       'Table',
+};
+
+const SIGNAL_METRIC_LABELS: Record<string, string> = {
+  total_revenue:   'Revenue',
+  order_count:     'Order Count',
+  avg_order_value: 'Avg Order Value',
 };
 
 const CHART_GROUP_LABELS: Record<AnalyticsGroupBy, string> = {
@@ -559,6 +567,65 @@ function SortIndicator({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }
 }
 
 // ---------------------------------------------------------------------------
+// SignalCard — one anomaly surfaced by /signals
+// ---------------------------------------------------------------------------
+
+function formatSignalValue(value: number, metric: string): string {
+  if (metric === 'order_count') return value.toLocaleString();
+  return `$${value.toFixed(2)}`;
+}
+
+interface SignalCardProps {
+  signal: Signal;
+  onNavigate: (date: string) => void;
+}
+
+function SignalCard({ signal, onNavigate }: SignalCardProps) {
+  const isHigh = signal.severity === 'high';
+  const isIncrease = signal.direction === 'increase';
+
+  return (
+    <button
+      onClick={() => onNavigate(signal.date)}
+      className={`w-full text-left p-5 rounded border transition-all hover:brightness-105 ${
+        isHigh
+          ? 'border-error/30 bg-error/5 dark:bg-error/10'
+          : 'border-tertiary/30 bg-tertiary/5 dark:bg-tertiary/10'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={`material-symbols-outlined text-[16px] ${isHigh ? 'text-error' : 'text-tertiary'}`}>
+              {isIncrease ? 'trending_up' : 'trending_down'}
+            </span>
+            <span className={`text-xs font-bold uppercase tracking-wider ${isHigh ? 'text-error' : 'text-tertiary'}`}>
+              {signal.severity} · {SIGNAL_METRIC_LABELS[signal.metric] ?? signal.metric}
+            </span>
+          </div>
+          <p className="text-sm text-on-surface">{signal.message}</p>
+          <p className="text-xs text-on-surface-variant">{signal.date}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className={`text-2xl font-headline ${isHigh ? 'text-error' : 'text-tertiary'}`}>
+            {signal.z_score > 0 ? '+' : ''}{signal.z_score.toFixed(1)}σ
+          </p>
+          <p className="text-[10px] text-on-surface-variant uppercase tracking-wider">z-score</p>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-4 text-xs text-on-surface-variant">
+        <span>Actual: <span className="font-semibold text-on-surface">{formatSignalValue(signal.value, signal.metric)}</span></span>
+        <span>Average: <span className="font-semibold text-on-surface">{formatSignalValue(signal.mean, signal.metric)}</span></span>
+        <span className="ml-auto flex items-center gap-1 opacity-60">
+          <span className="material-symbols-outlined text-[12px]">touch_app</span>
+          Explore
+        </span>
+      </div>
+    </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Analytics page
 // ---------------------------------------------------------------------------
 
@@ -582,6 +649,9 @@ export default function Analytics() {
 
   // ── Drill stack (single source of truth for the breakdown table) ──────────
   const [drillStack, setDrillStack] = useState<DrillStep[]>([INITIAL_STEP]);
+
+  // ── Tab ───────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 
   // ── Compare mode ──────────────────────────────────────────────────────────
   const [compareMode, setCompareMode] = useState(false);
@@ -642,6 +712,12 @@ export default function Analytics() {
     enabled: !compareMode,
   });
 
+  const { data: signalsData, isLoading: signalsLoading } = useQuery({
+    queryKey: ['analytics', 'signals', mealPeriod],
+    queryFn: () => analyticsApi.getSignals({ meal_period: mealPeriod || undefined }),
+    enabled: activeTab === 'signals',
+  });
+
   const { data: compareData, isLoading: compareLoading } = useQuery({
     queryKey: ['analytics', 'compare', start, end, compareStart, compareEnd, mealPeriod, current.metric, current.dimension, current.filters],
     queryFn: () => analyticsApi.getCompare({
@@ -686,6 +762,14 @@ export default function Analytics() {
       ...prev.slice(0, -1),
       { ...prev[prev.length - 1], metric },
     ]);
+  }
+
+  function handleSignalNavigate(date: string) {
+    setCustomStart(date);
+    setCustomEnd(date);
+    setTimeRange('custom');
+    setDrillStack([{ ...INITIAL_STEP, label: date }]);
+    setActiveTab('overview');
   }
 
   function handleChartBarClick(group: SummaryGroup) {
@@ -760,6 +844,32 @@ export default function Analytics() {
           </select>
         </div>
       </section>
+
+      {/* ── Tab bar ── */}
+      <div className="flex items-center gap-1 border-b border-outline-variant/15 dark:border-sumi-700">
+        {([['overview', 'bar_chart', 'Overview'], ['signals', 'notifications_active', 'Signals']] as const).map(([tab, icon, label]) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-on-surface-variant hover:text-on-surface hover:border-outline-variant/40'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">{icon}</span>
+            {label}
+            {tab === 'signals' && (signalsData?.length ?? 0) > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-error/15 text-error">
+                {signalsData!.length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Overview tab ── */}
+      {activeTab === 'overview' && <>
 
       {/* ── Summary cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -964,6 +1074,50 @@ export default function Analytics() {
           </div>
         )}
       </section>
+
+      </>}
+
+      {/* ── Signals tab ── */}
+      {activeTab === 'signals' && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-headline text-on-surface">Anomaly Signals</h3>
+              <p className="text-xs text-on-surface-variant mt-1">
+                Days where a metric deviated more than 2σ from the 14-day rolling average.
+                Click any card to explore that day.
+              </p>
+            </div>
+          </div>
+
+          {signalsLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-24 bg-surface-container-lowest dark:bg-sumi-800 rounded border border-outline-variant/10 animate-pulse" />
+              ))}
+            </div>
+          ) : !signalsData?.length ? (
+            <div className="py-16 flex flex-col items-center gap-3 text-on-surface-variant">
+              <span className="material-symbols-outlined text-[48px] opacity-30">check_circle</span>
+              <p className="text-sm">No anomalies detected in the last 14 days.</p>
+              <p className="text-xs opacity-60">All metrics are within 2 standard deviations of their rolling average.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {signalsData.map((signal, i) => (
+                <SignalCard key={i} signal={signal} onNavigate={handleSignalNavigate} />
+              ))}
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-outline-variant/10 dark:border-sumi-700">
+            <p className="text-[10px] text-on-surface-variant opacity-50">
+              Method: z-score over a 14-day rolling window. Severity: medium = |z| &gt; 2, high = |z| &gt; 3.
+              No machine learning — pure descriptive statistics.
+            </p>
+          </div>
+        </section>
+      )}
 
     </div>
   );
