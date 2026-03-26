@@ -14,6 +14,7 @@ import Tables from './pages/Tables';
 import ReportedImages from './pages/ReportedImages';
 import ImageModeration from './pages/ImageModeration';
 import CustomerApp from './pages/customer/CustomerApp';
+import Analytics from './pages/Analytics';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ function App() {
                         <Route path="/settings" element={<Settings />} />
                         <Route path="/reported-images" element={<ReportedImages />} />
                         <Route path="/moderation" element={<ImageModeration />} />
+                        <Route path="/analytics" element={<Analytics />} />
                       </Routes>
                     </Layout>
                   }

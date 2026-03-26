@@ -330,4 +330,67 @@ export const menuItemImagesApi = {
     api.patch(`/images/${imageId}/status`, { status: 'approved' }).then(res => res.data),
 };
 
+// ---------------------------------------------------------------------------
+// Analytics API — "The Lens"
+// ---------------------------------------------------------------------------
+
+export interface SummaryGroup {
+  group_key: string;
+  order_count: number;
+  total_revenue: number;
+  avg_order_value: number;
+}
+
+export interface AnalyticsSummary {
+  total_revenue: number;
+  order_count: number;
+  avg_order_value: number;
+  groups: SummaryGroup[] | null;
+}
+
+export interface DrillRow {
+  label: string;
+  value: number;
+  order_count: number;
+  item_id: number | null;
+  category_id: number | null;
+}
+
+export interface DrillResponse {
+  metric: string;
+  dimension: string;
+  rows: DrillRow[];
+  total: number;
+}
+
+export type AnalyticsMetric = 'revenue' | 'order_count' | 'avg_order_value' | 'item_count';
+export type AnalyticsDimension = 'item' | 'category' | 'day_of_week' | 'hour' | 'order_type' | 'table';
+export type AnalyticsGroupBy = 'day' | 'week' | 'day_of_week' | 'hour' | 'item' | 'category' | 'order_type';
+
+export interface SummaryParams {
+  start_date?: string;
+  end_date?: string;
+  meal_period?: string;
+  group_by?: AnalyticsGroupBy;
+}
+
+export interface DrillParams {
+  metric?: AnalyticsMetric;
+  dimension?: AnalyticsDimension;
+  start_date?: string;
+  end_date?: string;
+  meal_period?: string;
+  order_type?: string;
+  category_id?: number;
+  item_id?: number;
+}
+
+export const analyticsApi = {
+  getSummary: (params: SummaryParams): Promise<AnalyticsSummary> =>
+    api.get('/analytics/summary', { params }).then(r => r.data),
+
+  getDrill: (params: DrillParams): Promise<DrillResponse> =>
+    api.get('/analytics/drill', { params }).then(r => r.data),
+};
+
 export default api;
