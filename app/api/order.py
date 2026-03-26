@@ -7,7 +7,9 @@ including bulk operations and status management.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import text
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from datetime import datetime
 from decimal import Decimal
@@ -368,7 +370,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     Raises:
         HTTPException: If menu item not found
     """
-    try:
+    def _build_order() -> Order:
         # Create the order
         db_order = Order(
             table_id=order.table_id,
@@ -380,7 +382,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         )
         db.add(db_order)
         db.flush()  # Get the order ID
-        
+
         # Create order items
         for item in order.items:
             # Get the menu item to get its price
@@ -390,7 +392,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
                     status_code=404,
                     detail=f"Menu item with ID {item.menu_item_id} not found"
                 )
-            
+
             # Create order item with menu item's price
             db_item = OrderItem(
                 order_id=db_order.id,
@@ -400,7 +402,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
                 notes=item.notes
             )
             db.add(db_item)
-        
+
         # Calculate initial total
         if db_order.ayce_order:
             db_order.total_amount = get_current_ayce_price(db)
@@ -410,13 +412,36 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
             for item in db_order.items:
                 total += Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
             db_order.total_amount = total
-        
+
         db.commit()
         db.refresh(db_order)
         return db_order
+
+    try:
+        return _build_order()
+    except IntegrityError as e:
+        # Auto-heal sequence drift after manual data imports/seeding.
+        if "orders_pkey" in str(e):
+            logger.warning("orders.id sequence out of sync; resyncing and retrying order create once")
+            db.rollback()
+            db.execute(
+                text(
+                    "SELECT setval(pg_get_serial_sequence('orders', 'id'), "
+                    "COALESCE((SELECT MAX(id) FROM orders), 0) + 1, false)"
+                )
+            )
+            db.commit()
+            try:
+                return _build_order()
+            except Exception:
+                db.rollback()
+                raise
+        db.rollback()
+        raise
     except HTTPException:
         raise
     except Exception as e:
+        db.rollback()
         logger.error(f"Error creating order: {str(e)}")
         raise HTTPException(
             status_code=500,

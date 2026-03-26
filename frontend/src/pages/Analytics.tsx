@@ -1177,46 +1177,96 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Compare period B controls */}
+        {/* Compare period controls (A and B) */}
         {compareMode && (
-          <div className="flex flex-wrap items-center gap-3 px-1 py-3 bg-secondary/5 rounded border border-secondary/15">
-            <span className="text-xs font-semibold text-secondary uppercase tracking-wider">Period B</span>
-            <div className="flex rounded overflow-hidden border border-secondary/20">
-              {(['7d', '30d'] as TimeRange[]).map(r => (
-                <button key={r} onClick={() => setCompareRange(r)}
+          <div className="space-y-2">
+
+            {/* Period A — mirrors the global time range; editing here updates global state */}
+            <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 bg-primary/5 rounded border border-primary/15">
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider w-16 shrink-0">Period A</span>
+              <div className="flex rounded overflow-hidden border border-primary/20">
+                {([
+                  ['7d',    'Last 7d'],
+                  ['30d',   'Last 30d'],
+                  ['month', 'This Month'],
+                ] as [TimeRange, string][]).map(([r, label]) => (
+                  <button key={r} onClick={() => setTimeRange(r)}
+                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      timeRange === r
+                        ? 'bg-primary text-white'
+                        : 'bg-surface-container-low dark:bg-sumi-800 text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <button onClick={() => setTimeRange('custom')}
                   className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    compareRange === r
+                    timeRange === 'custom'
+                      ? 'bg-primary text-white'
+                      : 'bg-surface-container-low dark:bg-sumi-800 text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  Custom
+                </button>
+              </div>
+              {timeRange === 'custom' && (
+                <>
+                  <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+                    className="text-xs px-2 py-1.5 rounded border border-primary/20 bg-surface-container-low dark:bg-sumi-800 text-on-surface"
+                  />
+                  <span className="text-on-surface-variant text-xs">to</span>
+                  <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                    className="text-xs px-2 py-1.5 rounded border border-primary/20 bg-surface-container-low dark:bg-sumi-800 text-on-surface"
+                  />
+                </>
+              )}
+              <span className="text-[10px] text-on-surface-variant ml-auto opacity-70">
+                {start} → {end}
+              </span>
+            </div>
+
+            {/* Period B */}
+            <div className="flex flex-wrap items-center gap-3 px-3 py-2.5 bg-secondary/5 rounded border border-secondary/15">
+              <span className="text-xs font-semibold text-secondary uppercase tracking-wider w-16 shrink-0">Period B</span>
+              <div className="flex rounded overflow-hidden border border-secondary/20">
+                {(['7d', '30d'] as TimeRange[]).map(r => (
+                  <button key={r} onClick={() => setCompareRange(r)}
+                    className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      compareRange === r
+                        ? 'bg-secondary text-white'
+                        : 'bg-surface-container-low dark:bg-sumi-800 text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {r === '7d' ? 'Prior 7d' : 'Prior 30d'}
+                  </button>
+                ))}
+                <button onClick={() => setCompareRange('custom')}
+                  className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    compareRange === 'custom'
                       ? 'bg-secondary text-white'
                       : 'bg-surface-container-low dark:bg-sumi-800 text-on-surface-variant hover:text-on-surface'
                   }`}
                 >
-                  {r === '7d' ? 'Prior 7d' : 'Prior 30d'}
+                  Custom
                 </button>
-              ))}
-              <button onClick={() => setCompareRange('custom')}
-                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  compareRange === 'custom'
-                    ? 'bg-secondary text-white'
-                    : 'bg-surface-container-low dark:bg-sumi-800 text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                Custom
-              </button>
+              </div>
+              {compareRange === 'custom' && (
+                <>
+                  <input type="date" value={compareCustomStart} onChange={e => setCompareCustomStart(e.target.value)}
+                    className="text-xs px-2 py-1.5 rounded border border-secondary/20 bg-surface-container-low dark:bg-sumi-800 text-on-surface"
+                  />
+                  <span className="text-on-surface-variant text-xs">to</span>
+                  <input type="date" value={compareCustomEnd} onChange={e => setCompareCustomEnd(e.target.value)}
+                    className="text-xs px-2 py-1.5 rounded border border-secondary/20 bg-surface-container-low dark:bg-sumi-800 text-on-surface"
+                  />
+                </>
+              )}
+              <span className="text-[10px] text-on-surface-variant ml-auto opacity-70">
+                {compareStart} → {compareEnd}
+              </span>
             </div>
-            {compareRange === 'custom' && (
-              <>
-                <input type="date" value={compareCustomStart} onChange={e => setCompareCustomStart(e.target.value)}
-                  className="text-xs px-2 py-1.5 rounded border border-secondary/20 bg-surface-container-low dark:bg-sumi-800 text-on-surface"
-                />
-                <span className="text-on-surface-variant text-xs">to</span>
-                <input type="date" value={compareCustomEnd} onChange={e => setCompareCustomEnd(e.target.value)}
-                  className="text-xs px-2 py-1.5 rounded border border-secondary/20 bg-surface-container-low dark:bg-sumi-800 text-on-surface"
-                />
-              </>
-            )}
-            <span className="text-[10px] text-on-surface-variant ml-auto">
-              A = {start} → {end} &nbsp;·&nbsp; B = {compareStart} → {compareEnd}
-            </span>
+
           </div>
         )}
 
