@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   analyticsApi,
@@ -31,9 +31,21 @@ interface DrillStep {
   filters: Record<string, number | string>;
 }
 
-type TimeRange = '7d' | '30d' | 'custom';
+type TimeRange = '7d' | '30d' | 'month' | 'custom';
 type SortKey = 'value' | 'order_count';
 type ActiveTab = 'overview' | 'signals';
+
+/**
+ * One entry in the chart's local navigation stack.
+ * Clicking a bar pushes a new frame; Back pops it.
+ * Completely independent from the drill table stack and global time range.
+ */
+interface ChartFrame {
+  start: string;
+  end: string;
+  groupBy: AnalyticsGroupBy;
+  label: string; // shown in the Back button
+}
 
 // ---------------------------------------------------------------------------
 // Constants / display maps
@@ -88,9 +100,50 @@ function getDateRange(
       end: customEnd || fmt(today),
     };
   }
+  if (timeRange === 'month') {
+    return {
+      start: fmt(new Date(today.getFullYear(), today.getMonth(), 1)),
+      end: fmt(today),
+    };
+  }
   const start = new Date(today);
   start.setDate(today.getDate() - (timeRange === '7d' ? 7 : 30));
   return { start: fmt(start), end: fmt(today) };
+}
+
+/**
+ * Formats a bar's group_key into a compact axis label based on the active groupBy.
+ *
+ * Daily / weekly  "2026-03-12" → "Mar 12"
+ * Hourly          "09:00"      → "9am"
+ * Day-of-week     "Mon"        → "Mon"   (already short)
+ * Item / category             → truncated to 8 chars
+ */
+/** Converts a backend hour string like '09' or '14' to '9am' / '2pm'. */
+function formatHour(key: string): string {
+  const h = parseInt(key, 10);
+  if (isNaN(h)) return key;
+  if (h === 0)  return '12am';
+  if (h === 12) return '12pm';
+  return h > 12 ? `${h - 12}pm` : `${h}am`;
+}
+
+function formatAxisLabel(key: string, groupBy: AnalyticsGroupBy): string {
+  if (groupBy === 'hour') return formatHour(key);
+  if (groupBy === 'day' || groupBy === 'week') {
+    const d = new Date(key + 'T00:00:00');
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  }
+  return key.length > 8 ? key.slice(0, 8) : key;
+}
+
+/** Advance a YYYY-MM-DD string by n days. */
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
 }
 
 function formatValue(value: number, metric: AnalyticsMetric): string {
@@ -148,10 +201,12 @@ function isRowDrillable(
 interface BarChartProps {
   data: SummaryGroup[];
   metric: AnalyticsMetric;
+  groupBy: AnalyticsGroupBy;
+  canDrillDown?: boolean;         // shows drill cursor + hint when true
   onBarClick?: (group: SummaryGroup) => void;
 }
 
-function BarChart({ data, metric, onBarClick }: BarChartProps) {
+function BarChart({ data, metric, groupBy, canDrillDown, onBarClick }: BarChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!data.length) {
@@ -163,12 +218,19 @@ function BarChart({ data, metric, onBarClick }: BarChartProps) {
   }
 
   const chartH = 160;
-  const labelH = 28;
-  const totalH = chartH + labelH;
   const gap = 3;
   const barW = Math.max(10, Math.min(48, Math.floor((800 - data.length * gap) / data.length)));
   const totalW = data.length * (barW + gap);
   const maxVal = Math.max(...data.map(d => d.total_revenue), 1);
+
+  // Limit visible X-axis labels to avoid overlap.
+  // stride = 1 means every bar gets a label; stride = 3 means every 3rd bar.
+  const MAX_LABELS = 10;
+  const stride = Math.max(1, Math.ceil(data.length / MAX_LABELS));
+  // Tilt labels when there are many bars so they don't collide.
+  const tiltLabels = data.length > 18;
+  const labelH = tiltLabels ? 40 : 24;
+  const totalH = chartH + labelH;
 
   return (
     <div className="overflow-x-auto">
@@ -184,9 +246,12 @@ function BarChart({ data, metric, onBarClick }: BarChartProps) {
           const x = i * (barW + gap);
           const y = chartH - barH;
           const isHovered = hoveredIdx === i;
-          const ttW = 140;
+          const ttW = 150;
           const ttX = Math.min(x, totalW - ttW - 4);
-          const ttY = Math.max(4, y - 40);
+          const ttY = Math.max(4, y - 42);
+          const showLabel = i % stride === 0;
+          const labelX = x + barW / 2;
+          const labelY = chartH + (tiltLabels ? 10 : 16);
 
           return (
             <g
@@ -194,36 +259,62 @@ function BarChart({ data, metric, onBarClick }: BarChartProps) {
               onClick={() => onBarClick?.(d)}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
-              style={{ cursor: onBarClick ? 'pointer' : 'default' }}
+              style={{ cursor: (onBarClick && canDrillDown) ? 'pointer' : 'default' }}
             >
+              {/* Bar */}
               <rect
                 x={x} y={y} width={barW} height={barH} rx={2}
-                className={`transition-opacity duration-150 ${
-                  isHovered ? 'fill-primary opacity-100' : 'fill-primary opacity-50'
+                className={`transition-all duration-150 ${
+                  isHovered
+                    ? 'fill-primary opacity-100'
+                    : canDrillDown
+                      ? 'fill-primary opacity-60 hover:opacity-100'
+                      : 'fill-primary opacity-50'
                 }`}
               />
+
+              {/* Drill indicator — small downward chevron on hover */}
+              {isHovered && canDrillDown && barH > 16 && (
+                <text
+                  x={x + barW / 2} y={y + barH / 2 + 4}
+                  textAnchor="middle" fontSize={9} fontWeight="bold"
+                  className="fill-white" style={{ pointerEvents: 'none', opacity: 0.8 }}
+                >
+                  ▾
+                </text>
+              )}
+
+              {/* Tooltip */}
               {isHovered && (
                 <g>
                   <rect
-                    x={ttX} y={ttY} width={ttW} height={30} rx={4}
+                    x={ttX} y={ttY} width={ttW} height={32} rx={4}
                     className="fill-surface-container-high"
-                    style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.3))' }}
+                    style={{ filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.35))' }}
                   />
                   <text x={ttX + 8} y={ttY + 12} fontSize={9} className="fill-on-surface-variant">
-                    {d.group_key}
+                    {formatAxisLabel(d.group_key, groupBy)}
                   </text>
-                  <text x={ttX + 8} y={ttY + 24} fontSize={10} fontWeight="600" className="fill-on-surface">
+                  <text x={ttX + 8} y={ttY + 25} fontSize={10} fontWeight="600" className="fill-on-surface">
                     {formatShort(d.total_revenue, metric)} · {d.order_count} orders
                   </text>
                 </g>
               )}
-              <text
-                x={x + barW / 2} y={chartH + 18}
-                textAnchor="middle" fontSize={8}
-                className="fill-on-surface-variant" style={{ opacity: 0.7 }}
-              >
-                {d.group_key.length > 7 ? d.group_key.slice(0, 7) : d.group_key}
-              </text>
+
+              {/* X-axis label — only every Nth bar */}
+              {showLabel && (
+                <text
+                  x={labelX}
+                  y={labelY}
+                  textAnchor={tiltLabels ? 'end' : 'middle'}
+                  fontSize={tiltLabels ? 7.5 : 8}
+                  transform={tiltLabels ? `rotate(-35, ${labelX}, ${labelY})` : undefined}
+                  className="fill-on-surface-variant"
+                  style={{ opacity: 0.65 }}
+                >
+                  {formatAxisLabel(d.group_key, groupBy)}
+                </text>
+              )}
             </g>
           );
         })}
@@ -644,8 +735,13 @@ export default function Analytics() {
   const [mealPeriod, setMealPeriod] = useState<'' | 'lunch' | 'dinner'>('');
 
   // ── Chart ─────────────────────────────────────────────────────────────────
+  // chartGroupBy: the manual selector — only used when chartStack is empty
   const [chartGroupBy, setChartGroupBy] = useState<AnalyticsGroupBy>('day');
   const [decomposeOpen, setDecomposeOpen] = useState(false);
+  // chartStack: local navigation history for bar-click drilldown.
+  // Pushing a frame zooms the chart without touching global state.
+  // Back pops the stack. Clearing the global date range resets it.
+  const [chartStack, setChartStack] = useState<ChartFrame[]>([]);
 
   // ── Drill stack (single source of truth for the breakdown table) ──────────
   const [drillStack, setDrillStack] = useState<DrillStep[]>([INITIAL_STEP]);
@@ -662,6 +758,18 @@ export default function Analytics() {
   // Current drill level
   const current = drillStack[drillStack.length - 1];
   const { start, end } = getDateRange(timeRange, customStart, customEnd);
+
+  // Chart frame derivations — the active frame overrides the global range for the chart only.
+  const activeChartFrame = chartStack.length > 0 ? chartStack[chartStack.length - 1] : null;
+  const chartStart     = activeChartFrame?.start   ?? start;
+  const chartEnd       = activeChartFrame?.end     ?? end;
+  const activeChartGroupBy = activeChartFrame?.groupBy ?? chartGroupBy;
+  // Drill-down is only meaningful for time-based group modes.
+  const chartCanDrillDown = activeChartGroupBy === 'day' || activeChartGroupBy === 'week';
+
+  // Reset chart stack whenever the global date range changes so the
+  // zoomed chart doesn't become stale relative to the rest of the page.
+  useEffect(() => { setChartStack([]); }, [start, end]);
 
   // Compare period B dates
   const { start: compareStart, end: compareEnd } = useMemo(() => {
@@ -691,11 +799,12 @@ export default function Analytics() {
   });
 
   const { data: chartData, isLoading: chartLoading } = useQuery({
-    queryKey: ['analytics', 'chart', start, end, mealPeriod, chartGroupBy],
+    queryKey: ['analytics', 'chart', chartStart, chartEnd, mealPeriod, activeChartGroupBy],
     queryFn: () => analyticsApi.getSummary({
-      start_date: start, end_date: end,
+      start_date: chartStart,
+      end_date: chartEnd,
       meal_period: mealPeriod || undefined,
-      group_by: chartGroupBy,
+      group_by: activeChartGroupBy,
     }),
   });
 
@@ -773,13 +882,27 @@ export default function Analytics() {
   }
 
   function handleChartBarClick(group: SummaryGroup) {
-    // Clicking a bar narrows context to that day — resets drill to top with date label
-    if (chartGroupBy === 'day') {
-      setCustomStart(group.group_key);
-      setCustomEnd(group.group_key);
-      setTimeRange('custom');
-      setDrillStack([{ ...INITIAL_STEP, label: group.group_key }]);
+    // Push a new zoomed frame onto the chart stack.
+    // Does NOT touch global state — the drill table and summary cards are unaffected.
+    if (activeChartGroupBy === 'week') {
+      // Week → drill to the individual days of that week
+      const weekEnd = addDays(group.group_key, 6);
+      setChartStack(prev => [...prev, {
+        start: group.group_key,
+        end: weekEnd,
+        groupBy: 'day',
+        label: `Week of ${formatAxisLabel(group.group_key, 'week')}`,
+      }]);
+    } else if (activeChartGroupBy === 'day') {
+      // Day → drill to hours of that day
+      setChartStack(prev => [...prev, {
+        start: group.group_key,
+        end: group.group_key,
+        groupBy: 'hour',
+        label: formatAxisLabel(group.group_key, 'day'),
+      }]);
     }
+    // hour / day_of_week / item / category / order_type → no further zoom
   }
 
   const chartGroups = chartData?.groups ?? [];
@@ -801,7 +924,11 @@ export default function Analytics() {
         <div className="flex flex-wrap gap-3 items-center">
           {/* Time range toggle */}
           <div className="flex rounded overflow-hidden border border-outline-variant/20 dark:border-sumi-600">
-            {(['7d', '30d'] as TimeRange[]).map(r => (
+            {([
+              ['7d',    'Last 7d'],
+              ['30d',   'Last 30d'],
+              ['month', 'This Month'],
+            ] as [TimeRange, string][]).map(([r, label]) => (
               <button key={r} onClick={() => setTimeRange(r)}
                 className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
                   timeRange === r
@@ -809,7 +936,7 @@ export default function Analytics() {
                     : 'bg-surface-container-low dark:bg-sumi-800 text-on-surface-variant hover:text-on-surface'
                 }`}
               >
-                {r === '7d' ? 'Last 7 days' : 'Last 30 days'}
+                {label}
               </button>
             ))}
             <button onClick={() => setTimeRange('custom')}
@@ -888,11 +1015,42 @@ export default function Analytics() {
 
       {/* ── Revenue chart ── */}
       <section className="bg-surface-container-lowest dark:bg-sumi-800 rounded border border-outline-variant/10 dark:border-sumi-700 p-6 space-y-4">
+
+        {/* Header row */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h3 className="text-lg font-headline text-on-surface">Revenue Over Time</h3>
+          <div className="flex items-center gap-3">
+            {/* Back button — only shown when chart is zoomed in */}
+            {chartStack.length > 0 && (
+              <button
+                onClick={() => setChartStack(prev => prev.slice(0, -1))}
+                className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors"
+              >
+                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                Back
+              </button>
+            )}
+            <div>
+              <h3 className="text-lg font-headline text-on-surface leading-none">
+                {activeChartFrame
+                  ? activeChartFrame.label
+                  : 'Revenue Over Time'}
+              </h3>
+              {activeChartFrame && (
+                <p className="text-[10px] text-on-surface-variant mt-0.5">
+                  {chartStart === chartEnd ? chartStart : `${chartStart} → ${chartEnd}`}
+                  {' · '}
+                  {CHART_GROUP_LABELS[activeChartGroupBy]}
+                </p>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <select value={chartGroupBy} onChange={e => setChartGroupBy(e.target.value as AnalyticsGroupBy)}
-              className="text-xs px-2 py-1.5 rounded border border-outline-variant/20 dark:border-sumi-600 bg-surface-container-low dark:bg-sumi-700 text-on-surface"
+            {/* Groupby selector — disabled while zoomed (frame overrides it) */}
+            <select
+              value={chartGroupBy}
+              onChange={e => { setChartGroupBy(e.target.value as AnalyticsGroupBy); setChartStack([]); }}
+              disabled={chartStack.length > 0}
+              className="text-xs px-2 py-1.5 rounded border border-outline-variant/20 dark:border-sumi-600 bg-surface-container-low dark:bg-sumi-700 text-on-surface disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {(Object.keys(CHART_GROUP_LABELS) as AnalyticsGroupBy[]).map(k => (
                 <option key={k} value={k}>{CHART_GROUP_LABELS[k]}</option>
@@ -916,11 +1074,21 @@ export default function Analytics() {
         {chartLoading ? (
           <div className="h-48 bg-surface-container-low dark:bg-sumi-700 rounded animate-pulse" />
         ) : (
-          <BarChart data={chartGroups} metric={current.metric} onBarClick={handleChartBarClick} />
+          <BarChart
+            data={chartGroups}
+            metric={current.metric}
+            groupBy={activeChartGroupBy}
+            canDrillDown={chartCanDrillDown}
+            onBarClick={chartCanDrillDown ? handleChartBarClick : undefined}
+          />
         )}
 
-        <p className="text-[10px] text-on-surface-variant opacity-60 text-right">
-          Click a bar to zoom into that day
+        <p className="text-[10px] text-on-surface-variant opacity-50 text-right">
+          {chartCanDrillDown
+            ? activeChartGroupBy === 'day'
+              ? 'Click a bar to drill into hours'
+              : 'Click a bar to drill into individual days'
+            : 'Tip: switch to Daily or Weekly view to enable drilldown'}
         </p>
       </section>
 

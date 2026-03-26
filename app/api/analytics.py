@@ -375,14 +375,14 @@ def _grouped_summary(
     elif group_by == "hour":
         sql = f"""
             SELECT
-                LPAD(EXTRACT(HOUR FROM o.created_at)::int::text, 2, '0') || ':00' AS group_key,
-                COUNT(*)                               AS order_count,
-                COALESCE(SUM(o.total_amount), 0)       AS total_revenue,
-                COALESCE(AVG(o.total_amount), 0)       AS avg_order_value
+                TO_CHAR(o.created_at, 'HH24') AS group_key,
+                COUNT(*)                                AS order_count,
+                COALESCE(SUM(o.total_amount), 0)        AS total_revenue,
+                COALESCE(AVG(o.total_amount), 0)        AS avg_order_value
             FROM orders o
             WHERE {fc.order_clause}
-            GROUP BY EXTRACT(HOUR FROM o.created_at)
-            ORDER BY EXTRACT(HOUR FROM o.created_at)
+            GROUP BY TO_CHAR(o.created_at, 'HH24')
+            ORDER BY TO_CHAR(o.created_at, 'HH24')::int
         """
 
     elif group_by == "order_type":
@@ -543,13 +543,13 @@ def _drill_query(
         item_filter = fc.item_clause if join_clause else ""
         sql = f"""
             SELECT
-                LPAD(EXTRACT(HOUR FROM o.created_at)::int::text, 2, '0') || ':00' AS label,
-                {metric_expr}         AS value,
-                COUNT(DISTINCT o.id)  AS order_count
+                TO_CHAR(o.created_at, 'HH24') AS label,
+                {metric_expr}                           AS value,
+                COUNT(DISTINCT o.id)                    AS order_count
             FROM orders o {join_clause}
             WHERE {fc.order_clause} {item_filter}
-            GROUP BY EXTRACT(HOUR FROM o.created_at)
-            ORDER BY EXTRACT(HOUR FROM o.created_at)
+            GROUP BY TO_CHAR(o.created_at, 'HH24')
+            ORDER BY TO_CHAR(o.created_at, 'HH24')::int
         """
         def make_meta(_: Any) -> dict:
             return {}
