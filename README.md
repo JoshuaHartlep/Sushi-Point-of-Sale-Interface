@@ -52,7 +52,7 @@ Local development typically uses `.venv` (see **Setup**) or `./scripts/start-bac
 
 ```
 app/
-  api/          # FastAPI routers (menu, orders, images, dashboard, settings)
+  api/          # FastAPI routers (menu, orders, images, dashboard, settings, analytics)
   models/       # SQLAlchemy ORM models
   schemas/      # Pydantic request/response schemas
   core/         # DB config, settings, error handling, logging
@@ -64,7 +64,7 @@ frontend/
     pages/
       customer/ # Customer-facing ordering UI (CustomerApp, MenuItemModal, …)
       ...       # Manager: Dashboard, Menu, Orders, EditOrder, Tables, Modifiers, Settings,
-                #   ImageModeration, ReportedImages
+                #   ImageModeration, ReportedImages, Analytics ("The Lens")
     services/   # api.ts — typed Axios client for all endpoints
   vercel.json   # SPA rewrites for React Router (Vercel)
 
@@ -126,6 +126,7 @@ Frontend runs at `http://localhost:5173`.
 | `/settings` | Restaurant settings (**General** tab wired to API; see below) |
 | `/moderation` | Image moderation: **Pending** queue + **Reported** tab (sidebar nav) |
 | `/reported-images` | Reported customer photos (same data as Moderation → Reported; **no sidebar link**—open by URL or bookmark) |
+| `/analytics` | **The Lens** — analytics panel (Overview + Signals tabs; see below) |
 
 ### Customer flow (high level)
 
@@ -249,3 +250,55 @@ Why `PYTHON_VERSION` is required: pinned deps in `requirements.txt` (notably `py
 - **Lunch/dinner service** — manager-controlled current period; dinner-only items constrained during lunch
 - **Settings (General)** — name, timezone, meal period, AYCE prices
 - **Backend extras** — bulk menu operations and bulk order status updates via API (see OpenAPI); not all are exposed in the UI yet
+- **The Lens** — manager analytics panel (see below)
+
+---
+
+## The Lens — Analytics Panel (`/analytics`)
+
+A power-user analytics environment built for exploration, not just reporting. Philosophy: observe a number, drill into what drove it, compare it against another period, and let the system surface anomalies automatically.
+
+Built in three phases, all under `app/api/analytics.py` (backend) and `frontend/src/pages/Analytics.tsx` (frontend). No new libraries — raw SQL via SQLAlchemy `text()`, stdlib `statistics` for anomaly detection, SVG bar chart built from scratch.
+
+### Architecture
+
+All four endpoints share a single filter/SQL translation layer:
+
+- **`AnalyticsFilter`** — unified Pydantic model accepted by every endpoint (`start_date`, `end_date`, `meal_period`, `order_type`, `category_id`, `item_id`, `table_id`)
+- **`build_conditions()`** — single source of truth that compiles an `AnalyticsFilter` into `FilterConditions` (pre-built SQL WHERE fragments + bound params). No endpoint builds conditions inline.
+- **`_drill_query()`** — core aggregation engine shared by `/drill` and `/compare`. Returns rows with a generic `metadata` dict instead of hardcoded field names, so the frontend can drive drill-down without knowing what dimension was queried.
+
+### Phase 1 — Explore
+
+**`GET /analytics/summary`**
+Aggregates revenue, order count, and avg order value for a time window. Optional `group_by` returns a breakdown list (day, week, day_of_week, hour, item, category, order_type) for the bar chart.
+
+**`GET /analytics/drill`**
+Returns a metric broken down by a dimension with full filter support. As the user drills, filters accumulate (e.g. category → items within that category → day-of-week for those items). Each row carries a `metadata` dict with drillable IDs.
+
+Frontend: time range selector (7d / 30d / custom), meal period filter, SVG bar chart (click a bar to zoom to that day), sortable drill table showing value, order count, and % of total, breadcrumb trail.
+
+### Phase 2 — Compare and Explain
+
+**`GET /analytics/decompose`**
+Breaks revenue down into its component drivers (order count × avg order value) for a given window, plus a full daily timeseries. Answers "why did this number change?" Powered by `_grouped_summary()`.
+
+**`GET /analytics/compare`**
+Runs `_drill_query()` twice — once for cohort A and once for cohort B — and merges results by label with delta and % change. Cohorts share dimensional filters so comparisons are apples-to-apples; only time range and meal period differ.
+
+Frontend: **Compare mode** toggle swaps the drill table for a side-by-side A/B table with color-coded delta (positive = tertiary, negative = error) and % change badges. **Explain** button opens an inline DecomposePanel with three mini-cards and a scrollable daily breakdown table. Drill stack is generic — clicking a row pushes a new step using `row.metadata` keys to suggest the next dimension; no hardcoded paths.
+
+### Phase 3 — Signals (Anomaly Detection)
+
+**`GET /analytics/signals`**
+Scans daily metrics over a rolling window (default 14 days, configurable via `window_days`) and surfaces days that deviated significantly from expected behavior.
+
+**Method (no black box):**
+1. Fetch daily aggregates for `total_revenue`, `order_count`, and `avg_order_value` using `_grouped_summary()` — zero new SQL.
+2. For each metric, compute the window mean and standard deviation using Python's `statistics` module (stdlib).
+3. Flag any day where `|z_score| > 2` (≈ top/bottom 2.3% of a normal distribution).
+4. `z_score = (day_value − window_mean) / window_std`
+5. Edge cases: if std == 0 (all days identical), skip — no anomaly is possible. If fewer than 3 data points, return empty.
+6. Severity: `medium` when `|z| > 2`, `high` when `|z| > 3`. Results sorted by `|z_score|` descending.
+
+Frontend: **Signals tab** with a live badge showing anomaly count. Each card shows the metric, date, message (e.g. "Revenue dropped 38% below 14-day average"), z-score, and actual vs average values. Clicking a card sets the date range to that specific day, resets the drill stack, and switches back to Overview — dropping the user directly into exploration context for that anomaly. Methodology footnote at the bottom is visible to keep the math transparent.
