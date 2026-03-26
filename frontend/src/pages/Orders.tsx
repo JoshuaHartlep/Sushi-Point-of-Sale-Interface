@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, menuApi, settingsApi, Order, OrderCreate, OrderItemCreate, OrderItem } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import StatusDropdown from '../components/StatusDropdown';
+import ProgressLoader from '../components/ProgressLoader';
 
 const formatTotal = (total: string | number | undefined): string => {
   if (typeof total === 'string') return parseFloat(total).toFixed(2);
@@ -15,6 +16,8 @@ const formatPrice = (price: string | number): string => {
   if (typeof price === 'number' && !isNaN(price)) return price.toFixed(2);
   return '0.00';
 };
+
+const TOTAL_REQUESTS = 2;
 
 const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -30,12 +33,12 @@ const Orders = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[]>({
+  const { data: orders = [], isLoading: ordersLoading, isSuccess: ordersSuccess, error: ordersError } = useQuery<Order[]>({
     queryKey: ['orders'],
     queryFn: ordersApi.getAll,
   });
 
-  const { data: orderTotals = {}, isLoading: totalsLoading } = useQuery<Record<number, string>>({
+  const { data: orderTotals = {}, isLoading: totalsLoading, isSuccess: totalsSuccess } = useQuery<Record<number, string>>({
     queryKey: ['orderTotals', orders.map((o) => o.id)],
     queryFn: async () => {
       const totals: Record<number, string> = {};
@@ -51,6 +54,35 @@ const Orders = () => {
     },
     enabled: orders.length > 0,
   });
+
+  // ── Progress loader ────────────────────────────────────────────────────────
+  const [simProgress, setSimProgress] = useState(0);
+  const [showLoader, setShowLoader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let current = 0;
+    intervalRef.current = setInterval(() => {
+      current += 1.5;
+      if (current >= 50) { setSimProgress(50); if (intervalRef.current) clearInterval(intervalRef.current); }
+      else setSimProgress(current);
+    }, 45);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const totalsOrSkipped = totalsSuccess || (ordersSuccess && orders.length === 0);
+  const completedRequests = [ordersSuccess, totalsOrSkipped].filter(Boolean).length;
+  const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
+  const progress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
+
+  const allDone = !ordersLoading && !totalsLoading;
+  useEffect(() => {
+    if (!allDone || !showLoader) return;
+    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
+    const hideTimer = setTimeout(() => setShowLoader(false), 650);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, [allDone, showLoader]);
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
 
@@ -104,10 +136,10 @@ const Orders = () => {
   const handleConfirmDelete = () => { if (selectedOrder) deleteOrderMutation.mutate(selectedOrder.id); };
   const handleCreateOrder = async () => { try { await createOrderMutation.mutateAsync(newOrder); } catch {} };
 
-  if (ordersLoading || totalsLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="material-symbols-outlined text-[40px] text-on-surface-variant animate-spin">progress_activity</span>
+      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
+        <ProgressLoader progress={progress} />
       </div>
     );
   }

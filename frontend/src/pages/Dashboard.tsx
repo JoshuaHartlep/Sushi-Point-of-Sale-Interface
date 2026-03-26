@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef, useState } from 'react';
 import { dashboardApi, ordersApi } from '../services/api';
+import ProgressLoader from '../components/ProgressLoader';
 
 const formatTotal = (total: string | number | undefined): string => {
   if (typeof total === 'string') return parseFloat(total).toFixed(2);
@@ -25,18 +27,20 @@ const statusDot: Record<string, string> = {
   cancelled: 'bg-error',
 };
 
+const TOTAL_REQUESTS = 3;
+
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
+  const { data: stats, isLoading: statsLoading, isSuccess: statsSuccess, error: statsError } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: dashboardApi.getStats,
   });
 
-  const { data: recentOrders, isLoading: ordersLoading, error: ordersError } = useQuery({
+  const { data: recentOrders, isLoading: ordersLoading, isSuccess: ordersSuccess, error: ordersError } = useQuery({
     queryKey: ['recentOrders'],
     queryFn: dashboardApi.getRecentOrders,
   });
 
-  const { data: orderTotals = {}, isLoading: totalsLoading } = useQuery({
+  const { data: orderTotals = {}, isLoading: totalsLoading, isSuccess: totalsSuccess } = useQuery({
     queryKey: ['dashboardOrderTotals', recentOrders],
     queryFn: async () => {
       if (!recentOrders) return {};
@@ -54,6 +58,43 @@ export default function Dashboard() {
     enabled: !!recentOrders && recentOrders.length > 0,
   });
 
+  // ── Progress loader state ──────────────────────────────────────────────────
+  const [simProgress, setSimProgress] = useState(0);
+  const [showLoader, setShowLoader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Phase A: animate 0 → 50% over ~1.5 s regardless of API state
+  useEffect(() => {
+    let current = 0;
+    intervalRef.current = setInterval(() => {
+      current += 1.5;
+      if (current >= 50) {
+        setSimProgress(50);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      } else {
+        setSimProgress(current);
+      }
+    }, 45);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  // Phase B: real progress — count resolved queries
+  // totals is skipped when orders resolved with an empty list
+  const totalsOrSkipped = totalsSuccess || (ordersSuccess && (!recentOrders || recentOrders.length === 0));
+  const completedRequests = [statsSuccess, ordersSuccess, totalsOrSkipped].filter(Boolean).length;
+  const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
+  const progress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
+
+  // Dismiss loader after all queries finish
+  const allDone = !statsLoading && !ordersLoading && !totalsLoading;
+  useEffect(() => {
+    if (!allDone || !showLoader) return;
+    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
+    const hideTimer = setTimeout(() => setShowLoader(false), 650); // 300 + 350ms fade
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, [allDone, showLoader]);
+
   const formatTime = (minutes: number) => {
     if (!minutes) return '0m';
     if (minutes < 60) return `${minutes}m`;
@@ -62,10 +103,13 @@ export default function Dashboard() {
     return `${h}h ${m}m`;
   };
 
-  if (statsLoading || ordersLoading || totalsLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="material-symbols-outlined text-[40px] text-on-surface-variant animate-spin">progress_activity</span>
+      <div
+        className="transition-opacity duration-300"
+        style={{ opacity: fadeOut ? 0 : 1 }}
+      >
+        <ProgressLoader progress={progress} />
       </div>
     );
   }

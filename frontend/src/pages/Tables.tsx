@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tablesApi, TableData, TableStatus } from '../services/api';
+import ProgressLoader from '../components/ProgressLoader';
 
 const inputClass = "w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm";
 const labelClass = "block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5";
@@ -25,10 +26,35 @@ export default function Tables() {
   const [editForm, setEditForm]         = useState({ number: '', capacity: '' });
   const [error, setError]               = useState('');
 
-  const { data: tables = [], isLoading } = useQuery<TableData[]>({
+  const { data: tables = [], isLoading, isSuccess: tablesSuccess } = useQuery<TableData[]>({
     queryKey: ['tables'],
     queryFn: tablesApi.getAll,
   });
+
+  // ── Progress loader ────────────────────────────────────────────────────────
+  const [simProgress, setSimProgress] = useState(0);
+  const [showLoader, setShowLoader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let current = 0;
+    intervalRef.current = setInterval(() => {
+      current += 1.5;
+      if (current >= 50) { setSimProgress(50); if (intervalRef.current) clearInterval(intervalRef.current); }
+      else setSimProgress(current);
+    }, 45);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const tablesProgress = tablesSuccess ? Math.max(simProgress, 100) : simProgress;
+
+  useEffect(() => {
+    if (isLoading || !showLoader) return;
+    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
+    const hideTimer = setTimeout(() => setShowLoader(false), 650);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, [isLoading, showLoader]);
 
   const createMutation = useMutation({
     mutationFn: (data: { number: number; capacity: number }) => tablesApi.create(data),
@@ -105,6 +131,14 @@ export default function Tables() {
     return acc;
   }, {} as Record<string, number>);
 
+  if (showLoader) {
+    return (
+      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
+        <ProgressLoader progress={tablesProgress} />
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
 
@@ -140,11 +174,7 @@ export default function Tables() {
       </div>
 
       {/* Table grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <span className="material-symbols-outlined animate-spin text-primary text-[32px]">progress_activity</span>
-        </div>
-      ) : tables.length === 0 ? (
+      {tables.length === 0 ? (
         <div className="text-center py-20 text-on-surface-variant">
           <span className="material-symbols-outlined text-[48px] mb-3 block opacity-30">table_restaurant</span>
           <p className="text-sm">No tables configured yet. Add your first table.</p>

@@ -1,9 +1,10 @@
 """
 Analytics API — "The Lens"
 
-Phase 1: Summary metrics + drill-down by dimension.
+Phase 1: /summary, /drill
+Phase 2: /decompose, /compare — built on shared filter + aggregation core
 
-Recommended indexes to run once in your Supabase SQL editor for best performance:
+Recommended indexes (run once in Supabase SQL editor):
     CREATE INDEX IF NOT EXISTS idx_orders_created_status
         ON orders (created_at, status);
     CREATE INDEX IF NOT EXISTS idx_order_items_order_menu
@@ -12,16 +13,128 @@ Recommended indexes to run once in your Supabase SQL editor for best performance
         ON menu_items (category_id);
 """
 
+from dataclasses import dataclass, field
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from typing import Optional, List
+from typing import Any, Optional, List
 from datetime import date, datetime, timedelta
 from pydantic import BaseModel
 
 from app.core.database import get_db
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Input model + filter dependency
+# ---------------------------------------------------------------------------
+
+class AnalyticsFilter(BaseModel):
+    """Unified filter accepted by every analytics endpoint."""
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    meal_period: Optional[str] = None   # "lunch" | "dinner"
+    order_type: Optional[str] = None    # "ayce"  | "regular"
+    table_id: Optional[int] = None
+    category_id: Optional[int] = None  # narrows to items in this category
+    item_id: Optional[int] = None      # narrows to a specific item
+
+
+def parse_filter(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    meal_period: Optional[str] = Query(None),
+    order_type: Optional[str] = Query(None),
+    table_id: Optional[int] = Query(None),
+    category_id: Optional[int] = Query(None),
+    item_id: Optional[int] = Query(None),
+) -> AnalyticsFilter:
+    return AnalyticsFilter(
+        start_date=start_date,
+        end_date=end_date,
+        meal_period=meal_period,
+        order_type=order_type,
+        table_id=table_id,
+        category_id=category_id,
+        item_id=item_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Compiled filter conditions (SQL fragments + bound params)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class FilterConditions:
+    """
+    Pre-compiled SQL WHERE fragments ready to embed in any query.
+
+    order_clause  — conditions on the orders table (alias "o").
+                    Always present; safe to use without any extra joins.
+    item_clause   — additional conditions that reference order_items (oi)
+                    and menu_items (mi). Empty string when no item filters
+                    are active. Must only be included when those joins exist.
+    params        — SQLAlchemy bind params dict for this filter.
+    needs_items_join — True when item_clause is non-empty.
+    """
+    order_clause: str
+    item_clause: str
+    params: dict
+    needs_items_join: bool
+
+
+def build_conditions(f: AnalyticsFilter) -> FilterConditions:
+    """
+    Translates an AnalyticsFilter into FilterConditions.
+    This is the single source of truth for filter → SQL translation.
+    All analytics endpoints call this; none build conditions inline.
+    """
+    start_dt, end_dt = _resolve_dates(f.start_date, f.end_date)
+    params: dict = {"start_dt": start_dt, "end_dt": end_dt}
+
+    order_parts: list[str] = [
+        # Cast enum to text — prevents Postgres from rejecting unknown enum
+        # labels in raw SQL (enum drift / casing differences with SQLAlchemy).
+        "LOWER(o.status::text) != 'cancelled'",
+        "o.created_at >= :start_dt",
+        "o.created_at <= :end_dt",
+    ]
+    item_parts: list[str] = []
+
+    # Meal period (time-of-day heuristic: lunch = before 16:00, dinner ≥ 16:00)
+    if f.meal_period == "lunch":
+        order_parts.append("EXTRACT(HOUR FROM o.created_at) < 16")
+    elif f.meal_period == "dinner":
+        order_parts.append("EXTRACT(HOUR FROM o.created_at) >= 16")
+
+    # Order type
+    if f.order_type == "ayce":
+        order_parts.append("o.ayce_order = true")
+    elif f.order_type == "regular":
+        order_parts.append("o.ayce_order = false")
+
+    # Table filter (order-level)
+    if f.table_id is not None:
+        order_parts.append("o.table_id = :table_id")
+        params["table_id"] = f.table_id
+
+    # Item-level filters (require join with order_items + menu_items)
+    if f.category_id is not None:
+        item_parts.append("mi.category_id = :category_id")
+        params["category_id"] = f.category_id
+
+    if f.item_id is not None:
+        item_parts.append("oi.menu_item_id = :item_id")
+        params["item_id"] = f.item_id
+
+    item_clause = (" AND " + " AND ".join(item_parts)) if item_parts else ""
+    return FilterConditions(
+        order_clause=" AND ".join(order_parts),
+        item_clause=item_clause,
+        params=params,
+        needs_items_join=bool(item_parts),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +159,13 @@ class DrillRow(BaseModel):
     label: str
     value: float
     order_count: int
-    item_id: Optional[int] = None
-    category_id: Optional[int] = None
+    # Generic metadata bag — contains drillable IDs (item_id, category_id, etc.)
+    # Frontend reads this to determine what filter to push when a row is clicked.
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    class Config:
+        # pydantic v1 compat
+        pass
 
 
 class DrillResponse(BaseModel):
@@ -57,9 +175,43 @@ class DrillResponse(BaseModel):
     total: float
 
 
+class CompareRow(BaseModel):
+    label: str
+    a_value: float
+    b_value: float
+    delta: float
+    pct_change: Optional[float] = None  # None when b_value is 0
+
+
+class CompareResponse(BaseModel):
+    dimension: str
+    metric: str
+    rows: List[CompareRow]
+
+
+class DecomposeResponse(BaseModel):
+    """
+    Breaks a metric into its component drivers for a given time window.
+    Used to answer "why did this number change?"
+    """
+    total: SummaryResponse
+    timeseries: List[SummaryGroup]  # daily breakdown: revenue + orders + avg per day
+
+
 # ---------------------------------------------------------------------------
-# Internal helpers
+# Shared SQL helpers (metric expressions)
 # ---------------------------------------------------------------------------
+
+VALID_GROUP_BYS = frozenset(
+    {"day", "week", "day_of_week", "hour", "item", "category", "order_type"}
+)
+VALID_DIMENSIONS = frozenset(
+    {"item", "category", "day_of_week", "hour", "order_type", "table"}
+)
+VALID_METRICS = frozenset(
+    {"revenue", "order_count", "avg_order_value", "item_count"}
+)
+
 
 def _resolve_dates(
     start_date: Optional[date], end_date: Optional[date]
@@ -73,26 +225,49 @@ def _resolve_dates(
     return start_dt, end_dt
 
 
-def _meal_period_clause(meal_period: Optional[str]) -> str:
-    # Heuristic: lunch = orders placed before 16:00, dinner = 16:00 and later
-    if meal_period == "lunch":
-        return " AND EXTRACT(HOUR FROM o.created_at) < 16"
-    if meal_period == "dinner":
-        return " AND EXTRACT(HOUR FROM o.created_at) >= 16"
-    return ""
+def _item_metric_expr(metric: str) -> str:
+    """Metric expression for queries that JOIN order_items + menu_items."""
+    if metric == "revenue":
+        return "COALESCE(SUM(oi.quantity * oi.unit_price), 0)"
+    if metric == "order_count":
+        return "COUNT(DISTINCT o.id)"
+    if metric == "avg_order_value":
+        return "COALESCE(AVG(oi.unit_price), 0)"
+    if metric == "item_count":
+        return "COALESCE(SUM(oi.quantity), 0)"
+    return "COALESCE(SUM(oi.quantity * oi.unit_price), 0)"
 
 
-VALID_GROUP_BYS = frozenset(
-    {"day", "week", "day_of_week", "hour", "item", "category", "order_type"}
-)
+def _order_metric_expr(metric: str) -> str:
+    """Metric expression for queries on the orders table only."""
+    if metric == "revenue":
+        return "COALESCE(SUM(o.total_amount), 0)"
+    if metric == "order_count":
+        return "COUNT(DISTINCT o.id)"
+    if metric == "avg_order_value":
+        return "COALESCE(AVG(o.total_amount), 0)"
+    if metric == "item_count":
+        return "COUNT(DISTINCT o.id)"  # can't count items without join; fallback
+    return "COALESCE(SUM(o.total_amount), 0)"
 
-VALID_DIMENSIONS = frozenset(
-    {"item", "category", "day_of_week", "hour", "order_type", "table"}
-)
 
-VALID_METRICS = frozenset(
-    {"revenue", "order_count", "avg_order_value", "item_count"}
-)
+def _pick_metric_and_join(
+    metric: str, needs_items_join: bool
+) -> tuple[str, str]:
+    """
+    Returns (metric_expr, join_clause) for dimensions that can work either
+    with or without the order_items join (day_of_week, hour, etc.).
+
+    If item-level filters are active we must join order_items to apply them,
+    so we also switch to item-level metric expressions for consistency.
+    """
+    if needs_items_join or metric == "item_count":
+        join_clause = (
+            "JOIN order_items oi ON oi.order_id = o.id"
+            " JOIN menu_items mi ON mi.id = oi.menu_item_id"
+        )
+        return _item_metric_expr(metric), join_clause
+    return _order_metric_expr(metric), ""
 
 
 # ---------------------------------------------------------------------------
@@ -101,30 +276,15 @@ VALID_METRICS = frozenset(
 
 @router.get("/analytics/summary", response_model=SummaryResponse)
 def get_analytics_summary(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    meal_period: Optional[str] = Query(None),   # "lunch" | "dinner"
     group_by: Optional[str] = Query(None),
+    f: AnalyticsFilter = Depends(parse_filter),
     db: Session = Depends(get_db),
 ):
     """
-    Returns aggregate metrics for the given time window.
-    When group_by is provided, also returns a breakdown list.
-
+    Aggregate metrics for the given window. group_by adds a breakdown list.
     group_by options: day, week, day_of_week, hour, item, category, order_type
     """
-    start_dt, end_dt = _resolve_dates(start_date, end_date)
-    params: dict = {"start_dt": start_dt, "end_dt": end_dt}
-
-    base_conditions = (
-        # Compare enum status as text to avoid enum-literal validation errors.
-        # This endpoint is using raw SQL, so casting prevents Postgres from rejecting
-        # unknown enum labels (e.g. due to enum drift/casing differences).
-        "LOWER(o.status::text) != 'cancelled'"
-        " AND o.created_at >= :start_dt"
-        " AND o.created_at <= :end_dt"
-        + _meal_period_clause(meal_period)
-    )
+    fc = build_conditions(f)
 
     totals_row = db.execute(
         text(f"""
@@ -133,14 +293,14 @@ def get_analytics_summary(
                 COALESCE(SUM(o.total_amount), 0)  AS total_revenue,
                 COALESCE(AVG(o.total_amount), 0)  AS avg_order_value
             FROM orders o
-            WHERE {base_conditions}
+            WHERE {fc.order_clause}
         """),
-        params,
+        fc.params,
     ).fetchone()
 
     groups: Optional[List[SummaryGroup]] = None
     if group_by and group_by in VALID_GROUP_BYS:
-        groups = _grouped_summary(db, group_by, base_conditions, params)
+        groups = _grouped_summary(db, group_by, fc)
 
     return SummaryResponse(
         total_revenue=float(totals_row.total_revenue),
@@ -151,23 +311,33 @@ def get_analytics_summary(
 
 
 def _grouped_summary(
-    db: Session, group_by: str, base_conditions: str, params: dict
+    db: Session, group_by: str, fc: FilterConditions
 ) -> List[SummaryGroup]:
-    """Builds and runs the appropriate GROUP BY query for the requested dimension."""
+    """
+    Builds a GROUP BY query for the summary chart.
+    Dimensions that need item joins (item, category) use item-level metrics.
+    Time/type dimensions use order-level metrics; joins are added when
+    item filters are active so those filters are still applied.
+    """
+    needs_join = group_by in ("item", "category") or fc.needs_items_join
+    item_filter = fc.item_clause if needs_join else ""
 
     if group_by == "day":
-        select_key = "TO_CHAR(DATE(o.created_at), 'YYYY-MM-DD')"
-        order_by   = "DATE(o.created_at)"
+        join = (
+            "JOIN order_items oi ON oi.order_id = o.id JOIN menu_items mi ON mi.id = oi.menu_item_id"
+            if needs_join else ""
+        )
+        rev = _item_metric_expr("revenue") if needs_join else _order_metric_expr("revenue")
         sql = f"""
             SELECT
-                {select_key}                          AS group_key,
-                COUNT(*)                              AS order_count,
-                COALESCE(SUM(o.total_amount), 0)      AS total_revenue,
-                COALESCE(AVG(o.total_amount), 0)      AS avg_order_value
-            FROM orders o
-            WHERE {base_conditions}
-            GROUP BY {order_by}, {select_key}
-            ORDER BY {order_by}
+                TO_CHAR(DATE(o.created_at), 'YYYY-MM-DD') AS group_key,
+                COUNT(DISTINCT o.id)                      AS order_count,
+                {rev}                                     AS total_revenue,
+                COALESCE(AVG(o.total_amount), 0)          AS avg_order_value
+            FROM orders o {join}
+            WHERE {fc.order_clause} {item_filter}
+            GROUP BY DATE(o.created_at)
+            ORDER BY DATE(o.created_at)
         """
 
     elif group_by == "week":
@@ -178,20 +348,24 @@ def _grouped_summary(
                 COALESCE(SUM(o.total_amount), 0)                         AS total_revenue,
                 COALESCE(AVG(o.total_amount), 0)                         AS avg_order_value
             FROM orders o
-            WHERE {base_conditions}
+            WHERE {fc.order_clause}
             GROUP BY DATE_TRUNC('week', o.created_at)
             ORDER BY DATE_TRUNC('week', o.created_at)
         """
 
     elif group_by == "day_of_week":
+        join = (
+            "JOIN order_items oi ON oi.order_id = o.id JOIN menu_items mi ON mi.id = oi.menu_item_id"
+            if needs_join else ""
+        )
         sql = f"""
             SELECT
-                TO_CHAR(o.created_at, 'Dy')            AS group_key,
-                COUNT(*)                               AS order_count,
-                COALESCE(SUM(o.total_amount), 0)       AS total_revenue,
-                COALESCE(AVG(o.total_amount), 0)       AS avg_order_value
-            FROM orders o
-            WHERE {base_conditions}
+                TO_CHAR(o.created_at, 'Dy')  AS group_key,
+                COUNT(DISTINCT o.id)         AS order_count,
+                COALESCE(SUM(o.total_amount), 0) AS total_revenue,
+                COALESCE(AVG(o.total_amount), 0) AS avg_order_value
+            FROM orders o {join}
+            WHERE {fc.order_clause} {item_filter}
             GROUP BY EXTRACT(DOW FROM o.created_at), TO_CHAR(o.created_at, 'Dy')
             ORDER BY EXTRACT(DOW FROM o.created_at)
         """
@@ -204,7 +378,7 @@ def _grouped_summary(
                 COALESCE(SUM(o.total_amount), 0)       AS total_revenue,
                 COALESCE(AVG(o.total_amount), 0)       AS avg_order_value
             FROM orders o
-            WHERE {base_conditions}
+            WHERE {fc.order_clause}
             GROUP BY EXTRACT(HOUR FROM o.created_at)
             ORDER BY EXTRACT(HOUR FROM o.created_at)
         """
@@ -217,7 +391,7 @@ def _grouped_summary(
                 COALESCE(SUM(o.total_amount), 0)       AS total_revenue,
                 COALESCE(AVG(o.total_amount), 0)       AS avg_order_value
             FROM orders o
-            WHERE {base_conditions}
+            WHERE {fc.order_clause}
             GROUP BY o.ayce_order
             ORDER BY total_revenue DESC
         """
@@ -232,7 +406,7 @@ def _grouped_summary(
             FROM orders o
             JOIN order_items oi ON oi.order_id = o.id
             JOIN menu_items  mi ON mi.id = oi.menu_item_id
-            WHERE {base_conditions}
+            WHERE {fc.order_clause} {fc.item_clause}
             GROUP BY mi.id, mi.name
             ORDER BY total_revenue DESC
             LIMIT 50
@@ -249,7 +423,7 @@ def _grouped_summary(
             JOIN order_items oi ON oi.order_id = o.id
             JOIN menu_items  mi ON mi.id = oi.menu_item_id
             LEFT JOIN categories c ON c.id = mi.category_id
-            WHERE {base_conditions}
+            WHERE {fc.order_clause} {fc.item_clause}
             GROUP BY c.id, c.name
             ORDER BY total_revenue DESC
         """
@@ -257,7 +431,7 @@ def _grouped_summary(
     else:
         return []
 
-    rows = db.execute(text(sql), params).fetchall()
+    rows = db.execute(text(sql), fc.params).fetchall()
     return [
         SummaryGroup(
             group_key=str(r.group_key).strip(),
@@ -277,57 +451,20 @@ def _grouped_summary(
 def get_analytics_drill(
     metric: str = Query("revenue"),
     dimension: str = Query("category"),
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    meal_period: Optional[str] = Query(None),
-    order_type: Optional[str] = Query(None),    # "ayce" | "regular"
-    category_id: Optional[int] = Query(None),
-    item_id: Optional[int] = Query(None),
+    f: AnalyticsFilter = Depends(parse_filter),
     db: Session = Depends(get_db),
 ):
     """
-    Returns a breakdown of metric by dimension, supporting filter chaining for drill-downs.
-
-    Typical drill path:
-      dimension=category
-        → click row (category_id=X) → dimension=item&category_id=X
-          → click row (item_id=Y)   → dimension=day_of_week&item_id=Y
+    Returns metric broken down by dimension, with cumulative filter support.
+    Filters accumulate as the user drills deeper (category_id → item_id → …).
     """
-    # Validate against whitelists (prevents SQL injection via interpolated names)
     if metric not in VALID_METRICS:
         metric = "revenue"
     if dimension not in VALID_DIMENSIONS:
         dimension = "category"
 
-    start_dt, end_dt = _resolve_dates(start_date, end_date)
-    params: dict = {"start_dt": start_dt, "end_dt": end_dt}
-
-    # Build order-level filter conditions
-    order_conditions = (
-        # Cast enum to text for the same reason as in the summary endpoint.
-        "LOWER(o.status::text) != 'cancelled'"
-        " AND o.created_at >= :start_dt"
-        " AND o.created_at <= :end_dt"
-        + _meal_period_clause(meal_period)
-    )
-    if order_type == "ayce":
-        order_conditions += " AND o.ayce_order = true"
-    elif order_type == "regular":
-        order_conditions += " AND o.ayce_order = false"
-
-    # Build item-level filter conditions (only applied when join is present)
-    item_filter_parts: list[str] = []
-    if category_id is not None:
-        item_filter_parts.append("mi.category_id = :category_id")
-        params["category_id"] = category_id
-    if item_id is not None:
-        item_filter_parts.append("oi.menu_item_id = :item_id")
-        params["item_id"] = item_id
-
-    rows, total = _drill_query(
-        db, dimension, metric, order_conditions, item_filter_parts, params
-    )
-
+    fc = build_conditions(f)
+    rows, total = _drill_query(db, dimension, metric, fc)
     return DrillResponse(metric=metric, dimension=dimension, rows=rows, total=total)
 
 
@@ -335,183 +472,253 @@ def _drill_query(
     db: Session,
     dimension: str,
     metric: str,
-    order_conditions: str,
-    item_filter_parts: list[str],
-    params: dict,
+    fc: FilterConditions,
 ) -> tuple[List[DrillRow], float]:
     """
-    Builds the appropriate SQL for the given dimension + metric combination.
+    Core aggregation engine shared by /drill and /compare.
+    Builds one SQL query per dimension, embedding pre-compiled FilterConditions.
 
-    item_filter_parts contains WHERE clauses referencing oi/mi columns.
-    These are only applied when the query already joins order_items + menu_items.
-    For time/type dimensions, a conditional join is added when item filters are present.
+    Returns (rows, total) — rows carry a metadata dict with any IDs needed
+    for the frontend to determine drillability and accumulate filters.
     """
-    has_item_filters = bool(item_filter_parts)
-    item_filter_sql = (" AND " + " AND ".join(item_filter_parts)) if item_filter_parts else ""
 
-    # --- ITEM dimension ---
     if dimension == "item":
         metric_expr = _item_metric_expr(metric)
         sql = f"""
             SELECT
                 mi.name   AS label,
-                mi.id     AS item_id,
-                NULL::int AS category_id,
                 {metric_expr} AS value,
-                COUNT(DISTINCT o.id) AS order_count
+                COUNT(DISTINCT o.id) AS order_count,
+                mi.id     AS meta_item_id
             FROM orders o
             JOIN order_items oi ON oi.order_id = o.id
             JOIN menu_items  mi ON mi.id = oi.menu_item_id
-            WHERE {order_conditions} {item_filter_sql}
+            WHERE {fc.order_clause} {fc.item_clause}
             GROUP BY mi.id, mi.name
             ORDER BY value DESC
             LIMIT 50
         """
+        def make_meta(r: Any) -> dict:
+            return {"item_id": int(r.meta_item_id)}
 
-    # --- CATEGORY dimension ---
     elif dimension == "category":
         metric_expr = _item_metric_expr(metric)
         sql = f"""
             SELECT
                 COALESCE(c.name, 'Uncategorized') AS label,
-                NULL::int                         AS item_id,
-                c.id                              AS category_id,
                 {metric_expr}                     AS value,
-                COUNT(DISTINCT o.id)              AS order_count
+                COUNT(DISTINCT o.id)              AS order_count,
+                c.id                              AS meta_category_id
             FROM orders o
             JOIN order_items oi ON oi.order_id = o.id
             JOIN menu_items  mi ON mi.id = oi.menu_item_id
             LEFT JOIN categories c ON c.id = mi.category_id
-            WHERE {order_conditions} {item_filter_sql}
+            WHERE {fc.order_clause} {fc.item_clause}
             GROUP BY c.id, c.name
             ORDER BY value DESC
         """
+        def make_meta(r: Any) -> dict:
+            return {"category_id": int(r.meta_category_id)} if r.meta_category_id is not None else {}
 
-    # --- DAY_OF_WEEK dimension ---
     elif dimension == "day_of_week":
-        metric_expr, join_clause = _time_metric_and_join(metric, has_item_filters)
+        metric_expr, join_clause = _pick_metric_and_join(metric, fc.needs_items_join)
+        item_filter = fc.item_clause if join_clause else ""
         sql = f"""
             SELECT
                 TO_CHAR(o.created_at, 'Dy') AS label,
-                NULL::int                   AS item_id,
-                NULL::int                   AS category_id,
                 {metric_expr}               AS value,
                 COUNT(DISTINCT o.id)        AS order_count
-            FROM orders o
-            {join_clause}
-            WHERE {order_conditions} {item_filter_sql if has_item_filters and join_clause else ''}
+            FROM orders o {join_clause}
+            WHERE {fc.order_clause} {item_filter}
             GROUP BY EXTRACT(DOW FROM o.created_at), TO_CHAR(o.created_at, 'Dy')
             ORDER BY EXTRACT(DOW FROM o.created_at)
         """
+        def make_meta(_: Any) -> dict:
+            return {}
 
-    # --- HOUR dimension ---
     elif dimension == "hour":
-        metric_expr, join_clause = _time_metric_and_join(metric, has_item_filters)
+        metric_expr, join_clause = _pick_metric_and_join(metric, fc.needs_items_join)
+        item_filter = fc.item_clause if join_clause else ""
         sql = f"""
             SELECT
                 LPAD(EXTRACT(HOUR FROM o.created_at)::int::text, 2, '0') || ':00' AS label,
-                NULL::int             AS item_id,
-                NULL::int             AS category_id,
                 {metric_expr}         AS value,
                 COUNT(DISTINCT o.id)  AS order_count
-            FROM orders o
-            {join_clause}
-            WHERE {order_conditions} {item_filter_sql if has_item_filters and join_clause else ''}
+            FROM orders o {join_clause}
+            WHERE {fc.order_clause} {item_filter}
             GROUP BY EXTRACT(HOUR FROM o.created_at)
             ORDER BY EXTRACT(HOUR FROM o.created_at)
         """
+        def make_meta(_: Any) -> dict:
+            return {}
 
-    # --- ORDER_TYPE dimension ---
     elif dimension == "order_type":
         metric_expr = _order_metric_expr(metric)
         sql = f"""
             SELECT
                 CASE WHEN o.ayce_order THEN 'AYCE' ELSE 'Regular' END AS label,
-                NULL::int            AS item_id,
-                NULL::int            AS category_id,
                 {metric_expr}        AS value,
                 COUNT(DISTINCT o.id) AS order_count
             FROM orders o
-            WHERE {order_conditions}
+            WHERE {fc.order_clause}
             GROUP BY o.ayce_order
             ORDER BY value DESC
         """
+        def make_meta(r: Any) -> dict:
+            return {"order_type": "ayce" if r.label == "AYCE" else "regular"}
 
-    # --- TABLE dimension ---
     elif dimension == "table":
         metric_expr = _order_metric_expr(metric)
         sql = f"""
             SELECT
                 'Table ' || t.number::text AS label,
-                NULL::int                  AS item_id,
-                NULL::int                  AS category_id,
                 {metric_expr}              AS value,
-                COUNT(DISTINCT o.id)       AS order_count
+                COUNT(DISTINCT o.id)       AS order_count,
+                t.id                       AS meta_table_id
             FROM orders o
             JOIN tables t ON t.id = o.table_id
-            WHERE {order_conditions}
+            WHERE {fc.order_clause}
             GROUP BY t.id, t.number
             ORDER BY value DESC
         """
+        def make_meta(r: Any) -> dict:
+            return {"table_id": int(r.meta_table_id)}
 
     else:
         return [], 0.0
 
-    raw = db.execute(text(sql), params).fetchall()
+    raw = db.execute(text(sql), fc.params).fetchall()
     total = sum(float(r.value) for r in raw)
-
     rows = [
         DrillRow(
             label=str(r.label).strip(),
             value=float(r.value),
             order_count=int(r.order_count),
-            item_id=int(r.item_id) if r.item_id is not None else None,
-            category_id=int(r.category_id) if r.category_id is not None else None,
+            metadata=make_meta(r),
         )
         for r in raw
     ]
     return rows, total
 
 
-def _item_metric_expr(metric: str) -> str:
-    """Metric expressions for queries that JOIN order_items + menu_items."""
-    if metric == "revenue":
-        return "COALESCE(SUM(oi.quantity * oi.unit_price), 0)"
-    if metric == "order_count":
-        return "COUNT(DISTINCT o.id)"
-    if metric == "avg_order_value":
-        return "COALESCE(AVG(oi.unit_price), 0)"
-    if metric == "item_count":
-        return "COALESCE(SUM(oi.quantity), 0)"
-    return "COALESCE(SUM(oi.quantity * oi.unit_price), 0)"
+# ---------------------------------------------------------------------------
+# GET /analytics/decompose
+# ---------------------------------------------------------------------------
 
-
-def _order_metric_expr(metric: str) -> str:
-    """Metric expressions for queries on orders table only."""
-    if metric == "revenue":
-        return "COALESCE(SUM(o.total_amount), 0)"
-    if metric == "order_count":
-        return "COUNT(DISTINCT o.id)"
-    if metric == "avg_order_value":
-        return "COALESCE(AVG(o.total_amount), 0)"
-    if metric == "item_count":
-        return "COUNT(DISTINCT o.id)"  # fallback: can't count items without join
-    return "COALESCE(SUM(o.total_amount), 0)"
-
-
-def _time_metric_and_join(metric: str, has_item_filters: bool) -> tuple[str, str]:
+@router.get("/analytics/decompose", response_model=DecomposeResponse)
+def get_analytics_decompose(
+    f: AnalyticsFilter = Depends(parse_filter),
+    db: Session = Depends(get_db),
+):
     """
-    Returns (metric_expr, join_clause) for time-based dimensions.
-    If item filters are present, we must join order_items to apply them.
+    Breaks down revenue into its component drivers for a time window.
+    Returns an aggregate total AND a daily timeseries of all three metrics.
+    Use this to answer "why did revenue change?" for any filtered slice.
     """
-    needs_join = has_item_filters or metric == "item_count"
-    if needs_join:
-        join_clause = (
-            "JOIN order_items oi ON oi.order_id = o.id"
-            " JOIN menu_items mi ON mi.id = oi.menu_item_id"
+    fc = build_conditions(f)
+
+    totals_row = db.execute(
+        text(f"""
+            SELECT
+                COUNT(*)                          AS order_count,
+                COALESCE(SUM(o.total_amount), 0)  AS total_revenue,
+                COALESCE(AVG(o.total_amount), 0)  AS avg_order_value
+            FROM orders o
+            WHERE {fc.order_clause}
+        """),
+        fc.params,
+    ).fetchone()
+
+    # Reuse _grouped_summary for the daily breakdown (all three metrics per day)
+    timeseries = _grouped_summary(db, "day", fc)
+
+    total = SummaryResponse(
+        total_revenue=float(totals_row.total_revenue),
+        order_count=int(totals_row.order_count),
+        avg_order_value=float(totals_row.avg_order_value),
+    )
+    return DecomposeResponse(total=total, timeseries=timeseries)
+
+
+# ---------------------------------------------------------------------------
+# GET /analytics/compare
+# ---------------------------------------------------------------------------
+
+@router.get("/analytics/compare", response_model=CompareResponse)
+def get_analytics_compare(
+    metric: str = Query("revenue"),
+    dimension: str = Query("category"),
+    # Cohort A
+    a_start_date: Optional[date] = Query(None),
+    a_end_date: Optional[date] = Query(None),
+    a_meal_period: Optional[str] = Query(None),
+    a_order_type: Optional[str] = Query(None),
+    # Cohort B
+    b_start_date: Optional[date] = Query(None),
+    b_end_date: Optional[date] = Query(None),
+    b_meal_period: Optional[str] = Query(None),
+    b_order_type: Optional[str] = Query(None),
+    # Shared dimensional filters (applied to both cohorts)
+    category_id: Optional[int] = Query(None),
+    item_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Runs the same aggregation over two cohorts and returns a side-by-side diff.
+
+    Typical use: compare last 30 days vs the previous 30 days for the same
+    dimension, to see which categories / items grew or shrank.
+
+    Cohort A and B share the same dimension filters (category_id, item_id)
+    so comparisons are apples-to-apples. Only time range and period filters differ.
+    """
+    if metric not in VALID_METRICS:
+        metric = "revenue"
+    if dimension not in VALID_DIMENSIONS:
+        dimension = "category"
+
+    today = date.today()
+
+    filter_a = AnalyticsFilter(
+        start_date=a_start_date or today - timedelta(days=30),
+        end_date=a_end_date or today,
+        meal_period=a_meal_period,
+        order_type=a_order_type,
+        category_id=category_id,
+        item_id=item_id,
+    )
+    filter_b = AnalyticsFilter(
+        start_date=b_start_date or today - timedelta(days=60),
+        end_date=b_end_date or today - timedelta(days=31),
+        meal_period=b_meal_period,
+        order_type=b_order_type,
+        category_id=category_id,
+        item_id=item_id,
+    )
+
+    # Run the same _drill_query logic for both cohorts — zero duplication
+    rows_a, _ = _drill_query(db, dimension, metric, build_conditions(filter_a))
+    rows_b, _ = _drill_query(db, dimension, metric, build_conditions(filter_b))
+
+    # Align by label (full outer join semantics)
+    a_map: dict[str, float] = {r.label: r.value for r in rows_a}
+    b_map: dict[str, float] = {r.label: r.value for r in rows_b}
+    all_labels = sorted(set(a_map) | set(b_map), key=lambda l: a_map.get(l, 0), reverse=True)
+
+    compare_rows: List[CompareRow] = []
+    for label in all_labels:
+        a_val = a_map.get(label, 0.0)
+        b_val = b_map.get(label, 0.0)
+        delta = a_val - b_val
+        pct_change = (delta / b_val) if b_val != 0 else None
+        compare_rows.append(
+            CompareRow(
+                label=label,
+                a_value=a_val,
+                b_value=b_val,
+                delta=delta,
+                pct_change=pct_change,
+            )
         )
-        metric_expr = _item_metric_expr(metric)
-    else:
-        join_clause = ""
-        metric_expr = _order_metric_expr(metric)
-    return metric_expr, join_clause
+
+    return CompareResponse(dimension=dimension, metric=metric, rows=compare_rows)
