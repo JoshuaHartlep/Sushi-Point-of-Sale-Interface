@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  frontend:
+    image: michaeldockerlei/sushi-pos-frontend:latest
+    container_name: sushi-pos-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    networks:
+      - sushi-network
+
+  backend:
+    image: michaeldockerlei/sushi-pos-backend:latest
+    container_name: sushi-pos-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .backend-env
+    volumes:
+      - uploads:/app/uploads
+    networks:
+      - sushi-network
+
+  nginx:
+    image: nginx:1.29
+    container_name: sushi-pos-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt
+      - ./.well-known:/var/www/.well-known:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - sushi-network
+
+volumes:
+  uploads:
+
+networks:
+  sushi-network:
+    driver: bridge
