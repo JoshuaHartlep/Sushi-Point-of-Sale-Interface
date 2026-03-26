@@ -61,7 +61,10 @@ def get_menu_items(
         query = query.filter(MenuItem.price >= min_price)
     if max_price is not None:
         query = query.filter(MenuItem.price <= max_price)
-        
+
+    # predictable ordering: alphabetical by name (especially important for "All" / unpaginated customer menus)
+    query = query.order_by(MenuItem.name.asc())
+
     # skip and limit for pagination, then get all matching items
     return query.offset(skip).limit(limit).all()
 
