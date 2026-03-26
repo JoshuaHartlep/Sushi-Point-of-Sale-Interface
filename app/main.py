@@ -13,8 +13,9 @@ The application includes:
 - Error handling and logging
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from app.api import menu, order, dashboard, settings as settings_api, images as images_api, analytics as analytics_api
 from app.core.config import settings
@@ -61,6 +62,22 @@ app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Dashboar
 app.include_router(settings_api.router, prefix="/api/v1", tags=["Settings"])
 app.include_router(images_api.router, prefix="/api/v1", tags=["Images"])
 app.include_router(analytics_api.router, prefix="/api/v1", tags=["Analytics"])
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all handler for unhandled exceptions.
+    Starlette's CORSMiddleware doesn't inject headers into error responses that
+    propagate past it as raw exceptions, so the browser sees a CORS error
+    instead of the real 500. Returning a JSONResponse here means the response
+    goes back through the middleware stack normally, so CORS headers are present.
+    """
+    logger.exception("Unhandled exception: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
 
 @app.get("/")
 async def root():
