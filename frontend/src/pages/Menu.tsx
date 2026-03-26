@@ -1,11 +1,14 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, API_ORIGIN } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
+import ProgressLoader from '../components/ProgressLoader';
 
 const IMAGE_BASE = API_ORIGIN;
 
 const ITEMS_PER_PAGE = 12;
+
+const TOTAL_REQUESTS = 2;
 
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -42,15 +45,43 @@ export default function Menu() {
     return item.is_available;
   };
 
-  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery<Category[]>({
+  const { data: categories, isLoading: categoriesLoading, isSuccess: categoriesSuccess, error: categoriesError } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: categoriesApi.getAll,
   });
 
-  const { data: menuItems, isLoading: itemsLoading, error: itemsError } = useQuery<MenuItem[]>({
+  const { data: menuItems, isLoading: itemsLoading, isSuccess: itemsSuccess, error: itemsError } = useQuery<MenuItem[]>({
     queryKey: ['menuItems', selectedCategory, currentPage],
     queryFn: () => menuApi.getItems({ skip: currentPage * ITEMS_PER_PAGE, limit: ITEMS_PER_PAGE, category_id: selectedCategory || undefined }),
   });
+
+  // ── Progress loader ────────────────────────────────────────────────────────
+  const [simProgress, setSimProgress] = useState(0);
+  const [showLoader, setShowLoader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let current = 0;
+    progressIntervalRef.current = setInterval(() => {
+      current += 1.5;
+      if (current >= 50) { setSimProgress(50); if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); }
+      else setSimProgress(current);
+    }, 45);
+    return () => { if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); };
+  }, []);
+
+  const completedRequests = [categoriesSuccess, itemsSuccess].filter(Boolean).length;
+  const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
+  const menuProgress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
+
+  const allDone = !categoriesLoading && !itemsLoading;
+  useEffect(() => {
+    if (!allDone || !showLoader) return;
+    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
+    const hideTimer = setTimeout(() => setShowLoader(false), 650);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, [allDone, showLoader]);
 
   const deleteImageMutation = useMutation({
     mutationFn: (id: number) => menuApi.deleteImage(id),
@@ -146,10 +177,10 @@ export default function Menu() {
     }
   };
 
-  if (categoriesLoading || itemsLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="material-symbols-outlined text-[40px] text-on-surface-variant animate-spin">progress_activity</span>
+      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
+        <ProgressLoader progress={menuProgress} />
       </div>
     );
   }

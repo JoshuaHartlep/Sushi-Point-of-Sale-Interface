@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, categoriesApi } from '../services/api';
+import ProgressLoader from '../components/ProgressLoader';
 
 interface Modifier {
   id: number;
@@ -34,13 +35,38 @@ const Modifiers = () => {
 
   const { data: categories = [] } = useQuery<Category[]>({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
 
-  const { data: modifiers = [], isLoading: modifiersLoading } = useQuery<Modifier[]>({
+  const { data: modifiers = [], isLoading: modifiersLoading, isSuccess: modifiersSuccess } = useQuery<Modifier[]>({
     queryKey: ['modifiers', currentPage, selectedCategory],
     queryFn: async () => {
       const response = await menuApi.getModifiers({ skip: currentPage * ITEMS_PER_PAGE, limit: ITEMS_PER_PAGE, category_id: selectedCategory ?? undefined });
       return response;
     }
   });
+
+  // ── Progress loader ────────────────────────────────────────────────────────
+  const [simProgress, setSimProgress] = useState(0);
+  const [showLoader, setShowLoader] = useState(true);
+  const [fadeOut, setFadeOut] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    let current = 0;
+    intervalRef.current = setInterval(() => {
+      current += 1.5;
+      if (current >= 50) { setSimProgress(50); if (intervalRef.current) clearInterval(intervalRef.current); }
+      else setSimProgress(current);
+    }, 45);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, []);
+
+  const modProgress = modifiersSuccess ? Math.max(simProgress, 100) : simProgress;
+
+  useEffect(() => {
+    if (modifiersLoading || !showLoader) return;
+    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
+    const hideTimer = setTimeout(() => setShowLoader(false), 650);
+    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+  }, [modifiersLoading, showLoader]);
 
   const createModifierMutation = useMutation({
     mutationFn: (data: Omit<Modifier, 'id'>) => menuApi.createModifier(data),
@@ -71,10 +97,10 @@ const Modifiers = () => {
     else setIsEditModalOpen(false);
   };
 
-  if (modifiersLoading) {
+  if (showLoader) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="material-symbols-outlined text-[40px] text-on-surface-variant animate-spin">progress_activity</span>
+      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
+        <ProgressLoader progress={modProgress} />
       </div>
     );
   }

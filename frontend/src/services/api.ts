@@ -348,12 +348,15 @@ export interface AnalyticsSummary {
   groups: SummaryGroup[] | null;
 }
 
+// DrillRow uses a generic metadata bag instead of per-field IDs.
+// metadata keys: item_id, category_id, table_id, order_type — whatever
+// the backend populates for the current dimension. Frontend reads this
+// to accumulate filters when the user drills deeper.
 export interface DrillRow {
   label: string;
   value: number;
   order_count: number;
-  item_id: number | null;
-  category_id: number | null;
+  metadata: Record<string, number | string>;
 }
 
 export interface DrillResponse {
@@ -363,24 +366,63 @@ export interface DrillResponse {
   total: number;
 }
 
+export interface CompareRow {
+  label: string;
+  a_value: number;
+  b_value: number;
+  delta: number;
+  pct_change: number | null;
+}
+
+export interface CompareResponse {
+  dimension: string;
+  metric: string;
+  rows: CompareRow[];
+}
+
+export interface DecomposeResponse {
+  total: AnalyticsSummary;
+  timeseries: SummaryGroup[];
+}
+
 export type AnalyticsMetric = 'revenue' | 'order_count' | 'avg_order_value' | 'item_count';
 export type AnalyticsDimension = 'item' | 'category' | 'day_of_week' | 'hour' | 'order_type' | 'table';
 export type AnalyticsGroupBy = 'day' | 'week' | 'day_of_week' | 'hour' | 'item' | 'category' | 'order_type';
 
-export interface SummaryParams {
-  start_date?: string;
-  end_date?: string;
-  meal_period?: string;
-  group_by?: AnalyticsGroupBy;
-}
-
-export interface DrillParams {
-  metric?: AnalyticsMetric;
-  dimension?: AnalyticsDimension;
+// Shared filter params accepted by summary, drill, decompose
+export interface AnalyticsFilterParams {
   start_date?: string;
   end_date?: string;
   meal_period?: string;
   order_type?: string;
+  category_id?: number;
+  item_id?: number;
+  table_id?: number;
+}
+
+export interface SummaryParams extends AnalyticsFilterParams {
+  group_by?: AnalyticsGroupBy;
+}
+
+export interface DrillParams extends AnalyticsFilterParams {
+  metric?: AnalyticsMetric;
+  dimension?: AnalyticsDimension;
+}
+
+export interface CompareParams {
+  metric?: AnalyticsMetric;
+  dimension?: AnalyticsDimension;
+  // Cohort A
+  a_start_date?: string;
+  a_end_date?: string;
+  a_meal_period?: string;
+  a_order_type?: string;
+  // Cohort B
+  b_start_date?: string;
+  b_end_date?: string;
+  b_meal_period?: string;
+  b_order_type?: string;
+  // Shared dimensional filters
   category_id?: number;
   item_id?: number;
 }
@@ -391,6 +433,12 @@ export const analyticsApi = {
 
   getDrill: (params: DrillParams): Promise<DrillResponse> =>
     api.get('/analytics/drill', { params }).then(r => r.data),
+
+  getDecompose: (params: AnalyticsFilterParams): Promise<DecomposeResponse> =>
+    api.get('/analytics/decompose', { params }).then(r => r.data),
+
+  getCompare: (params: CompareParams): Promise<CompareResponse> =>
+    api.get('/analytics/compare', { params }).then(r => r.data),
 };
 
 export default api;
