@@ -260,6 +260,23 @@ A power-user analytics environment built for exploration, not just reporting. Ph
 
 Built in three phases, all under `app/api/analytics.py` (backend) and `frontend/src/pages/Analytics.tsx` (frontend). No new libraries — raw SQL via SQLAlchemy `text()`, stdlib `statistics` for anomaly detection, SVG bar chart built from scratch.
 
+### API quick reference
+
+All Lens endpoints live under `GET /api/v1/analytics/*` and accept a shared set of query params:
+
+- `start_date`, `end_date` — ISO date strings (`YYYY-MM-DD`)
+- Optional filters (depending on UI state): `meal_period`, `order_type`, `category_id`, `item_id`, `table_id`
+
+Lens uses two key concepts:
+
+- **`group_by`** (for `/analytics/summary`): controls time/label breakdown for the bar chart.
+- **`dimension`** (for `/analytics/drill` and `/analytics/compare`): controls what the drill table groups by.
+
+**Common values used by the UI:**
+
+- `group_by`: `day`, `week`, `day_of_week`, `hour`, `category`, `item`, `order_type`
+- `dimension`: `category`, `item`, `day`, `day_of_week`, `hour`, `order_type`, `table`
+
 ### Architecture
 
 All four endpoints share a single filter/SQL translation layer:
@@ -302,3 +319,45 @@ Scans daily metrics over a rolling window (default 14 days, configurable via `wi
 6. Severity: `medium` when `|z| > 2`, `high` when `|z| > 3`. Results sorted by `|z_score|` descending.
 
 Frontend: **Signals tab** with a live badge showing anomaly count. Each card shows the metric, date, message (e.g. "Revenue dropped 38% below 14-day average"), z-score, and actual vs average values. Clicking a card sets the date range to that specific day, resets the drill stack, and switches back to Overview — dropping the user directly into exploration context for that anomaly. Methodology footnote at the bottom is visible to keep the math transparent.
+
+### Lens troubleshooting notes (things we actually hit)
+
+- **“CORS blocked” in the browser often means the backend threw a 500**: when FastAPI returns an unhandled 500, the response may not include CORS headers, so the browser surfaces it as a CORS/network error. Treat it as “there’s a server-side exception” and check backend logs.
+- **Hour-by-hour drilldowns rely on correct SQL grouping**: Lens uses `group_by=hour` for the “click a day → see hour breakdown” flow. Backend grouping must match the selected expression for the hour label, or Postgres will raise a `GROUP BY` error.
+
+### Recent backend fixes that unblocked Lens
+
+These are in `app/api/analytics.py`:
+
+- **Order status enum robustness**: queries that excluded cancelled orders now compare as `LOWER(o.status::text) != 'cancelled'` instead of hardcoding a case-sensitive enum literal. This prevents `invalid input value for enum orderstatus: "cancelled"` errors.
+- **Hour grouping correctness**: `group_by=hour` and `dimension=hour` were updated to group/order by the same expression used in `SELECT` (`TO_CHAR(o.created_at, 'HH24')`, ordered numerically). This fixes Postgres `GroupingError` when Lens requests hour-by-hour summaries/drills.
+
+---
+
+## Lens test data (realistic + anomaly-rich)
+
+Lens (especially **Signals**, **Compare**, and deep **Drill**) is only as good as the data distribution. This repo includes seed SQL that was generated specifically to produce visible trends/anomalies over the last ~30 days without overwriting existing data.
+
+### Seed files
+
+- `tmp_supabase_seed/chunks_04_09_clean/` — “clean” order chunks (baseline distribution)
+- `tmp_supabase_seed/chunks_316_485_anomalies/` — anomaly-injected order chunks
+- `tmp_supabase_seed/chunks_316_485_anomalies/groups_remaining/` — combined groups intended for easier execution (each file inserts a contiguous range)
+
+### What the anomaly dataset is designed to show
+
+- **Weekly behavior**: week-over-week changes in order volume and average order value
+- **Day-of-week effect**: Fridays/Saturdays busier than Mondays
+- **Time-of-day**: lunch vs dinner order size differences
+- **Category shift**: a late-period spike in a specific category (e.g. Sashimi)
+- **AYCE mix shift**: AYCE share dropping in the final 7–10 days
+- **Strong Signals anomalies**:
+  - a 2–3 day negative revenue shock late in the range (lower volume + fewer items)
+  - a single-day positive volume spike
+  - item-level “trending up” vs “declining” substitutions
+
+### How to execute
+
+Use your preferred SQL runner against the configured `DATABASE_URL` (Supabase SQL editor, `psql`, or your internal tooling). Execute the files in order and **do not** re-run the same chunk twice (they insert explicit IDs).
+
+If you only want to finish the remaining anomaly inserts, run the `tmp_supabase_seed/chunks_316_485_anomalies/groups_remaining/group_*.sql` files (they are already bundled for convenience).

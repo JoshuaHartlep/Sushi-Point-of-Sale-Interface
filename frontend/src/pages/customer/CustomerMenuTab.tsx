@@ -5,6 +5,9 @@ import { menuApi, categoriesApi, MenuItem, Category, API_ORIGIN } from '../../se
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 import MenuItemModal from './MenuItemModal';
 
+const sortMenuItemsByName = (a: MenuItem, b: MenuItem) =>
+  a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+
 export default function CustomerMenuTab() {
   const { mealPeriod, addToCart, updateQty, cart, isAyce } = useCustomerOrder();
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -30,16 +33,25 @@ export default function CustomerMenuTab() {
     ? periodItems.filter(item => item.category_id === selectedCategory)
     : periodItems;
 
-  // Per-category: available first, unavailable at the bottom
+  // Per-category: available first, unavailable at the bottom; names A–Z within each group
   const itemsByCategory = categories.reduce<Record<number, { available: MenuItem[]; unavailable: MenuItem[] }>>((acc, cat) => {
     const catItems = filteredPeriodItems.filter(i => i.category_id === cat.id);
     if (catItems.length === 0) return acc;
     acc[cat.id] = {
-      available: catItems.filter(i => i.is_available),
-      unavailable: catItems.filter(i => !i.is_available),
+      available: catItems.filter(i => i.is_available).sort(sortMenuItemsByName),
+      unavailable: catItems.filter(i => !i.is_available).sort(sortMenuItemsByName),
     };
     return acc;
   }, {});
+
+  const categoryEntriesOrdered =
+    selectedCategory === null
+      ? Object.entries(itemsByCategory).sort(([idA], [idB]) => {
+          const nameA = categories.find(c => c.id === parseInt(idA, 10))?.name ?? '';
+          const nameB = categories.find(c => c.id === parseInt(idB, 10))?.name ?? '';
+          return nameA.localeCompare(nameB, undefined, { sensitivity: 'base' });
+        })
+      : Object.entries(itemsByCategory);
 
   // Get qty from local cart (instant, no API)
   const getCartQty = (menuItemId: number) =>
@@ -90,7 +102,7 @@ export default function CustomerMenuTab() {
       </nav>
 
       <div className="px-4 pt-6 space-y-10">
-        {Object.entries(itemsByCategory).map(([catIdStr, { available, unavailable }]) => {
+        {categoryEntriesOrdered.map(([catIdStr, { available, unavailable }]) => {
           const catId = parseInt(catIdStr);
           const category = categories.find(c => c.id === catId);
           if (!category) return null;
