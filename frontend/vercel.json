@@ -12,6 +12,10 @@
       "destination": "http://44.206.250.63/api/:path*"
     },
     {
+      "source": "/uploads/:path*",
+      "destination": "http://44.206.250.63/uploads/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
