@@ -64,10 +64,11 @@ const Orders = () => {
 
   const createOrderMutation = useMutation({
     mutationFn: ordersApi.create,
-    onSuccess: () => {
+    onSuccess: (createdOrder) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setIsNewOrderModalOpen(false);
       setNewOrder({ table_id: 1, status: 'pending', ayce_order: false, items: [] });
+      navigate(`/orders/${createdOrder.id}/edit`);
     },
   });
 
@@ -185,12 +186,12 @@ const Orders = () => {
       {/* ── New Order Modal ── */}
       {isNewOrderModalOpen && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 p-6 rounded-xl w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl w-full max-w-md max-h-[90vh] flex flex-col border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
+            <div className="flex justify-between items-center p-6 pb-0 mb-6">
               <h2 className="text-2xl font-headline text-on-surface">Create New Order</h2>
               <button onClick={() => setIsNewOrderModalOpen(false)} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4 px-6 overflow-y-auto">
               <div>
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Table Number</label>
                 <input type="number" value={newOrder.table_id} onChange={(e) => setNewOrder({ ...newOrder, table_id: parseInt(e.target.value) })}
@@ -220,7 +221,7 @@ const Orders = () => {
                   className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm" />
               </div>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="p-6 pt-4 flex justify-end gap-3 shrink-0">
               <button onClick={() => setIsNewOrderModalOpen(false)} className="btn-secondary">Cancel</button>
               <button onClick={handleCreateOrder} className="btn-primary">Create Order</button>
             </div>
