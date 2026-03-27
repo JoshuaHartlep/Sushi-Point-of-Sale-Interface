@@ -16,7 +16,9 @@ Flexible enough to be used for any restaurant, not just sushi.
 | Frontend | React + TypeScript, Vite, Tailwind CSS |
 | State | TanStack React Query + React contexts |
 | Image storage | Local disk (`uploads/`) served at `/uploads/` by FastAPI |
-| Hosting | Frontend **Vercel**, backend **Render** (see **Deployment**) |
+| Hosting | Frontend **Vercel** (redirects to EC2), backend **AWS EC2** (Docker), database **Supabase** |
+| Containers | Docker + Docker Compose; images on DockerHub (`joshuadockerhartlep/sushi-pos-backend`, `joshuadockerhartlep/sushi-pos-frontend`) |
+| CI/CD | GitHub Actions — auto-builds and pushes Docker images on every push to `main` |
 
 **Security note:** The manager and customer UIs are **not behind login** in the current codebase—treat deployments accordingly (network restrictions, auth gateway, or future app-level auth).
 
@@ -185,43 +187,94 @@ Open the Network URL printed by Vite on your phone. The backend already binds to
 
 ---
 
-## Deployment (Vercel + Render)
+## Deployment (Vercel + AWS EC2 + Docker)
 
 Current production split:
 
-- Frontend (React/Vite) on **Vercel**
-- Backend (FastAPI) on **Render**
+- Frontend (React/Vite) on **Vercel** — redirects all traffic to EC2
+- Backend (FastAPI) on **AWS EC2** via Docker Compose
 - Database on **Supabase Postgres**
+- Images on **DockerHub** (`joshuadockerhartlep/sushi-pos-backend`, `joshuadockerhartlep/sushi-pos-frontend`)
+
+### CI/CD — GitHub Actions
+
+Every push to `main` automatically builds and pushes both Docker images via `.github/workflows/docker-deploy.yml`.
+
+Required GitHub repository secrets:
+
+| Secret | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | `joshuadockerhartlep` |
+| `DOCKERHUB_TOKEN` | DockerHub access token (Account Settings → Security → Access Tokens) |
+
+### AWS EC2 Setup
+
+1. Launch an Amazon Linux 2023 instance, open port **80** in the security group inbound rules.
+2. SSH in with your key pair:
+   ```bash
+   ssh -i "Sushi POS Key Pair.pem" ec2-user@<your-ec2-public-ip>
+   ```
+3. Install Docker and Docker Compose:
+   ```bash
+   sudo dnf install -y docker
+   sudo systemctl start docker && sudo systemctl enable docker
+   sudo usermod -aG docker ec2-user
+   # log out and back in, then:
+   sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+   sudo chmod +x /usr/local/bin/docker-compose
+   ```
+4. Upload `ec2setup/docker-compose.yml` and `ec2setup/nginx-ipv4.conf` to the instance.
+5. Create `.backend-env` next to `docker-compose.yml`:
+   ```env
+   DATABASE_URL=postgresql://<supabase-connection-string>
+   ENVIRONMENT=production
+   SQL_ECHO=False
+   ```
+6. Pull and start:
+   ```bash
+   docker-compose pull
+   docker-compose up -d
+   ```
+
+To update after a new Docker image is pushed:
+```bash
+docker-compose pull && docker-compose up -d
+```
+
+### Building Docker Images Locally
+
+Images are built for both `linux/amd64` and `linux/arm64` (Apple Silicon + EC2):
+
+```bash
+# one-time buildx setup
+docker buildx create --use --name multibuilder
+docker buildx inspect --bootstrap
+
+# backend
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t joshuadockerhartlep/sushi-pos-backend:latest --push .
+
+# frontend
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t joshuadockerhartlep/sushi-pos-frontend:latest --push ./frontend
+```
 
 ### Vercel (Frontend)
 
-Use a Vercel project rooted at `frontend/`.
+The Vercel project is rooted at `frontend/`. It redirects all traffic to the EC2 instance via `frontend/vercel.json`.
 
 - **Root Directory:** `frontend`
 - **Build Command:** `npm run build`
 - **Output Directory:** `dist`
 - **Framework Preset:** Vite
-- **Environment Variable:** `VITE_API_URL=https://<your-render-backend-domain>`
-
-This repo includes SPA rewrites for React Router deep links (for example `/customer?table=1`). See `frontend/vercel.json`.
-
-### Render (Backend)
-
-Use a Render Web Service rooted at repo root (do **not** set Root Directory to `backend` for this repo).
-
-- **Root Directory:** *(blank)*
-- **Build Command:** `pip install -r requirements.txt`
-- **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- **Environment Variable:** `PYTHON_VERSION=3.12.7` (or another 3.12.x)
-- **Database:** set `DATABASE_URL` to your Postgres connection string (e.g. Supabase)
-
-Why `PYTHON_VERSION` is required: pinned deps in `requirements.txt` (notably `pydantic==2.6.1`) can fail to build under Python 3.14 on Render.
+- **Environment Variable:** `VITE_API_URL` — leave empty (requests route through Vercel to EC2)
 
 ### Important Notes
 
-- Keep secrets (Render API keys, DB URLs, etc.) in platform environment variables, not in committed files.
+- Keep secrets (`DATABASE_URL`, DockerHub tokens, etc.) in platform environment variables, not in committed files.
 - `VITE_*` variables are public in frontend bundles; never put server secrets there.
-- Uploaded images are stored on backend disk (`/uploads/`). For long-term multi-instance scalability, move to object storage (S3/R2/etc.).
+- Uploaded images are stored on EC2 disk (`/uploads/`) via a named Docker volume. For multi-instance scalability, move to object storage (S3/R2/etc.).
+- The EC2 public IP may change on instance restart unless an Elastic IP is assigned.
 
 ---
 
@@ -231,8 +284,11 @@ Why `PYTHON_VERSION` is required: pinned deps in `requirements.txt` (notably `py
 - **`Form data requires "python-multipart"`** — run `pip install python-multipart`
 - **Alembic `Target database is not up to date`** — ignore Alembic entirely; apply schema changes directly (see Database section above)
 - **Images not loading** — the backend must be running; `/uploads/` is served as a static mount by FastAPI, not a CDN
-- **Render build fails while preparing `pydantic-core`** — set `PYTHON_VERSION=3.12.7` in Render environment variables and redeploy
 - **Vercel `/customer` returns 404** — confirm `frontend/vercel.json` exists and Vercel project Root Directory is `frontend`
+- **Mixed content errors on Vercel** — `VITE_API_URL` must be empty in Vercel env vars so requests proxy through Vercel to EC2 rather than calling EC2 directly over HTTP
+- **EC2 containers not starting** — run `docker-compose logs backend` / `docker-compose logs frontend` to diagnose; ensure `.backend-env` exists next to `docker-compose.yml`
+- **`no matching manifest for linux/amd64`** — images were built on Apple Silicon without `--platform`. Rebuild using `docker buildx build --platform linux/amd64,linux/arm64`
+- **GitHub Actions build fails** — confirm `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets are set in repo Settings → Secrets and variables → Actions
 
 ---
 
