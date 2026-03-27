@@ -118,15 +118,30 @@ export default function Menu() {
     if (!selectedItem) return;
     const changed: Partial<MenuItem> = {};
     Object.entries(editItemData).forEach(([k, v]) => { if (v !== selectedItem[k as keyof MenuItem]) (changed as any)[k] = v; });
+    const changedCount = Object.keys(changed).length;
+
     if (Object.keys(changed).length > 0) {
       updateItemMutation.mutate({ id: selectedItem.id, data: changed });
     }
+
+    let uploadedImage = false;
     if (editImageFile) {
       await menuApi.uploadImage(selectedItem.id, editImageFile);
       queryClient.invalidateQueries({ queryKey: ['menuItems'] });
       setEditImageFile(null);
+      uploadedImage = true;
     }
-    if (Object.keys(changed).length === 0 && !editImageFile) {
+
+    // When the user only uploads a new image, close the modal after save.
+    if (changedCount === 0 && uploadedImage) {
+      setIsEditItemModalOpen(false);
+      setSelectedItem(null);
+      setEditItemData({});
+      setEditImagePreview(null);
+      return;
+    }
+
+    if (changedCount === 0 && !uploadedImage) {
       setIsEditItemModalOpen(false);
     }
   };

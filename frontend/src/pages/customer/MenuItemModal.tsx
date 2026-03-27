@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Minus, Camera, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
-import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, API_ORIGIN } from '../../services/api';
+import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, resolveImageUrl } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 const NOTE_MAX = 50;
 
@@ -95,7 +95,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  const mainImageUrl = item.image_url ? `${API_ORIGIN}${item.image_url}` : null;
+  const mainImageUrl = resolveImageUrl(item.image_url);
   const trimmedNote = note.trim() || undefined;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,7 +150,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
 
             <img
               key={currentImg.id}
-              src={`${API_ORIGIN}${currentImg.image_url}`}
+              src={resolveImageUrl(currentImg.image_url) ?? undefined}
               alt="Customer photo"
               className="max-w-full max-h-full object-contain rounded-2xl select-none"
               draggable={false}
@@ -329,12 +329,12 @@ export default function MenuItemModal({ item, onClose }: Props) {
                     </div>
                   )}
                   {userImages.map((img, idx) => {
-                    const url = `${API_ORIGIN}${img.image_url}`;
+                    const url = resolveImageUrl(img.image_url);
                     const alreadyRep = reportedIds.has(img.id);
                     return (
                       <div key={img.id} className="relative shrink-0 w-24 h-24 rounded-xl overflow-hidden snap-start">
                         <img
-                          src={url}
+                          src={url ?? undefined}
                           alt="Customer photo"
                           className="w-full h-full object-cover cursor-pointer"
                           onClick={() => setExpandedIndex(idx)}
