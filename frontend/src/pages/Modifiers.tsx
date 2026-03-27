@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, categoriesApi } from '../services/api';
-import ProgressLoader from '../components/ProgressLoader';
 
 interface Modifier {
   id: number;
@@ -35,7 +34,7 @@ const Modifiers = () => {
 
   const { data: categories = [] } = useQuery<Category[]>({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
 
-  const { data: modifiers = [], isLoading: modifiersLoading, isSuccess: modifiersSuccess } = useQuery<Modifier[]>({
+  const { data: modifiers = [], isLoading: modifiersLoading } = useQuery<Modifier[]>({
     queryKey: ['modifiers', currentPage, selectedCategory],
     queryFn: async () => {
       const response = await menuApi.getModifiers({ skip: currentPage * ITEMS_PER_PAGE, limit: ITEMS_PER_PAGE, category_id: selectedCategory ?? undefined });
@@ -43,30 +42,6 @@ const Modifiers = () => {
     }
   });
 
-  // ── Progress loader ────────────────────────────────────────────────────────
-  const [simProgress, setSimProgress] = useState(0);
-  const [showLoader, setShowLoader] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      current += 1.5;
-      if (current >= 50) { setSimProgress(50); if (intervalRef.current) clearInterval(intervalRef.current); }
-      else setSimProgress(current);
-    }, 45);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
-
-  const modProgress = modifiersSuccess ? Math.max(simProgress, 100) : simProgress;
-
-  useEffect(() => {
-    if (modifiersLoading || !showLoader) return;
-    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
-    const hideTimer = setTimeout(() => setShowLoader(false), 650);
-    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
-  }, [modifiersLoading, showLoader]);
 
   const createModifierMutation = useMutation({
     mutationFn: (data: Omit<Modifier, 'id'>) => menuApi.createModifier(data),
@@ -96,14 +71,6 @@ const Modifiers = () => {
     if (Object.keys(changed).length > 0) updateModifierMutation.mutate({ id: selectedModifier.id, data: changed });
     else setIsEditModalOpen(false);
   };
-
-  if (showLoader) {
-    return (
-      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
-        <ProgressLoader progress={modProgress} />
-      </div>
-    );
-  }
 
   return (
     <div className="px-8 py-8 space-y-10 max-w-7xl mx-auto w-full">
@@ -141,7 +108,18 @@ const Modifiers = () => {
 
       {/* ── Modifiers grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {modifiers.map((modifier) => (
+        {modifiersLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-5 border border-outline-variant/10 dark:border-sumi-700 animate-pulse">
+              <div className="flex justify-between mb-2">
+                <div className="h-4 w-28 bg-surface-container rounded" />
+                <div className="h-4 w-12 bg-surface-container rounded" />
+              </div>
+              <div className="h-3 w-full bg-surface-container rounded mb-1" />
+              <div className="h-3 w-2/3 bg-surface-container rounded" />
+            </div>
+          ))
+        ) : modifiers.map((modifier) => (
           <div key={modifier.id} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-5 border border-outline-variant/10 dark:border-sumi-700 transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-outline-variant/20">
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-base font-bold text-on-surface">{modifier.name}</h3>
@@ -161,7 +139,7 @@ const Modifiers = () => {
               </button>
             </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* ── Pagination ── */}

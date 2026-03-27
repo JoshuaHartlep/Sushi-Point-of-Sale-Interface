@@ -55,6 +55,7 @@ export interface Order {
   table_id: number;
   status: string;
   total: number;
+  total_amount: number;
   created_at: string;
   ayce_order: boolean;
   notes?: string;

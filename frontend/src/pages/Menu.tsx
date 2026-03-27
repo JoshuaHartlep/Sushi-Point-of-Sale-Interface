@@ -1,14 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, API_ORIGIN } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
-import ProgressLoader from '../components/ProgressLoader';
 
 const IMAGE_BASE = API_ORIGIN;
 
 const ITEMS_PER_PAGE = 12;
-
-const TOTAL_REQUESTS = 2;
 
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -45,43 +42,15 @@ export default function Menu() {
     return item.is_available;
   };
 
-  const { data: categories, isLoading: categoriesLoading, isSuccess: categoriesSuccess, error: categoriesError } = useQuery<Category[]>({
+  const { data: categories, isLoading: categoriesLoading, error: categoriesError } = useQuery<Category[]>({
     queryKey: ['categories'],
     queryFn: categoriesApi.getAll,
   });
 
-  const { data: menuItems, isLoading: itemsLoading, isSuccess: itemsSuccess, error: itemsError } = useQuery<MenuItem[]>({
+  const { data: menuItems, isLoading: itemsLoading, error: itemsError } = useQuery<MenuItem[]>({
     queryKey: ['menuItems', selectedCategory, currentPage],
     queryFn: () => menuApi.getItems({ skip: currentPage * ITEMS_PER_PAGE, limit: ITEMS_PER_PAGE, category_id: selectedCategory || undefined }),
   });
-
-  // ── Progress loader ────────────────────────────────────────────────────────
-  const [simProgress, setSimProgress] = useState(0);
-  const [showLoader, setShowLoader] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    let current = 0;
-    progressIntervalRef.current = setInterval(() => {
-      current += 1.5;
-      if (current >= 50) { setSimProgress(50); if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); }
-      else setSimProgress(current);
-    }, 45);
-    return () => { if (progressIntervalRef.current) clearInterval(progressIntervalRef.current); };
-  }, []);
-
-  const completedRequests = [categoriesSuccess, itemsSuccess].filter(Boolean).length;
-  const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
-  const menuProgress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
-
-  const allDone = !categoriesLoading && !itemsLoading;
-  useEffect(() => {
-    if (!allDone || !showLoader) return;
-    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
-    const hideTimer = setTimeout(() => setShowLoader(false), 650);
-    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
-  }, [allDone, showLoader]);
 
   const deleteImageMutation = useMutation({
     mutationFn: (id: number) => menuApi.deleteImage(id),
@@ -177,25 +146,6 @@ export default function Menu() {
     }
   };
 
-  if (showLoader) {
-    return (
-      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
-        <ProgressLoader progress={menuProgress} />
-      </div>
-    );
-  }
-
-  if (categoriesError || itemsError) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center space-y-2">
-          <span className="material-symbols-outlined text-[40px] text-error">error</span>
-          <p className="text-sm text-on-surface-variant">Error loading menu data.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="px-8 py-8 max-w-7xl w-full mx-auto space-y-10">
 
@@ -224,7 +174,11 @@ export default function Menu() {
           >
             All
           </button>
-          {categories?.map((cat) => (
+          {categoriesLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-9 w-20 bg-surface-container rounded-full animate-pulse" />
+            ))
+          ) : categories?.map((cat) => (
             <button
               key={cat.id}
               onClick={() => { setSelectedCategory(cat.id); setCurrentPage(0); }}
@@ -242,7 +196,25 @@ export default function Menu() {
 
       {/* ── Menu items grid ── */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {menuItems?.map((item) => {
+        {categoriesError || itemsError ? (
+          <div className="col-span-3 flex items-center justify-center h-40">
+            <div className="text-center space-y-2">
+              <span className="material-symbols-outlined text-[40px] text-error">error</span>
+              <p className="text-sm text-on-surface-variant">Error loading menu data.</p>
+            </div>
+          </div>
+        ) : itemsLoading ? (
+          Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl border border-outline-variant/10 dark:border-sumi-700 overflow-hidden animate-pulse">
+              <div className="h-40 bg-surface-container" />
+              <div className="p-4 space-y-2">
+                <div className="h-4 w-3/4 bg-surface-container rounded" />
+                <div className="h-3 w-full bg-surface-container rounded" />
+                <div className="h-5 w-16 bg-surface-container rounded" />
+              </div>
+            </div>
+          ))
+        ) : menuItems?.map((item) => {
           const available = isItemAvailable(item);
           return (
             <div
@@ -321,7 +293,6 @@ export default function Menu() {
           );
         })}
       </section>
-
       {/* ── Pagination ── */}
       <footer className="pt-8 border-t border-outline-variant/10 flex items-center justify-between">
         <button
