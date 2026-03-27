@@ -134,6 +134,12 @@ export interface MenuItemImage {
 // Set VITE_API_URL in .env.local (localhost) or run with --mode network (.env.network).
 export const API_ORIGIN = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
+export const resolveImageUrl = (imageUrl?: string | null): string | null => {
+  if (!imageUrl) return null;
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  return `${API_ORIGIN}${imageUrl}`;
+};
+
 const API_BASE_URL = `${API_ORIGIN}/api/v1`;
 
 // Log active API URL in development so you know which backend you're hitting.
