@@ -1,7 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
 import { dashboardApi } from '../services/api';
-import ProgressLoader from '../components/ProgressLoader';
 
 const formatTotal = (total: string | number | undefined): string => {
   if (typeof total === 'string') return parseFloat(total).toFixed(2);
@@ -27,53 +25,25 @@ const statusDot: Record<string, string> = {
   cancelled: 'bg-error',
 };
 
-const TOTAL_REQUESTS = 2;
+function StatCardSkeleton() {
+  return (
+    <div className="bg-surface-container-lowest dark:bg-sumi-800 p-6 rounded card-shadow border border-outline-variant/10 animate-pulse">
+      <div className="h-2.5 w-20 bg-surface-container rounded mb-4" />
+      <div className="h-9 w-24 bg-surface-container rounded" />
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const { data: stats, isLoading: statsLoading, isSuccess: statsSuccess, error: statsError } = useQuery({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery({
     queryKey: ['dashboardStats'],
     queryFn: dashboardApi.getStats,
   });
 
-  const { data: recentOrders, isLoading: ordersLoading, isSuccess: ordersSuccess, error: ordersError } = useQuery({
+  const { data: recentOrders, isLoading: ordersLoading, error: ordersError } = useQuery({
     queryKey: ['recentOrders'],
     queryFn: dashboardApi.getRecentOrders,
   });
-
-  // ── Progress loader state ──────────────────────────────────────────────────
-  const [simProgress, setSimProgress] = useState(0);
-  const [showLoader, setShowLoader] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Phase A: animate 0 → 50% over ~1.5 s regardless of API state
-  useEffect(() => {
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      current += 1.5;
-      if (current >= 50) {
-        setSimProgress(50);
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      } else {
-        setSimProgress(current);
-      }
-    }, 45);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
-
-  // Phase B: real progress — count resolved queries
-  const completedRequests = [statsSuccess, ordersSuccess].filter(Boolean).length;
-  const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
-  const progress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
-
-  // Dismiss loader after all queries finish
-  const allDone = !statsLoading && !ordersLoading;
-  useEffect(() => {
-    if (!allDone || !showLoader) return;
-    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
-    const hideTimer = setTimeout(() => setShowLoader(false), 650); // 300 + 350ms fade
-    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
-  }, [allDone, showLoader]);
 
   const formatTime = (minutes: number) => {
     if (!minutes) return '0m';
@@ -83,34 +53,12 @@ export default function Dashboard() {
     return `${h}h ${m}m`;
   };
 
-  if (showLoader) {
-    return (
-      <div
-        className="transition-opacity duration-300"
-        style={{ opacity: fadeOut ? 0 : 1 }}
-      >
-        <ProgressLoader progress={progress} />
-      </div>
-    );
-  }
-
-  if (statsError || ordersError || !stats || !recentOrders) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center space-y-2">
-          <span className="material-symbols-outlined text-[40px] text-error">error</span>
-          <p className="text-sm text-on-surface-variant">Error loading dashboard data</p>
-        </div>
-      </div>
-    );
-  }
-
-  const statCards = [
+  const statCards = stats ? [
     { label: 'Total Orders',   value: String(stats.total_orders || 0),                    icon: 'receipt_long', suffix: '' },
     { label: 'Total Revenue',  value: `$${(stats.total_revenue || 0).toFixed(2)}`,        icon: 'payments',     suffix: '' },
     { label: 'Avg Prep Time',  value: formatTime(stats.average_order_time),               icon: 'timer',        suffix: '' },
     { label: 'Active Orders',  value: String(stats.active_orders || 0),                   icon: 'restaurant',   suffix: 'In Progress', highlight: true },
-  ];
+  ] : [];
 
   return (
     <div className="p-8 space-y-12">
@@ -125,7 +73,16 @@ export default function Dashboard() {
 
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((card) =>
+        {statsError ? (
+          <div className="col-span-4 text-sm text-error">Failed to load stats.</div>
+        ) : statsLoading ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : statCards.map((card) =>
           card.highlight ? (
             <div
               key={card.label}
@@ -168,40 +125,55 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded overflow-hidden border border-outline-variant/10 dark:border-sumi-700 shadow-sm">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low/50 dark:bg-sumi-700/50">
-                <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Order ID</th>
-                <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Table</th>
-                <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Status</th>
-                <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Total</th>
-                <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold text-right">Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/5 dark:divide-sumi-700">
-              {recentOrders.map((order) => {
-                const st = order.status as string;
-                return (
-                  <tr key={order.id} className="hover:bg-surface-container-low/30 dark:hover:bg-sumi-700/30 transition-colors">
-                    <td className="py-5 px-6 font-medium text-sm text-on-surface">#{order.id}</td>
-                    <td className="py-5 px-6 text-sm text-on-surface-variant">Table {(order as any).table_id ?? (order as any).table_number}</td>
-                    <td className="py-5 px-6">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusStyles[st] ?? 'bg-surface-container text-on-surface-variant'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot[st] ?? 'bg-on-surface-variant'}`} />
-                        {st.charAt(0).toUpperCase() + st.slice(1)}
-                      </span>
-                    </td>
-                    <td className="py-5 px-6 text-sm font-semibold text-on-surface">
-                      ${formatTotal(order.total)}
-                    </td>
-                    <td className="py-5 px-6 text-sm text-on-surface-variant text-right">
-                      {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {ordersError ? (
+            <div className="py-12 text-center text-sm text-error">Failed to load recent orders.</div>
+          ) : ordersLoading ? (
+            <div className="divide-y divide-outline-variant/5 dark:divide-sumi-700">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="py-5 px-6 flex gap-6 animate-pulse">
+                  <div className="h-4 w-12 bg-surface-container rounded" />
+                  <div className="h-4 w-14 bg-surface-container rounded" />
+                  <div className="h-4 w-20 bg-surface-container rounded" />
+                  <div className="h-4 w-16 bg-surface-container rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low/50 dark:bg-sumi-700/50">
+                  <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Order ID</th>
+                  <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Table</th>
+                  <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Status</th>
+                  <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Total</th>
+                  <th className="py-4 px-6 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold text-right">Time</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/5 dark:divide-sumi-700">
+                {recentOrders!.map((order) => {
+                  const st = order.status as string;
+                  return (
+                    <tr key={order.id} className="hover:bg-surface-container-low/30 dark:hover:bg-sumi-700/30 transition-colors">
+                      <td className="py-5 px-6 font-medium text-sm text-on-surface">#{order.id}</td>
+                      <td className="py-5 px-6 text-sm text-on-surface-variant">Table {(order as any).table_id ?? (order as any).table_number}</td>
+                      <td className="py-5 px-6">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusStyles[st] ?? 'bg-surface-container text-on-surface-variant'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusDot[st] ?? 'bg-on-surface-variant'}`} />
+                          {st.charAt(0).toUpperCase() + st.slice(1)}
+                        </span>
+                      </td>
+                      <td className="py-5 px-6 text-sm font-semibold text-on-surface">
+                        ${formatTotal(order.total)}
+                      </td>
+                      <td className="py-5 px-6 text-sm text-on-surface-variant text-right">
+                        {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </section>
     </div>
