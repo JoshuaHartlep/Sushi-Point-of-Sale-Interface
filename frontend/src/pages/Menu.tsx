@@ -34,6 +34,14 @@ export default function Menu() {
   const queryClient = useQueryClient();
   const { isLunch } = useMealPeriod();
 
+  const getDefaultNewItemData = (categoryId: number | null) => ({
+    name: '',
+    description: '',
+    price: '',
+    category_id: categoryId ? String(categoryId) : '',
+    meal_period: 'BOTH' as 'BOTH' | 'LUNCH' | 'DINNER',
+  });
+
   const isItemAvailable = (item: MenuItem): boolean => {
     if (!item.meal_period || item.meal_period === 'BOTH') return item.is_available;
     if (isLunch && item.meal_period === 'DINNER') return false;
@@ -106,6 +114,14 @@ export default function Menu() {
     });
   };
 
+  const openAddItemModal = () => {
+    // Snapshot the currently viewed category when opening the form.
+    setNewItemData(getDefaultNewItemData(selectedCategory));
+    setNewItemImageFile(null);
+    setNewItemImagePreview(null);
+    setIsAddItemModalOpen(true);
+  };
+
   const handleEditItem = (item: MenuItem) => {
     setSelectedItem(item);
     setEditItemData({ name: item.name, description: item.description, price: item.price, category_id: item.category_id, is_available: item.is_available, meal_period: item.meal_period });
@@ -168,7 +184,7 @@ export default function Menu() {
           <h2 className="text-5xl font-headline text-on-surface tracking-tight leading-none">Menu</h2>
           <p className="text-on-surface-variant mt-2 text-sm">Manage your items and categories.</p>
         </div>
-        <button onClick={() => setIsAddItemModalOpen(true)} className="btn-primary">
+        <button onClick={openAddItemModal} className="btn-primary">
           <span className="material-symbols-outlined text-[18px]">add</span>
           Add New Item
         </button>
