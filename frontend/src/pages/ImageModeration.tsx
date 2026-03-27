@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, Trash2, Clock, Flag, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { menuItemImagesApi, MenuItemImage, API_ORIGIN } from '../services/api';
+import { menuItemImagesApi, MenuItemImage, resolveImageUrl } from '../services/api';
 
 type Tab = 'pending' | 'reported';
 
@@ -127,7 +127,7 @@ export default function ImageModeration() {
 
               <img
                 key={currentImg.id}
-                src={`${API_ORIGIN}${currentImg.image_url}`}
+                src={resolveImageUrl(currentImg.image_url) ?? undefined}
                 alt="Customer photo"
                 className="max-w-full max-h-full object-contain rounded-2xl select-none"
                 draggable={false}
@@ -286,7 +286,7 @@ export default function ImageModeration() {
                   onClick={() => setLightboxIndex(idx)}
                 >
                   <img
-                    src={`${API_ORIGIN}${img.image_url}`}
+                    src={resolveImageUrl(img.image_url) ?? undefined}
                     alt="Customer photo"
                     className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-200"
                     onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3'; }}

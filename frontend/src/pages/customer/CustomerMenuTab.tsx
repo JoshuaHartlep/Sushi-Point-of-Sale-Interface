@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Minus, Loader2 } from 'lucide-react';
-import { menuApi, categoriesApi, MenuItem, Category, API_ORIGIN } from '../../services/api';
+import { menuApi, categoriesApi, MenuItem, Category, resolveImageUrl } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 import MenuItemModal from './MenuItemModal';
 
@@ -125,7 +125,7 @@ export default function CustomerMenuTab() {
                 <div className={`bg-surface-container flex items-center justify-center flex-shrink-0 overflow-hidden relative ${isFeature ? 'h-36' : 'h-28'}`}>
                   {item.image_url ? (
                     <img
-                      src={`${API_ORIGIN}${item.image_url}`}
+                      src={resolveImageUrl(item.image_url) ?? undefined}
                       alt={item.name}
                       className="w-full h-full object-cover"
                       onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
