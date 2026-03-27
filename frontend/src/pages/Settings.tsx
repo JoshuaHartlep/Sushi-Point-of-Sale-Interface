@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRestaurant } from '../contexts/RestaurantContext';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import { settingsApi, Settings as SettingsType, SettingsUpdate } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
-import ProgressLoader from '../components/ProgressLoader';
 
 const inputClass = "w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm";
 const labelClass = "block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5";
@@ -30,30 +29,6 @@ const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // ── Progress loader ────────────────────────────────────────────────────────
-  const [simProgress, setSimProgress] = useState(0);
-  const [showLoader, setShowLoader] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      current += 1.5;
-      if (current >= 50) { setSimProgress(50); if (intervalRef.current) clearInterval(intervalRef.current); }
-      else setSimProgress(current);
-    }, 45);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
-
-  const settingsProgress = !loading ? Math.max(simProgress, 100) : simProgress;
-
-  useEffect(() => {
-    if (loading || !showLoader) return;
-    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
-    const hideTimer = setTimeout(() => setShowLoader(false), 650);
-    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
-  }, [loading, showLoader]);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const queryClient = useQueryClient();
@@ -124,10 +99,14 @@ const SettingsPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  if (showLoader) {
+  if (loading) {
     return (
-      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
-        <ProgressLoader progress={settingsProgress} />
+      <div className="px-8 py-8 space-y-10 max-w-5xl mx-auto w-full animate-pulse">
+        <div className="h-10 w-40 bg-surface-container rounded" />
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="w-full md:w-52 shrink-0 bg-surface-container-lowest dark:bg-sumi-800 rounded-xl h-52 border border-outline-variant/10" />
+          <div className="flex-1 bg-surface-container-lowest dark:bg-sumi-800 rounded-xl h-80 border border-outline-variant/10" />
+        </div>
       </div>
     );
   }

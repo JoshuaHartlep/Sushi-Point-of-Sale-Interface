@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, menuApi, settingsApi, Order, OrderCreate, OrderItemCreate, OrderItem } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import StatusDropdown from '../components/StatusDropdown';
-import ProgressLoader from '../components/ProgressLoader';
 
 const formatTotal = (total: string | number | undefined): string => {
   if (typeof total === 'string') return parseFloat(total).toFixed(2);
@@ -16,8 +15,6 @@ const formatPrice = (price: string | number): string => {
   if (typeof price === 'number' && !isNaN(price)) return price.toFixed(2);
   return '0.00';
 };
-
-const TOTAL_REQUESTS = 2;
 
 const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -33,56 +30,10 @@ const Orders = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: orders = [], isLoading: ordersLoading, isSuccess: ordersSuccess, error: ordersError } = useQuery<Order[]>({
+  const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[]>({
     queryKey: ['orders'],
     queryFn: ordersApi.getAll,
   });
-
-  const { data: orderTotals = {}, isLoading: totalsLoading, isSuccess: totalsSuccess } = useQuery<Record<number, string>>({
-    queryKey: ['orderTotals', orders.map((o) => o.id)],
-    queryFn: async () => {
-      const totals: Record<number, string> = {};
-      for (const order of orders) {
-        try {
-          const { total } = await ordersApi.getTotal(order.id);
-          totals[order.id] = String(total);
-        } catch {
-          totals[order.id] = '0.00';
-        }
-      }
-      return totals;
-    },
-    enabled: orders.length > 0,
-  });
-
-  // ── Progress loader ────────────────────────────────────────────────────────
-  const [simProgress, setSimProgress] = useState(0);
-  const [showLoader, setShowLoader] = useState(true);
-  const [fadeOut, setFadeOut] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    let current = 0;
-    intervalRef.current = setInterval(() => {
-      current += 1.5;
-      if (current >= 50) { setSimProgress(50); if (intervalRef.current) clearInterval(intervalRef.current); }
-      else setSimProgress(current);
-    }, 45);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
-
-  const totalsOrSkipped = totalsSuccess || (ordersSuccess && orders.length === 0);
-  const completedRequests = [ordersSuccess, totalsOrSkipped].filter(Boolean).length;
-  const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
-  const progress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
-
-  const allDone = !ordersLoading && !totalsLoading;
-  useEffect(() => {
-    if (!allDone || !showLoader) return;
-    const fadeTimer = setTimeout(() => setFadeOut(true), 300);
-    const hideTimer = setTimeout(() => setShowLoader(false), 650);
-    return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
-  }, [allDone, showLoader]);
 
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: settingsApi.get });
 
@@ -136,25 +87,6 @@ const Orders = () => {
   const handleConfirmDelete = () => { if (selectedOrder) deleteOrderMutation.mutate(selectedOrder.id); };
   const handleCreateOrder = async () => { try { await createOrderMutation.mutateAsync(newOrder); } catch {} };
 
-  if (showLoader) {
-    return (
-      <div className="transition-opacity duration-300" style={{ opacity: fadeOut ? 0 : 1 }}>
-        <ProgressLoader progress={progress} />
-      </div>
-    );
-  }
-
-  if (ordersError) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center space-y-2">
-          <span className="material-symbols-outlined text-[40px] text-error">error</span>
-          <p className="text-sm text-on-surface-variant">Error loading orders.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="px-8 py-8 space-y-10 max-w-7xl mx-auto w-full">
 
@@ -172,7 +104,28 @@ const Orders = () => {
 
       {/* ── Orders card grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {orders.map((order) => (
+        {ordersError ? (
+          <div className="col-span-3 flex items-center justify-center h-40">
+            <div className="text-center space-y-2">
+              <span className="material-symbols-outlined text-[40px] text-error">error</span>
+              <p className="text-sm text-on-surface-variant">Error loading orders.</p>
+            </div>
+          </div>
+        ) : ordersLoading ? (
+          <>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded border border-outline-variant/20 dark:border-sumi-700 p-6 animate-pulse">
+                <div className="h-4 w-16 bg-surface-container rounded mb-6" />
+                <div className="space-y-3 mb-6">
+                  <div className="h-4 w-full bg-surface-container rounded" />
+                  <div className="h-4 w-3/4 bg-surface-container rounded" />
+                  <div className="h-7 w-1/2 bg-surface-container rounded" />
+                </div>
+                <div className="h-8 w-full bg-surface-container rounded" />
+              </div>
+            ))}
+          </>
+        ) : orders.map((order) => (
           <div key={order.id} className="bg-surface-container-lowest dark:bg-sumi-800 rounded border border-outline-variant/20 dark:border-sumi-700 p-6 card-shadow group transition-all hover:-translate-y-0.5 hover:shadow-md">
             <div className="flex justify-between items-start mb-6">
               <div>
@@ -200,7 +153,7 @@ const Orders = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-on-surface-variant text-sm">Total</span>
-                <span className="text-xl font-headline font-bold text-primary">${formatTotal(orderTotals[order.id])}</span>
+                <span className="text-xl font-headline font-bold text-primary">${formatTotal(order.total_amount)}</span>
               </div>
             </div>
 
@@ -218,7 +171,7 @@ const Orders = () => {
               </button>
             </div>
           </div>
-        ))}
+        )}
 
         {/* Empty-state add card */}
         <button onClick={() => setIsNewOrderModalOpen(true)} className="border-2 border-dashed border-outline-variant/30 rounded p-6 flex flex-col items-center justify-center text-on-surface-variant/40 hover:border-primary/40 hover:text-primary transition-all group min-h-[260px]">
