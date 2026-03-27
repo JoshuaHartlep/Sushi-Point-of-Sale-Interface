@@ -2,18 +2,18 @@ version: "3.9"
 
 services:
   frontend:
-    image: michaeldockerlei/sushi-pos-frontend:latest
+    image: joshuadockerhartlep/sushi-pos-frontend:latest
     container_name: sushi-pos-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ""
+        VITE_API_URL: "http://44.206.250.63"
     networks:
       - sushi-network
 
   backend:
-    image: michaeldockerlei/sushi-pos-backend:latest
+    image: joshuadockerhartlep/sushi-pos-backend:latest
     container_name: sushi-pos-backend
     build:
       context: .
