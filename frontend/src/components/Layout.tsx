@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import { useQuery } from '@tanstack/react-query';
@@ -34,6 +34,7 @@ const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const { mode, cycleTheme } = useTheme();
   const { isDinner } = useMealPeriod();
+  const navigate = useNavigate();
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -112,6 +113,16 @@ const Layout = ({ children }: LayoutProps) => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Customer view button */}
+            <button
+              onClick={() => navigate('/customer?table=1')}
+              title="Preview customer view (Table 1)"
+              className="flex items-center gap-1.5 text-sm font-medium text-on-surface-variant hover:text-primary border border-outline-variant/30 hover:border-primary/50 rounded-full px-3 py-1 transition-all"
+            >
+              <span className="material-symbols-outlined text-[16px]">person</span>
+              Customer View
+            </button>
+
             {/* Theme toggle */}
             <button
               onClick={cycleTheme}
