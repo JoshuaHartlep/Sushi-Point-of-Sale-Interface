@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
-import { dashboardApi, ordersApi } from '../services/api';
+import { dashboardApi } from '../services/api';
 import ProgressLoader from '../components/ProgressLoader';
 
 const formatTotal = (total: string | number | undefined): string => {
@@ -27,7 +27,7 @@ const statusDot: Record<string, string> = {
   cancelled: 'bg-error',
 };
 
-const TOTAL_REQUESTS = 3;
+const TOTAL_REQUESTS = 2;
 
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading, isSuccess: statsSuccess, error: statsError } = useQuery({
@@ -38,24 +38,6 @@ export default function Dashboard() {
   const { data: recentOrders, isLoading: ordersLoading, isSuccess: ordersSuccess, error: ordersError } = useQuery({
     queryKey: ['recentOrders'],
     queryFn: dashboardApi.getRecentOrders,
-  });
-
-  const { data: orderTotals = {}, isLoading: totalsLoading, isSuccess: totalsSuccess } = useQuery({
-    queryKey: ['dashboardOrderTotals', recentOrders],
-    queryFn: async () => {
-      if (!recentOrders) return {};
-      const totals: Record<number, string> = {};
-      for (const order of recentOrders) {
-        try {
-          const { total } = await ordersApi.getTotal(order.id);
-          totals[order.id] = String(total);
-        } catch {
-          totals[order.id] = '0.00';
-        }
-      }
-      return totals;
-    },
-    enabled: !!recentOrders && recentOrders.length > 0,
   });
 
   // ── Progress loader state ──────────────────────────────────────────────────
@@ -80,14 +62,12 @@ export default function Dashboard() {
   }, []);
 
   // Phase B: real progress — count resolved queries
-  // totals is skipped when orders resolved with an empty list
-  const totalsOrSkipped = totalsSuccess || (ordersSuccess && (!recentOrders || recentOrders.length === 0));
-  const completedRequests = [statsSuccess, ordersSuccess, totalsOrSkipped].filter(Boolean).length;
+  const completedRequests = [statsSuccess, ordersSuccess].filter(Boolean).length;
   const phaseB = 50 + (completedRequests / TOTAL_REQUESTS) * 50;
   const progress = completedRequests > 0 ? Math.max(simProgress, phaseB) : simProgress;
 
   // Dismiss loader after all queries finish
-  const allDone = !statsLoading && !ordersLoading && !totalsLoading;
+  const allDone = !statsLoading && !ordersLoading;
   useEffect(() => {
     if (!allDone || !showLoader) return;
     const fadeTimer = setTimeout(() => setFadeOut(true), 300);
@@ -212,7 +192,7 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td className="py-5 px-6 text-sm font-semibold text-on-surface">
-                      ${formatTotal(orderTotals[order.id])}
+                      ${formatTotal(order.total)}
                     </td>
                     <td className="py-5 px-6 text-sm text-on-surface-variant text-right">
                       {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
