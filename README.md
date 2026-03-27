@@ -15,7 +15,7 @@ Flexible enough to be used for any restaurant, not just sushi.
 | ORM | SQLAlchemy (Alembic files exist; see **Database** for current migration policy) |
 | Frontend | React + TypeScript, Vite, Tailwind CSS |
 | State | TanStack React Query + React contexts |
-| Image storage | Local disk (`uploads/`) served at `/uploads/` by FastAPI |
+| Image storage | **AWS S3** (`sushi-pos-uploads` bucket); URLs stored directly in the database |
 | Hosting | Frontend **Vercel** (redirects to EC2), backend **AWS EC2** (Docker), database **Supabase** |
 | Containers | Docker + Docker Compose; images on DockerHub (`joshuadockerhartlep/sushi-pos-backend`, `joshuadockerhartlep/sushi-pos-frontend`) |
 | CI/CD | GitHub Actions — auto-builds and pushes Docker images on every push to `main` |
@@ -273,7 +273,7 @@ The Vercel project is rooted at `frontend/`. It redirects all traffic to the EC2
 
 - Keep secrets (`DATABASE_URL`, DockerHub tokens, etc.) in platform environment variables, not in committed files.
 - `VITE_*` variables are public in frontend bundles; never put server secrets there.
-- Uploaded images are stored on EC2 disk (`/uploads/`) via a named Docker volume. For multi-instance scalability, move to object storage (S3/R2/etc.).
+- Images are stored in **AWS S3** (`sushi-pos-uploads` bucket). Add `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, and `S3_BUCKET_NAME` to `.backend-env` on EC2.
 - The EC2 public IP may change on instance restart unless an Elastic IP is assigned.
 
 ---
@@ -283,7 +283,7 @@ The Vercel project is rooted at `frontend/`. It redirects all traffic to the EC2
 - **`ModuleNotFoundError: No module named 'pydantic_settings'`** — run `pip install pydantic-settings` in the active venv
 - **`Form data requires "python-multipart"`** — run `pip install python-multipart`
 - **Alembic `Target database is not up to date`** — ignore Alembic entirely; apply schema changes directly (see Database section above)
-- **Images not loading** — the backend must be running; `/uploads/` is served as a static mount by FastAPI, not a CDN
+- **Images not loading** — check that `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `S3_BUCKET_NAME` are set in `.backend-env` and the S3 bucket policy allows public `s3:GetObject`
 - **Vercel `/customer` returns 404** — confirm `frontend/vercel.json` exists and Vercel project Root Directory is `frontend`
 - **Mixed content errors on Vercel** — `VITE_API_URL` must be empty in Vercel env vars so requests proxy through Vercel to EC2 rather than calling EC2 directly over HTTP
 - **EC2 containers not starting** — run `docker-compose logs backend` / `docker-compose logs frontend` to diagnose; ensure `.backend-env` exists next to `docker-compose.yml`

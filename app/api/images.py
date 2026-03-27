@@ -36,6 +36,8 @@ def upload_user_image(
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
+    from app.core.s3 import upload_image
+
     # make sure the menu item exists
     item = db.query(MenuItem).filter(MenuItem.id == menu_item_id).first()
     if not item:
@@ -46,20 +48,13 @@ def upload_user_image(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, and GIF images are allowed")
 
-    # save the file to disk
-    ext = os.path.splitext(file.filename or "image.jpg")[1].lower() or ".jpg"
-    filename = f"{menu_item_id}_{uuid.uuid4().hex}{ext}"
-    uploads_dir = _uploads_dir()
-    os.makedirs(uploads_dir, exist_ok=True)
-    filepath = os.path.join(uploads_dir, filename)
-
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    # upload to S3
+    s3_url = upload_image(file.file, "user-images", menu_item_id, file.filename or "image.jpg", file.content_type)
 
     # save the record in the database
     db_image = MenuItemImage(
         menu_item_id=menu_item_id,
-        image_url=f"/uploads/user-images/{filename}",
+        image_url=s3_url,
     )
     db.add(db_image)
     db.commit()
@@ -153,17 +148,14 @@ def report_image(image_id: int, report: ImageReportCreate, db: Session = Depends
 # delete an image (manager only)
 @router.delete("/images/{image_id}")
 def delete_image(image_id: int, db: Session = Depends(get_db)):
+    from app.core.s3 import delete_image as s3_delete
+
     image = db.query(MenuItemImage).filter(MenuItemImage.id == image_id).first()
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # remove the file from disk if it exists
     if image.image_url:
-        uploads_dir = _uploads_dir()
-        filename = image.image_url.split("/uploads/user-images/")[-1]
-        filepath = os.path.join(uploads_dir, filename)
-        if os.path.exists(filepath):
-            os.remove(filepath)
+        s3_delete(image.image_url)
 
     db.delete(image)
     db.commit()

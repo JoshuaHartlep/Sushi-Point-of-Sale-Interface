@@ -129,13 +129,15 @@ def patch_menu_item(item_id: int, item: MenuItemUpdate, db: Session = Depends(ge
     db.refresh(db_item)
     return db_item
 
-# upload an image for a menu item and store it locally
+# upload an image for a menu item and store it in S3
 @router.post("/menu-items/{item_id}/upload-image", response_model=MenuItemResponse)
 def upload_menu_item_image(
     item_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
+    from app.core.s3 import upload_image, delete_image
+
     # check the item exists
     db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
     if not db_item:
@@ -146,26 +148,14 @@ def upload_menu_item_image(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, and GIF images are allowed")
 
-    # figure out where to save the file
-    ext = os.path.splitext(file.filename or "image.jpg")[1].lower() or ".jpg"
-    filename = f"{item_id}_{uuid.uuid4().hex}{ext}"
-    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "menu-images")
-    os.makedirs(uploads_dir, exist_ok=True)
-    filepath = os.path.join(uploads_dir, filename)
-
-    # delete old image file if one exists
+    # delete old image from S3 if one exists
     if db_item.image_url:
-        old_filename = db_item.image_url.split("/uploads/menu-images/")[-1]
-        old_path = os.path.join(uploads_dir, old_filename)
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        delete_image(db_item.image_url)
 
-    # save the uploaded file to disk
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(file.file, f)
+    # upload new image to S3
+    s3_url = upload_image(file.file, "menu-images", item_id, file.filename or "image.jpg", file.content_type)
 
-    # save the relative URL in the database
-    db_item.image_url = f"/uploads/menu-images/{filename}"
+    db_item.image_url = s3_url
     db.commit()
     db.refresh(db_item)
     return db_item
@@ -174,16 +164,14 @@ def upload_menu_item_image(
 # remove the image from a menu item
 @router.delete("/menu-items/{item_id}/image", response_model=MenuItemResponse)
 def delete_menu_item_image(item_id: int, db: Session = Depends(get_db)):
+    from app.core.s3 import delete_image
+
     db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
     if not db_item:
         raise RecordNotFoundError("MenuItem", item_id)
 
     if db_item.image_url:
-        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads", "menu-images")
-        old_filename = db_item.image_url.split("/uploads/menu-images/")[-1]
-        old_path = os.path.join(uploads_dir, old_filename)
-        if os.path.exists(old_path):
-            os.remove(old_path)
+        delete_image(db_item.image_url)
         db_item.image_url = None
         db.commit()
         db.refresh(db_item)
