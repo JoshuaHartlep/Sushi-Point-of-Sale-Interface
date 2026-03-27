@@ -1,9 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, API_ORIGIN } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
-
-const IMAGE_BASE = API_ORIGIN;
 
 const ITEMS_PER_PAGE = 12;
 
@@ -112,7 +110,7 @@ export default function Menu() {
     setSelectedItem(item);
     setEditItemData({ name: item.name, description: item.description, price: item.price, category_id: item.category_id, is_available: item.is_available, meal_period: item.meal_period });
     setEditImageFile(null);
-    setEditImagePreview(item.image_url ? `${IMAGE_BASE}${item.image_url}` : null);
+    setEditImagePreview(resolveImageUrl(item.image_url));
     setIsEditItemModalOpen(true);
   };
 
@@ -227,7 +225,7 @@ export default function Menu() {
               {item.image_url ? (
                 <div className="w-full h-36 overflow-hidden bg-surface-container">
                   <img
-                    src={`${IMAGE_BASE}${item.image_url}`}
+                    src={resolveImageUrl(item.image_url) ?? undefined}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
@@ -473,7 +471,7 @@ export default function Menu() {
                     <div key={img.id} className="relative rounded-xl overflow-hidden border border-outline-variant/10 bg-surface-container">
                       <div className="w-full h-32 overflow-hidden">
                         <img
-                          src={`${IMAGE_BASE}${img.image_url}`}
+                          src={resolveImageUrl(img.image_url) ?? undefined}
                           alt="Customer photo"
                           className="w-full h-full object-cover"
                           onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3'; }}
