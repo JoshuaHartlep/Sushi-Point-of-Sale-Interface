@@ -109,16 +109,18 @@ const Modifiers = () => {
       {/* ── Modifiers grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {modifiersLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-5 border border-outline-variant/10 dark:border-sumi-700 animate-pulse">
-              <div className="flex justify-between mb-2">
-                <div className="h-4 w-28 bg-surface-container rounded" />
-                <div className="h-4 w-12 bg-surface-container rounded" />
+          <>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-5 border border-outline-variant/10 dark:border-sumi-700 animate-pulse">
+                <div className="flex justify-between mb-2">
+                  <div className="h-4 w-28 bg-surface-container rounded" />
+                  <div className="h-4 w-12 bg-surface-container rounded" />
+                </div>
+                <div className="h-3 w-full bg-surface-container rounded mb-1" />
+                <div className="h-3 w-2/3 bg-surface-container rounded" />
               </div>
-              <div className="h-3 w-full bg-surface-container rounded mb-1" />
-              <div className="h-3 w-2/3 bg-surface-container rounded" />
-            </div>
-          ))
+            ))}
+          </>
         ) : modifiers.map((modifier) => (
           <div key={modifier.id} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-5 border border-outline-variant/10 dark:border-sumi-700 transition-all hover:shadow-lg hover:shadow-primary/5 hover:border-outline-variant/20">
             <div className="flex justify-between items-start mb-2">
@@ -139,7 +141,7 @@ const Modifiers = () => {
               </button>
             </div>
           </div>
-        )}
+        ))}
       </div>
 
       {/* ── Pagination ── */}
