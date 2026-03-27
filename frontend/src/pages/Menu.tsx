@@ -204,16 +204,18 @@ export default function Menu() {
             </div>
           </div>
         ) : itemsLoading ? (
-          Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl border border-outline-variant/10 dark:border-sumi-700 overflow-hidden animate-pulse">
-              <div className="h-40 bg-surface-container" />
-              <div className="p-4 space-y-2">
-                <div className="h-4 w-3/4 bg-surface-container rounded" />
-                <div className="h-3 w-full bg-surface-container rounded" />
-                <div className="h-5 w-16 bg-surface-container rounded" />
+          <>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl border border-outline-variant/10 dark:border-sumi-700 overflow-hidden animate-pulse">
+                <div className="h-40 bg-surface-container" />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 w-3/4 bg-surface-container rounded" />
+                  <div className="h-3 w-full bg-surface-container rounded" />
+                  <div className="h-5 w-16 bg-surface-container rounded" />
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </>
         ) : menuItems?.map((item) => {
           const available = isItemAvailable(item);
           return (

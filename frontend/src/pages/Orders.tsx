@@ -171,7 +171,7 @@ const Orders = () => {
               </button>
             </div>
           </div>
-        )}
+        ))}
 
         {/* Empty-state add card */}
         <button onClick={() => setIsNewOrderModalOpen(true)} className="border-2 border-dashed border-outline-variant/30 rounded p-6 flex flex-col items-center justify-center text-on-surface-variant/40 hover:border-primary/40 hover:text-primary transition-all group min-h-[260px]">
