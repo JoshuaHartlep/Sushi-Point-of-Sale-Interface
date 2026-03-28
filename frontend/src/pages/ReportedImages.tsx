@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trash2, Flag } from 'lucide-react';
-import { menuItemImagesApi, MenuItemImage, API_ORIGIN } from '../services/api';
+import { menuItemImagesApi, MenuItemImage, resolveImageUrl } from '../services/api';
 
 export default function ReportedImages() {
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export default function ReportedImages() {
             >
               <div className="w-full h-48 bg-surface-container-high overflow-hidden">
                 <img
-                  src={`${API_ORIGIN}${img.image_url}`}
+                  src={resolveImageUrl(img.image_url) ?? undefined}
                   alt="Reported"
                   className="w-full h-full object-cover"
                   onError={e => {

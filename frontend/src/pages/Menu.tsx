@@ -1,9 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, API_ORIGIN } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
-
-const IMAGE_BASE = API_ORIGIN;
 
 const ITEMS_PER_PAGE = 12;
 
@@ -35,6 +33,14 @@ export default function Menu() {
 
   const queryClient = useQueryClient();
   const { isLunch } = useMealPeriod();
+
+  const getDefaultNewItemData = (categoryId: number | null) => ({
+    name: '',
+    description: '',
+    price: '',
+    category_id: categoryId ? String(categoryId) : '',
+    meal_period: 'BOTH' as 'BOTH' | 'LUNCH' | 'DINNER',
+  });
 
   const isItemAvailable = (item: MenuItem): boolean => {
     if (!item.meal_period || item.meal_period === 'BOTH') return item.is_available;
@@ -108,11 +114,19 @@ export default function Menu() {
     });
   };
 
+  const openAddItemModal = () => {
+    // Snapshot the currently viewed category when opening the form.
+    setNewItemData(getDefaultNewItemData(selectedCategory));
+    setNewItemImageFile(null);
+    setNewItemImagePreview(null);
+    setIsAddItemModalOpen(true);
+  };
+
   const handleEditItem = (item: MenuItem) => {
     setSelectedItem(item);
     setEditItemData({ name: item.name, description: item.description, price: item.price, category_id: item.category_id, is_available: item.is_available, meal_period: item.meal_period });
     setEditImageFile(null);
-    setEditImagePreview(item.image_url ? `${IMAGE_BASE}${item.image_url}` : null);
+    setEditImagePreview(resolveImageUrl(item.image_url));
     setIsEditItemModalOpen(true);
   };
 
@@ -120,15 +134,30 @@ export default function Menu() {
     if (!selectedItem) return;
     const changed: Partial<MenuItem> = {};
     Object.entries(editItemData).forEach(([k, v]) => { if (v !== selectedItem[k as keyof MenuItem]) (changed as any)[k] = v; });
+    const changedCount = Object.keys(changed).length;
+
     if (Object.keys(changed).length > 0) {
       updateItemMutation.mutate({ id: selectedItem.id, data: changed });
     }
+
+    let uploadedImage = false;
     if (editImageFile) {
       await menuApi.uploadImage(selectedItem.id, editImageFile);
       queryClient.invalidateQueries({ queryKey: ['menuItems'] });
       setEditImageFile(null);
+      uploadedImage = true;
     }
-    if (Object.keys(changed).length === 0 && !editImageFile) {
+
+    // When the user only uploads a new image, close the modal after save.
+    if (changedCount === 0 && uploadedImage) {
+      setIsEditItemModalOpen(false);
+      setSelectedItem(null);
+      setEditItemData({});
+      setEditImagePreview(null);
+      return;
+    }
+
+    if (changedCount === 0 && !uploadedImage) {
       setIsEditItemModalOpen(false);
     }
   };
@@ -155,7 +184,7 @@ export default function Menu() {
           <h2 className="text-5xl font-headline text-on-surface tracking-tight leading-none">Menu</h2>
           <p className="text-on-surface-variant mt-2 text-sm">Manage your items and categories.</p>
         </div>
-        <button onClick={() => setIsAddItemModalOpen(true)} className="btn-primary">
+        <button onClick={openAddItemModal} className="btn-primary">
           <span className="material-symbols-outlined text-[18px]">add</span>
           Add New Item
         </button>
@@ -227,7 +256,7 @@ export default function Menu() {
               {item.image_url ? (
                 <div className="w-full h-36 overflow-hidden bg-surface-container">
                   <img
-                    src={`${IMAGE_BASE}${item.image_url}`}
+                    src={resolveImageUrl(item.image_url) ?? undefined}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
@@ -473,7 +502,7 @@ export default function Menu() {
                     <div key={img.id} className="relative rounded-xl overflow-hidden border border-outline-variant/10 bg-surface-container">
                       <div className="w-full h-32 overflow-hidden">
                         <img
-                          src={`${IMAGE_BASE}${img.image_url}`}
+                          src={resolveImageUrl(img.image_url) ?? undefined}
                           alt="Customer photo"
                           className="w-full h-full object-cover"
                           onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3'; }}
