@@ -96,6 +96,20 @@ class ModifierResponse(ModifierBase):
         from_attributes = True
 
 
+class ItemModifiersResponse(BaseModel):
+    """Schema for returning a menu item's assigned modifiers."""
+    item_id: int
+    modifier_ids: List[int]
+
+    class Config:
+        from_attributes = True
+
+
+class ItemModifiersUpdate(BaseModel):
+    """Schema for updating a menu item's assigned modifiers."""
+    modifier_ids: List[int]
+
+
 class ImageStatusUpdate(BaseModel):
     """Schema for approving an image."""
     status: ImageStatusEnum
