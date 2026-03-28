@@ -20,7 +20,9 @@ from app.schemas.menu import (
     ModifierCreate,
     ModifierResponse,
     ModifierUpdate,
-    CategoryUpdate
+    CategoryUpdate,
+    ItemModifiersResponse,
+    ItemModifiersUpdate,
 )
 from app.schemas.bulk_operations import BulkMenuItemOperation, BulkMenuItemResponse, BulkOperationType
 from app.core.error_handling import RecordNotFoundError
@@ -474,3 +476,36 @@ def delete_modifier(
     db.delete(modifier)
     db.commit()
     return {"message": "Modifier deleted successfully"}
+
+# get the modifiers assigned to a specific menu item
+@router.get("/menu-items/{item_id}/modifiers", response_model=ItemModifiersResponse)
+def get_item_modifiers(item_id: int, db: Session = Depends(get_db)):
+    item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    if not item:
+        raise RecordNotFoundError("MenuItem", item_id)
+    return ItemModifiersResponse(
+        item_id=item.id,
+        modifier_ids=[m.id for m in item.modifiers],
+    )
+
+# update which modifiers are assigned to a menu item
+@router.put("/menu-items/{item_id}/modifiers", response_model=ItemModifiersResponse)
+def update_item_modifiers(item_id: int, data: ItemModifiersUpdate, db: Session = Depends(get_db)):
+    item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    if not item:
+        raise RecordNotFoundError("MenuItem", item_id)
+
+    # look up all requested modifiers
+    modifiers = db.query(Modifier).filter(Modifier.id.in_(data.modifier_ids)).all()
+    found_ids = {m.id for m in modifiers}
+    missing = set(data.modifier_ids) - found_ids
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Modifiers not found: {sorted(missing)}")
+
+    item.modifiers = modifiers
+    db.commit()
+    db.refresh(item)
+    return ItemModifiersResponse(
+        item_id=item.id,
+        modifier_ids=[m.id for m in item.modifiers],
+    )

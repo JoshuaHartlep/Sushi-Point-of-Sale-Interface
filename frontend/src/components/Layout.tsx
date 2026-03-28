@@ -103,7 +103,7 @@ const Layout = ({ children }: LayoutProps) => {
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Top header */}
-        <header className="h-[57px] w-full sticky top-0 z-40 bg-background/80 dark:bg-sumi-900/80 backdrop-blur-xl flex justify-between items-center px-8 border-b border-outline-variant/10 dark:border-sumi-700">
+        <header className="h-[57px] w-full sticky top-0 z-40 bg-background dark:bg-sumi-900 flex justify-between items-center px-8 border-b border-outline-variant/10 dark:border-sumi-700">
           <div className="flex items-center gap-6">
             <span className="text-base font-headline italic text-primary">{pageTitle}</span>
             <div className="h-4 w-px bg-outline-variant/30" />
