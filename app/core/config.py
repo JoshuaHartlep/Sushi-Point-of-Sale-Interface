@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # Development settings
     SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+
+    # AWS S3 settings for uploaded images
+    AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")
+    AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "sushi-pos-uploads")
     
     class Config:
         """
