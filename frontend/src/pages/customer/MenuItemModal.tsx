@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Minus, Camera, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
-import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, resolveImageUrl } from '../../services/api';
+import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, resolveImageUrl, getMenuImageStyle } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 const NOTE_MAX = 50;
 
@@ -251,6 +251,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
                 src={mainImageUrl}
                 alt={item.name}
                 className="w-full h-full object-cover"
+                style={getMenuImageStyle(item)}
                 onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
               />
             ) : (

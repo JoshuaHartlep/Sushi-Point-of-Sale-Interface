@@ -19,6 +19,9 @@ class MenuItemBase(BaseModel):
     is_available: bool = True
     meal_period: MealPeriodEnum = MealPeriodEnum.BOTH
     image_url: Optional[str] = None
+    image_position_x: float = Field(default=50.0, ge=0.0, le=100.0)
+    image_position_y: float = Field(default=50.0, ge=0.0, le=100.0)
+    image_zoom: float = Field(default=1.0, ge=1.0, le=3.0)
 
 class MenuItemCreate(MenuItemBase):
     """Schema for creating a menu item."""
@@ -27,8 +30,15 @@ class MenuItemCreate(MenuItemBase):
 class MenuItemUpdate(MenuItemBase):
     """Schema for updating a menu item."""
     name: Optional[str] = None
+    description: Optional[str] = None
     price: Optional[float] = None
+    category_id: Optional[int] = None
+    is_available: Optional[bool] = None
     meal_period: Optional[MealPeriodEnum] = None
+    image_url: Optional[str] = None
+    image_position_x: Optional[float] = Field(default=None, ge=0.0, le=100.0)
+    image_position_y: Optional[float] = Field(default=None, ge=0.0, le=100.0)
+    image_zoom: Optional[float] = Field(default=None, ge=1.0, le=3.0)
 
 class MenuItemResponse(MenuItemBase):
     """Schema for menu item responses."""

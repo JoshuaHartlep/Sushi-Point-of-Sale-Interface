@@ -6,6 +6,7 @@ import {
   type DrillRow,
   type CompareRow,
   type Signal,
+  type HourOrder,
   type AnalyticsMetric,
   type AnalyticsDimension,
   type AnalyticsGroupBy,
@@ -746,6 +747,10 @@ export default function Analytics() {
   // ── Drill stack (single source of truth for the breakdown table) ──────────
   const [drillStack, setDrillStack] = useState<DrillStep[]>([INITIAL_STEP]);
 
+  // ── Hour orders panel ─────────────────────────────────────────────────────
+  // Set when user clicks an hour bar; null = panel closed
+  const [selectedHourBar, setSelectedHourBar] = useState<{ hour: number; start: string; end: string; label: string } | null>(null);
+
   // ── Tab ───────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
 
@@ -765,11 +770,11 @@ export default function Analytics() {
   const chartEnd       = activeChartFrame?.end     ?? end;
   const activeChartGroupBy = activeChartFrame?.groupBy ?? chartGroupBy;
   // Drill-down is only meaningful for time-based group modes.
-  const chartCanDrillDown = activeChartGroupBy === 'day' || activeChartGroupBy === 'week';
+  const chartCanDrillDown = activeChartGroupBy === 'day' || activeChartGroupBy === 'week' || activeChartGroupBy === 'hour';
 
   // Reset chart stack whenever the global date range changes so the
   // zoomed chart doesn't become stale relative to the rest of the page.
-  useEffect(() => { setChartStack([]); }, [start, end]);
+  useEffect(() => { setChartStack([]); setSelectedHourBar(null); }, [start, end]);
 
   // Compare period B dates
   const { start: compareStart, end: compareEnd } = useMemo(() => {
@@ -825,6 +830,17 @@ export default function Analytics() {
     queryKey: ['analytics', 'signals', mealPeriod],
     queryFn: () => analyticsApi.getSignals({ meal_period: mealPeriod || undefined }),
     enabled: activeTab === 'signals',
+  });
+
+  const { data: hourOrdersData, isLoading: hourOrdersLoading } = useQuery({
+    queryKey: ['analytics', 'hourOrders', selectedHourBar?.start, selectedHourBar?.end, selectedHourBar?.hour, mealPeriod],
+    queryFn: () => analyticsApi.getHourOrders({
+      start_date: selectedHourBar!.start,
+      end_date: selectedHourBar!.end,
+      hour: selectedHourBar!.hour,
+      meal_period: mealPeriod || undefined,
+    }),
+    enabled: selectedHourBar !== null,
   });
 
   const { data: compareData, isLoading: compareLoading } = useQuery({
@@ -901,8 +917,17 @@ export default function Analytics() {
         groupBy: 'hour',
         label: formatAxisLabel(group.group_key, 'day'),
       }]);
+    } else if (activeChartGroupBy === 'hour') {
+      // Hour → show orders for that specific hour
+      const h = parseInt(group.group_key, 10);
+      setSelectedHourBar({
+        hour: h,
+        start: chartStart,
+        end: chartEnd,
+        label: formatHour(group.group_key),
+      });
     }
-    // hour / day_of_week / item / category / order_type → no further zoom
+    // day_of_week / item / category / order_type → no further zoom
   }
 
   const chartGroups = chartData?.groups ?? [];
@@ -1019,10 +1044,16 @@ export default function Analytics() {
         {/* Header row */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            {/* Back button — only shown when chart is zoomed in */}
-            {chartStack.length > 0 && (
+            {/* Back button — shown when chart is zoomed in OR showing hour orders */}
+            {(chartStack.length > 0 || selectedHourBar) && (
               <button
-                onClick={() => setChartStack(prev => prev.slice(0, -1))}
+                onClick={() => {
+                  if (selectedHourBar) {
+                    setSelectedHourBar(null);
+                  } else {
+                    setChartStack(prev => prev.slice(0, -1));
+                  }
+                }}
                 className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors"
               >
                 <span className="material-symbols-outlined text-[16px]">arrow_back</span>
@@ -1031,11 +1062,19 @@ export default function Analytics() {
             )}
             <div>
               <h3 className="text-lg font-headline text-on-surface leading-none">
-                {activeChartFrame
-                  ? activeChartFrame.label
-                  : 'Revenue Over Time'}
+                {selectedHourBar
+                  ? `Orders at ${selectedHourBar.label}`
+                  : activeChartFrame
+                    ? activeChartFrame.label
+                    : 'Revenue Over Time'}
               </h3>
-              {activeChartFrame && (
+              {selectedHourBar ? (
+                <p className="text-[10px] text-on-surface-variant mt-0.5">
+                  {chartStart === chartEnd ? chartStart : `${chartStart} → ${chartEnd}`}
+                  {' · '}
+                  {selectedHourBar.label}
+                </p>
+              ) : activeChartFrame && (
                 <p className="text-[10px] text-on-surface-variant mt-0.5">
                   {chartStart === chartEnd ? chartStart : `${chartStart} → ${chartEnd}`}
                   {' · '}
@@ -1044,34 +1083,107 @@ export default function Analytics() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Groupby selector — disabled while zoomed (frame overrides it) */}
-            <select
-              value={chartGroupBy}
-              onChange={e => { setChartGroupBy(e.target.value as AnalyticsGroupBy); setChartStack([]); }}
-              disabled={chartStack.length > 0}
-              className="text-xs px-2 py-1.5 rounded border border-outline-variant/20 dark:border-sumi-600 bg-surface-container-low dark:bg-sumi-700 text-on-surface disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {(Object.keys(CHART_GROUP_LABELS) as AnalyticsGroupBy[]).map(k => (
-                <option key={k} value={k}>{CHART_GROUP_LABELS[k]}</option>
-              ))}
-            </select>
-            <button
-              onClick={() => setDecomposeOpen(v => !v)}
-              title="Decompose: break revenue into drivers"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border transition-colors ${
-                decomposeOpen
-                  ? 'bg-primary/10 text-primary border-primary/20'
-                  : 'border-outline-variant/20 dark:border-sumi-600 text-on-surface-variant hover:text-primary bg-surface-container-low dark:bg-sumi-700'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[14px]">analytics</span>
-              Explain
-            </button>
-          </div>
+          {/* Hide groupby/explain controls while viewing orders */}
+          {!selectedHourBar && (
+            <div className="flex items-center gap-2">
+              <select
+                value={chartGroupBy}
+                onChange={e => { setChartGroupBy(e.target.value as AnalyticsGroupBy); setChartStack([]); }}
+                disabled={chartStack.length > 0}
+                className="text-xs px-2 py-1.5 rounded border border-outline-variant/20 dark:border-sumi-600 bg-surface-container-low dark:bg-sumi-700 text-on-surface disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {(Object.keys(CHART_GROUP_LABELS) as AnalyticsGroupBy[]).map(k => (
+                  <option key={k} value={k}>{CHART_GROUP_LABELS[k]}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => setDecomposeOpen(v => !v)}
+                title="Decompose: break revenue into drivers"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold border transition-colors ${
+                  decomposeOpen
+                    ? 'bg-primary/10 text-primary border-primary/20'
+                    : 'border-outline-variant/20 dark:border-sumi-600 text-on-surface-variant hover:text-primary bg-surface-container-low dark:bg-sumi-700'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[14px]">analytics</span>
+                Explain
+              </button>
+            </div>
+          )}
         </div>
 
-        {chartLoading ? (
+        {/* Chart or hour orders — mutually exclusive */}
+        {selectedHourBar ? (
+          hourOrdersLoading ? (
+            <div className="p-8 flex justify-center">
+              <span className="material-symbols-outlined text-[32px] text-on-surface-variant animate-spin">progress_activity</span>
+            </div>
+          ) : !hourOrdersData?.length ? (
+            <div className="p-6 text-center text-on-surface-variant text-sm">No orders found for this hour</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low/50 dark:bg-sumi-700/50">
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Order #</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Time</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Table</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Type</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Items</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold text-right">Total</th>
+                    <th className="py-3 px-4 text-[10px] uppercase tracking-[0.15em] text-on-surface-variant font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/5 dark:divide-sumi-700">
+                  {(hourOrdersData as HourOrder[]).map(order => (
+                    <tr key={order.id} className="hover:bg-surface-container-low/30 dark:hover:bg-sumi-700/30 transition-colors">
+                      <td className="py-3 px-4 text-sm font-semibold text-on-surface">#{order.id}</td>
+                      <td className="py-3 px-4 text-sm text-on-surface-variant">
+                        {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-on-surface">
+                        {order.table_number != null ? `Table ${order.table_number}` : '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                          order.ayce_order ? 'bg-secondary/10 text-secondary' : 'bg-primary/10 text-primary'
+                        }`}>
+                          {order.ayce_order ? 'AYCE' : 'Regular'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-on-surface-variant max-w-[240px]">
+                        {order.items.length === 0 ? '—' : order.items.map(it => `${it.quantity}× ${it.name}`).join(', ')}
+                      </td>
+                      <td className="py-3 px-4 text-sm font-semibold text-on-surface text-right">
+                        ${order.total_amount.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                          order.status === 'completed' ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                          : order.status === 'pending'  ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                          : 'bg-surface-container-high text-on-surface-variant'
+                        }`}>
+                          {order.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-outline-variant/15 dark:border-sumi-600">
+                    <td colSpan={5} className="py-3 px-4 text-xs text-on-surface-variant uppercase tracking-wider font-bold">
+                      Total — {hourOrdersData.length} order{hourOrdersData.length !== 1 ? 's' : ''}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-semibold text-on-surface text-right">
+                      ${(hourOrdersData as HourOrder[]).reduce((s, o) => s + o.total_amount, 0).toFixed(2)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )
+        ) : chartLoading ? (
           <div className="h-48 bg-surface-container-low dark:bg-sumi-700 rounded animate-pulse" />
         ) : (
           <BarChart
@@ -1079,17 +1191,21 @@ export default function Analytics() {
             metric={current.metric}
             groupBy={activeChartGroupBy}
             canDrillDown={chartCanDrillDown}
-            onBarClick={chartCanDrillDown ? handleChartBarClick : undefined}
+            onBarClick={handleChartBarClick}
           />
         )}
 
-        <p className="text-[10px] text-on-surface-variant opacity-50 text-right">
-          {chartCanDrillDown
-            ? activeChartGroupBy === 'day'
-              ? 'Click a bar to drill into hours'
-              : 'Click a bar to drill into individual days'
-            : 'Tip: switch to Daily or Weekly view to enable drilldown'}
-        </p>
+        {!selectedHourBar && (
+          <p className="text-[10px] text-on-surface-variant opacity-50 text-right">
+            {chartCanDrillDown
+              ? activeChartGroupBy === 'day'
+                ? 'Click a bar to drill into hours'
+                : activeChartGroupBy === 'hour'
+                  ? 'Click a bar to see orders for that hour'
+                  : 'Click a bar to drill into individual days'
+              : 'Tip: switch to Daily or Weekly view to enable drilldown'}
+          </p>
+        )}
       </section>
 
       {/* ── Decompose panel (inline, collapsible) ── */}
