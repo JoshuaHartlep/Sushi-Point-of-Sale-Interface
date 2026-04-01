@@ -8,19 +8,19 @@ interface StatusDropdownProps {
 }
 
 const statusOptions = [
-  { value: 'pending',   label: 'Pending'   },
-  { value: 'preparing', label: 'Preparing' },
-  { value: 'ready',     label: 'Ready'     },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'PENDING',   label: 'Pending'   },
+  { value: 'PREPARING', label: 'Preparing' },
+  { value: 'READY',     label: 'Ready'     },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
 ];
 
 const statusStyles: Record<string, { pill: string; dot: string }> = {
-  pending:   { pill: 'bg-secondary/10 text-secondary',           dot: 'bg-secondary'   },
-  preparing: { pill: 'bg-primary/10 text-primary',               dot: 'bg-primary animate-pulse' },
-  ready:     { pill: 'bg-tertiary/10 text-tertiary',             dot: 'bg-tertiary'    },
-  completed: { pill: 'bg-surface-container-high text-on-surface-variant', dot: 'bg-on-surface-variant' },
-  cancelled: { pill: 'bg-error/10 text-error',                   dot: 'bg-error'       },
+  PENDING:   { pill: 'bg-secondary/10 text-secondary',           dot: 'bg-secondary'   },
+  PREPARING: { pill: 'bg-primary/10 text-primary',               dot: 'bg-primary animate-pulse' },
+  READY:     { pill: 'bg-tertiary/10 text-tertiary',             dot: 'bg-tertiary'    },
+  COMPLETED: { pill: 'bg-surface-container-high text-on-surface-variant', dot: 'bg-on-surface-variant' },
+  CANCELLED: { pill: 'bg-error/10 text-error',                   dot: 'bg-error'       },
 };
 
 const StatusDropdown = ({ currentStatus, orderId, onStatusChange, isUpdating }: StatusDropdownProps) => {

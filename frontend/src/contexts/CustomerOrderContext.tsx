@@ -68,7 +68,7 @@ export function CustomerOrderProvider({ children }: { children: ReactNode }) {
     try {
       const orderData: OrderCreate = {
         table_id: tId,
-        status: 'pending',
+        status: 'PENDING',
         ayce_order: ayce,
         items: [],
         notes: `Party of ${size}`,

@@ -1159,8 +1159,8 @@ export default function Analytics() {
                       </td>
                       <td className="py-3 px-4">
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                          order.status === 'completed' ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                          : order.status === 'pending'  ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
+                          order.status === 'COMPLETED' ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                          : order.status === 'PENDING'  ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
                           : 'bg-surface-container-high text-on-surface-variant'
                         }`}>
                           {order.status}

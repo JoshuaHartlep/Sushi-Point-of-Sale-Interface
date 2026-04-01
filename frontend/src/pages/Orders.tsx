@@ -21,7 +21,7 @@ const Orders = () => {
   const [isNewOrderModalOpen, setIsNewOrderModalOpen] = useState(false);
   const [newOrder, setNewOrder] = useState<OrderCreate>({
     table_id: 1,
-    status: 'pending',
+    status: 'PENDING',
     ayce_order: false,
     items: [] as OrderItemCreate[],
   });
@@ -67,7 +67,7 @@ const Orders = () => {
     onSuccess: (createdOrder) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setIsNewOrderModalOpen(false);
-      setNewOrder({ table_id: 1, status: 'pending', ayce_order: false, items: [] });
+      setNewOrder({ table_id: 1, status: 'PENDING', ayce_order: false, items: [] });
       navigate(`/orders/${createdOrder.id}/edit`);
     },
   });

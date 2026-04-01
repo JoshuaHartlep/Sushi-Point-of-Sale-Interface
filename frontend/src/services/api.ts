@@ -79,7 +79,7 @@ export interface OrderTotal {
   is_ayce?: boolean;
 }
 
-export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning';
+export type TableStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
 
 export interface TableData {
   id: number;
@@ -94,7 +94,7 @@ export interface TableData {
   updated_at?: string | null;
 }
 
-export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'completed';
+export type OrderStatus = 'PENDING' | 'PREPARING' | 'READY' | 'DELIVERED' | 'CANCELLED' | 'COMPLETED';
 
 export interface OrderCreate {
   table_id: number;
