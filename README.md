@@ -281,6 +281,41 @@ The Vercel project is rooted at `frontend/`. It redirects all traffic to the EC2
 
 ---
 
+## Multi-tenant Architecture
+
+The database schema is **multi-tenant ready**, though the system currently runs in **single-tenant mode** (one restaurant per deployment).
+
+### What was added
+
+- **`tenants` table** — each row represents one restaurant installation (`id`, `name`, `created_at`).
+- **`tenant_id` FK column** on every business data table: `categories`, `menu_items`, `modifiers`, `tables`, `orders`, `settings`. Every row is scoped to a tenant.
+- **`get_tenant_id()` FastAPI dependency** (`app/core/tenant.py`) — all API routes inject the current tenant via `Depends(get_tenant_id)`. In single-tenant mode this always returns `DEFAULT_TENANT_ID` (1). To add real tenant resolution (JWT claim, subdomain, API key), only this file needs to change.
+- **Alembic migration** (`14495eb936cc`) applied the schema change safely on a live database using a 3-phase approach: add nullable columns → backfill existing rows with `tenant_id=1` → tighten to `NOT NULL` + FK + index.
+
+### Current behavior
+
+All requests resolve to `tenant_id = 1` ("Default Restaurant"). The app behaves exactly as a single-restaurant POS; the tenant column is set silently on every insert/query.
+
+### Extending to true multi-tenancy
+
+Replace the body of `get_tenant_id()` in `app/core/tenant.py`:
+
+```python
+# JWT claim example
+def get_tenant_id(token: str = Depends(oauth2_scheme)) -> int:
+    payload = decode_jwt(token)
+    return payload["tenant_id"]
+
+# Subdomain example
+def get_tenant_id(request: Request) -> int:
+    host = request.headers.get("host", "")
+    return resolve_tenant_by_subdomain(host)
+```
+
+No route code changes are needed — every endpoint already passes `tenant_id` through the dependency.
+
+---
+
 ## Common Troubleshooting
 
 - **`ModuleNotFoundError: No module named 'pydantic_settings'`** — run `pip install pydantic-settings` in the active venv

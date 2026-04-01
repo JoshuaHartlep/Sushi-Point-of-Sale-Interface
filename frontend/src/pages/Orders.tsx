@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ordersApi, menuApi, settingsApi, Order, OrderCreate, OrderItemCreate, OrderItem, OrderTotal } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import StatusDropdown from '../components/StatusDropdown';
+import AppModal from '../components/AppModal';
 
 const formatTotal = (total: string | number | undefined): string => {
   if (typeof total === 'string') return parseFloat(total).toFixed(2);
@@ -185,13 +186,16 @@ const Orders = () => {
 
       {/* ── New Order Modal ── */}
       {isNewOrderModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl w-full max-w-md max-h-[90vh] flex flex-col border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center p-6 pb-0 mb-6">
-              <h2 className="text-2xl font-headline text-on-surface">Create New Order</h2>
-              <button onClick={() => setIsNewOrderModalOpen(false)} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <AppModal
+          title="Create New Order"
+          onClose={() => setIsNewOrderModalOpen(false)}
+          footer={(
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setIsNewOrderModalOpen(false)} className="btn-secondary">Cancel</button>
+              <button onClick={handleCreateOrder} className="btn-primary">Create Order</button>
             </div>
-            <div className="space-y-4 px-6 overflow-y-auto">
+          )}
+        >
               <div>
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Table Number</label>
                 <input type="number" value={newOrder.table_id} onChange={(e) => setNewOrder({ ...newOrder, table_id: parseInt(e.target.value) })}
@@ -220,23 +224,16 @@ const Orders = () => {
                 <textarea value={newOrder.notes || ''} onChange={(e) => setNewOrder({ ...newOrder, notes: e.target.value })} rows={3}
                   className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm" />
               </div>
-            </div>
-            <div className="p-6 pt-4 flex justify-end gap-3 shrink-0">
-              <button onClick={() => setIsNewOrderModalOpen(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handleCreateOrder} className="btn-primary">Create Order</button>
-            </div>
-          </div>
-        </div>
+        </AppModal>
       )}
 
       {/* ── View Order Modal ── */}
       {isViewModalOpen && selectedOrder && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-2xl border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-headline text-on-surface">Order #{selectedOrder.id}</h2>
-              <button onClick={() => { setIsViewModalOpen(false); setSelectedOrder(null); }} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
-            </div>
+        <AppModal
+          title={`Order #${selectedOrder.id}`}
+          onClose={() => { setIsViewModalOpen(false); setSelectedOrder(null); }}
+          maxWidthClassName="max-w-2xl"
+        >
 
             {detailsLoading || totalLoading ? (
               <div className="flex justify-center py-8">
@@ -306,22 +303,15 @@ const Orders = () => {
                 )}
               </div>
             )}
-          </div>
-        </div>
+        </AppModal>
       )}
 
       {/* ── Delete Confirmation Modal ── */}
       {isDeleteModalOpen && selectedOrder && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-headline text-on-surface">Delete Order</h2>
-              <button onClick={() => { setIsDeleteModalOpen(false); setSelectedOrder(null); }} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
-            </div>
-            <p className="text-on-surface-variant text-sm mb-6">Are you sure you want to delete Order #{selectedOrder.id}? This action cannot be undone.</p>
-            {deleteOrderMutation.isError && (
-              <div className="p-3 bg-error/5 text-error rounded mb-4 text-sm">Failed to delete order. Please try again.</div>
-            )}
+        <AppModal
+          title="Delete Order"
+          onClose={() => { setIsDeleteModalOpen(false); setSelectedOrder(null); }}
+          footer={(
             <div className="flex justify-end gap-3">
               <button onClick={() => { setIsDeleteModalOpen(false); setSelectedOrder(null); }} className="btn-secondary">Cancel</button>
               <button onClick={handleConfirmDelete} disabled={deleteOrderMutation.isPending}
@@ -329,8 +319,13 @@ const Orders = () => {
                 {deleteOrderMutation.isPending ? 'Deleting…' : 'Delete'}
               </button>
             </div>
-          </div>
-        </div>
+          )}
+        >
+          <p className="text-on-surface-variant text-sm">Are you sure you want to delete Order #{selectedOrder.id}? This action cannot be undone.</p>
+          {deleteOrderMutation.isError && (
+            <div className="p-3 bg-error/5 text-error rounded text-sm">Failed to delete order. Please try again.</div>
+          )}
+        </AppModal>
       )}
     </div>
   );

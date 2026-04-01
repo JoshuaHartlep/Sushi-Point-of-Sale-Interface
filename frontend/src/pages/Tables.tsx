@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tablesApi, TableData, TableStatus } from '../services/api';
+import AppModal from '../components/AppModal';
 
 const inputClass = "w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm";
 const labelClass = "block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5";
@@ -223,16 +224,28 @@ export default function Tables() {
 
       {/* ── Create Modal ─────────────────────────────────────────── */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface dark:bg-sumi-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-headline font-bold text-on-surface dark:text-white">Add New Table</h3>
-              <button onClick={() => setIsCreateOpen(false)} className="text-on-surface-variant hover:text-on-surface transition-colors">
-                <span className="material-symbols-outlined">close</span>
+        <AppModal
+          title="Add New Table"
+          onClose={() => setIsCreateOpen(false)}
+          maxWidthClassName="max-w-sm"
+          footer={(
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsCreateOpen(false)}
+                className="flex-1 py-2 text-sm text-on-surface-variant border border-outline-variant/30 dark:border-sumi-600 rounded-lg hover:bg-surface-container transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={createMutation.isPending}
+                className="flex-1 py-2 text-sm bg-primary text-on-primary rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create Table'}
               </button>
             </div>
-
-            <div className="space-y-4">
+          )}
+        >
               <div>
                 <label className={labelClass}>Table Number</label>
                 <input
@@ -257,39 +270,33 @@ export default function Tables() {
                 />
               </div>
               {error && <p className="text-xs text-error">{error}</p>}
-            </div>
+        </AppModal>
+      )}
 
-            <div className="flex gap-3 mt-6">
+      {/* ── Edit Modal ───────────────────────────────────────────── */}
+      {isEditOpen && selected && (
+        <AppModal
+          title={`Edit Table ${selected.number}`}
+          onClose={() => setIsEditOpen(false)}
+          maxWidthClassName="max-w-sm"
+          footer={(
+            <div className="flex gap-3">
               <button
-                onClick={() => setIsCreateOpen(false)}
+                onClick={() => setIsEditOpen(false)}
                 className="flex-1 py-2 text-sm text-on-surface-variant border border-outline-variant/30 dark:border-sumi-600 rounded-lg hover:bg-surface-container transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleCreate}
-                disabled={createMutation.isPending}
+                onClick={handleEdit}
+                disabled={updateMutation.isPending}
                 className="flex-1 py-2 text-sm bg-primary text-on-primary rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {createMutation.isPending ? 'Creating...' : 'Create Table'}
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Edit Modal ───────────────────────────────────────────── */}
-      {isEditOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface dark:bg-sumi-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-headline font-bold text-on-surface dark:text-white">Edit Table {selected.number}</h3>
-              <button onClick={() => setIsEditOpen(false)} className="text-on-surface-variant hover:text-on-surface transition-colors">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="space-y-4">
+          )}
+        >
               <div>
                 <label className={labelClass}>Table Number</label>
                 <input
@@ -312,40 +319,16 @@ export default function Tables() {
                 />
               </div>
               {error && <p className="text-xs text-error">{error}</p>}
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setIsEditOpen(false)}
-                className="flex-1 py-2 text-sm text-on-surface-variant border border-outline-variant/30 dark:border-sumi-600 rounded-lg hover:bg-surface-container transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleEdit}
-                disabled={updateMutation.isPending}
-                className="flex-1 py-2 text-sm bg-primary text-on-primary rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </AppModal>
       )}
 
       {/* ── Delete Modal ─────────────────────────────────────────── */}
       {isDeleteOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-surface dark:bg-sumi-800 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="material-symbols-outlined text-error text-[28px]">warning</span>
-              <h3 className="text-lg font-headline font-bold text-on-surface dark:text-white">Delete Table {selected.number}?</h3>
-            </div>
-            <p className="text-sm text-on-surface-variant mb-2">
-              This will permanently remove Table {selected.number} ({selected.capacity} seats).
-            </p>
-            <p className="text-xs text-on-surface-variant opacity-70 mb-6">Tables with active orders cannot be deleted.</p>
-            {error && <p className="text-xs text-error mb-4">{error}</p>}
+        <AppModal
+          title={`Delete Table ${selected.number}?`}
+          onClose={() => setIsDeleteOpen(false)}
+          maxWidthClassName="max-w-sm"
+          footer={(
             <div className="flex gap-3">
               <button
                 onClick={() => setIsDeleteOpen(false)}
@@ -361,8 +344,14 @@ export default function Tables() {
                 {deleteMutation.isPending ? 'Deleting...' : 'Delete Table'}
               </button>
             </div>
-          </div>
-        </div>
+          )}
+        >
+          <p className="text-sm text-on-surface-variant">
+            This will permanently remove Table {selected.number} ({selected.capacity} seats).
+          </p>
+          <p className="text-xs text-on-surface-variant opacity-70">Tables with active orders cannot be deleted.</p>
+          {error && <p className="text-xs text-error">{error}</p>}
+        </AppModal>
       )}
     </div>
   );
