@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
+from app.core.tenant import get_tenant_id
 from app.models.menu import MenuItem, Category, Modifier
 from app.schemas.menu import (
     MenuItemCreate,
@@ -62,10 +63,11 @@ def get_menu_items(
     search: Optional[str] = None,  # search by name or description
     min_price: Optional[float] = None,  # minimum price filter
     max_price: Optional[float] = None,  # maximum price filter
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # start with all menu items
-    query = db.query(MenuItem)
+    # scope to the current tenant — never return another restaurant's items
+    query = db.query(MenuItem).filter(MenuItem.tenant_id == tenant_id)
     
     # add filters one by one if they're provided
     if category_id:
@@ -98,18 +100,18 @@ def get_menu_items(
 
 # get one specific menu item by its ID
 @router.get("/menu-items/{item_id}", response_model=MenuItemResponse)
-def get_menu_item(item_id: int, db: Session = Depends(get_db)):
-    # look up the item in the database
-    item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+def get_menu_item(item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # look up the item — tenant filter prevents cross-tenant access
+    item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not item:
         raise RecordNotFoundError("MenuItem", item_id)
     return item
 
 # add a new menu item
 @router.post("/menu-items/", response_model=MenuItemResponse)
-def create_menu_item(item: MenuItemCreate, db: Session = Depends(get_db)):
-    # convert the input data to a database item and save it
-    db_item = MenuItem(**item.model_dump())
+def create_menu_item(item: MenuItemCreate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # inject tenant_id so the new item is scoped to the current restaurant
+    db_item = MenuItem(**item.model_dump(), tenant_id=tenant_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -117,9 +119,9 @@ def create_menu_item(item: MenuItemCreate, db: Session = Depends(get_db)):
 
 # update some fields of a menu item
 @router.patch("/menu-items/{item_id}", response_model=MenuItemResponse)
-def patch_menu_item(item_id: int, item: MenuItemUpdate, db: Session = Depends(get_db)):
-    # find the item we want to update
-    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+def patch_menu_item(item_id: int, item: MenuItemUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # tenant filter ensures we can't accidentally edit another restaurant's item
+    db_item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not db_item:
         raise RecordNotFoundError("MenuItem", item_id)
         
@@ -136,12 +138,13 @@ def patch_menu_item(item_id: int, item: MenuItemUpdate, db: Session = Depends(ge
 def upload_menu_item_image(
     item_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     from app.core.s3 import upload_image, delete_image
 
-    # check the item exists
-    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    # check the item exists within this tenant
+    db_item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not db_item:
         raise RecordNotFoundError("MenuItem", item_id)
 
@@ -169,10 +172,10 @@ def upload_menu_item_image(
 
 # remove the image from a menu item
 @router.delete("/menu-items/{item_id}/image", response_model=MenuItemResponse)
-def delete_menu_item_image(item_id: int, db: Session = Depends(get_db)):
+def delete_menu_item_image(item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     from app.core.s3 import delete_image
 
-    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+    db_item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not db_item:
         raise RecordNotFoundError("MenuItem", item_id)
 
@@ -187,9 +190,9 @@ def delete_menu_item_image(item_id: int, db: Session = Depends(get_db)):
 
 # delete a menu item
 @router.delete("/menu-items/{item_id}")
-def delete_menu_item(item_id: int, db: Session = Depends(get_db)):
-    # find and delete the item
-    db_item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+def delete_menu_item(item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # tenant filter prevents deleting another restaurant's items
+    db_item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not db_item:
         raise RecordNotFoundError("MenuItem", item_id)
         
@@ -199,18 +202,18 @@ def delete_menu_item(item_id: int, db: Session = Depends(get_db)):
 
 # do a bunch of operations on menu items at once
 @router.post("/menu-items/bulk", response_model=BulkMenuItemResponse)
-def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Depends(get_db)):
+def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     # keep track of what we changed and any errors
     affected_items = []
     errors = []
-    
+
     try:
         # handle creating multiple items
         if operation.operation_type == "create":
             items = []
             for item_data in operation.data:
                 try:
-                    db_item = MenuItem(**item_data)
+                    db_item = MenuItem(**item_data, tenant_id=tenant_id)
                     db.add(db_item)
                     items.append(db_item)
                 except Exception as e:
@@ -230,11 +233,11 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
         elif operation.operation_type == "update":
             if not operation.item_ids:
                 raise HTTPException(status_code=400, detail="item_ids required for update operation")
-                
-            items = db.query(MenuItem).filter(MenuItem.id.in_(operation.item_ids)).all()
+
+            items = db.query(MenuItem).filter(MenuItem.id.in_(operation.item_ids), MenuItem.tenant_id == tenant_id).all()
             if not items:
                 raise HTTPException(status_code=404, detail="No items found")
-                
+
             for item in items:
                 try:
                     for key, value in operation.data.items():
@@ -242,7 +245,7 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
                     affected_items.append(item.id)
                 except Exception as e:
                     errors.append({"item_id": item.id, "error": str(e)})
-                    
+
             db.commit()
             return BulkMenuItemResponse(
                 success=True,
@@ -250,16 +253,16 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
                 affected_items=affected_items,
                 errors=errors if errors else None
             )
-            
+
         # handle deleting multiple items
         elif operation.operation_type == "delete":
             if not operation.item_ids:
                 raise HTTPException(status_code=400, detail="item_ids required for delete operation")
-                
-            items = db.query(MenuItem).filter(MenuItem.id.in_(operation.item_ids)).all()
+
+            items = db.query(MenuItem).filter(MenuItem.id.in_(operation.item_ids), MenuItem.tenant_id == tenant_id).all()
             if not items:
                 raise HTTPException(status_code=404, detail="No items found")
-                
+
             for item in items:
                 try:
                     db.delete(item)
@@ -291,10 +294,11 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
 def bulk_update_availability(
     item_ids: List[int],
     is_available: bool,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # find all the items we want to update
-    items = db.query(MenuItem).filter(MenuItem.id.in_(item_ids)).all()
+    # scope to current tenant before checking IDs
+    items = db.query(MenuItem).filter(MenuItem.id.in_(item_ids), MenuItem.tenant_id == tenant_id).all()
     if not items:
         raise HTTPException(status_code=404, detail="No items found")
         
@@ -313,20 +317,22 @@ def bulk_update_availability(
 def get_categories(
     skip: int = Query(0, ge=0),  # how many to skip
     limit: int = Query(12, ge=1, le=100),  # how many to show
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # get categories in order and apply pagination
-    query = db.query(Category).order_by(Category.display_order)
+    # scope to current tenant and return in display order
+    query = db.query(Category).filter(Category.tenant_id == tenant_id).order_by(Category.display_order)
     return query.offset(skip).limit(limit).all()
 
 # add a new category
 @router.post("/categories/", response_model=CategoryResponse)
 def create_category(
     category: CategoryCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # save the new category to the database
-    db_category = Category(**category.model_dump())
+    # inject tenant_id so this category is scoped to the current restaurant
+    db_category = Category(**category.model_dump(), tenant_id=tenant_id)
     db.add(db_category)
     db.commit()
     db.refresh(db_category)
@@ -336,10 +342,11 @@ def create_category(
 @router.get("/categories/{category_id}", response_model=CategoryResponse)
 def get_category(
     category_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # look up the category
-    category = db.query(Category).filter(Category.id == category_id).first()
+    # tenant filter prevents reading another restaurant's categories
+    category = db.query(Category).filter(Category.id == category_id, Category.tenant_id == tenant_id).first()
     if not category:
         raise RecordNotFoundError(f"Category with ID {category_id} not found")
     return category
@@ -349,10 +356,11 @@ def get_category(
 def patch_category(
     category_id: int,
     category: CategoryUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # find the category we want to update
-    db_category = db.query(Category).filter(Category.id == category_id).first()
+    # tenant filter prevents patching another restaurant's category
+    db_category = db.query(Category).filter(Category.id == category_id, Category.tenant_id == tenant_id).first()
     if not db_category:
         raise RecordNotFoundError(f"Category with ID {category_id} not found")
     
@@ -369,10 +377,11 @@ def patch_category(
 @router.delete("/categories/{category_id}")
 def delete_category(
     category_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # find and delete the category
-    category = db.query(Category).filter(Category.id == category_id).first()
+    # tenant filter prevents deleting another restaurant's category
+    category = db.query(Category).filter(Category.id == category_id, Category.tenant_id == tenant_id).first()
     if not category:
         raise RecordNotFoundError(f"Category with ID {category_id} not found")
     
@@ -386,13 +395,14 @@ def get_modifiers(
     skip: int = Query(0, ge=0),  # how many to skip
     limit: int = Query(12, ge=1, le=100),  # how many to show
     category_id: Optional[int] = None,  # filter by category
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # start with all modifiers
-    query = db.query(Modifier)
-    
+    # scope to current tenant first
+    query = db.query(Modifier).filter(Modifier.tenant_id == tenant_id)
+
     if category_id is not None:
-        # get modifiers that are either for this category or global
+        # get modifiers that are either for this category or global (within tenant)
         query = query.filter(
             (Modifier.category_id == category_id) | (Modifier.category_id.is_(None))
         )
@@ -404,10 +414,11 @@ def get_modifiers(
 @router.post("/modifiers/", response_model=ModifierResponse)
 def create_modifier(
     modifier: ModifierCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # save the new modifier to the database
-    db_modifier = Modifier(**modifier.model_dump())
+    # inject tenant_id so this modifier is scoped to the current restaurant
+    db_modifier = Modifier(**modifier.model_dump(), tenant_id=tenant_id)
     db.add(db_modifier)
     db.commit()
     db.refresh(db_modifier)
@@ -417,10 +428,11 @@ def create_modifier(
 @router.get("/modifiers/{modifier_id}", response_model=ModifierResponse)
 def get_modifier(
     modifier_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # look up the modifier
-    modifier = db.query(Modifier).filter(Modifier.id == modifier_id).first()
+    # tenant filter prevents reading another restaurant's modifiers
+    modifier = db.query(Modifier).filter(Modifier.id == modifier_id, Modifier.tenant_id == tenant_id).first()
     if not modifier:
         raise RecordNotFoundError(f"Modifier with ID {modifier_id} not found")
     return modifier
@@ -430,10 +442,11 @@ def get_modifier(
 def update_modifier(
     modifier_id: int,
     modifier: ModifierCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # find the modifier we want to update
-    db_modifier = db.query(Modifier).filter(Modifier.id == modifier_id).first()
+    # tenant filter prevents updating another restaurant's modifier
+    db_modifier = db.query(Modifier).filter(Modifier.id == modifier_id, Modifier.tenant_id == tenant_id).first()
     if not db_modifier:
         raise RecordNotFoundError(f"Modifier with ID {modifier_id} not found")
     
@@ -450,10 +463,11 @@ def update_modifier(
 def patch_modifier(
     modifier_id: int,
     modifier: ModifierUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # find the modifier we want to update
-    db_modifier = db.query(Modifier).filter(Modifier.id == modifier_id).first()
+    # tenant filter prevents patching another restaurant's modifier
+    db_modifier = db.query(Modifier).filter(Modifier.id == modifier_id, Modifier.tenant_id == tenant_id).first()
     if not db_modifier:
         raise RecordNotFoundError(f"Modifier with ID {modifier_id} not found")
     
@@ -470,10 +484,11 @@ def patch_modifier(
 @router.delete("/modifiers/{modifier_id}")
 def delete_modifier(
     modifier_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
-    # find and delete the modifier
-    modifier = db.query(Modifier).filter(Modifier.id == modifier_id).first()
+    # tenant filter prevents deleting another restaurant's modifier
+    modifier = db.query(Modifier).filter(Modifier.id == modifier_id, Modifier.tenant_id == tenant_id).first()
     if not modifier:
         raise RecordNotFoundError(f"Modifier with ID {modifier_id} not found")
     
@@ -483,8 +498,8 @@ def delete_modifier(
 
 # get the modifiers assigned to a specific menu item
 @router.get("/menu-items/{item_id}/modifiers", response_model=ItemModifiersResponse)
-def get_item_modifiers(item_id: int, db: Session = Depends(get_db)):
-    item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+def get_item_modifiers(item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not item:
         raise RecordNotFoundError("MenuItem", item_id)
     return ItemModifiersResponse(
@@ -494,13 +509,13 @@ def get_item_modifiers(item_id: int, db: Session = Depends(get_db)):
 
 # update which modifiers are assigned to a menu item
 @router.put("/menu-items/{item_id}/modifiers", response_model=ItemModifiersResponse)
-def update_item_modifiers(item_id: int, data: ItemModifiersUpdate, db: Session = Depends(get_db)):
-    item = db.query(MenuItem).filter(MenuItem.id == item_id).first()
+def update_item_modifiers(item_id: int, data: ItemModifiersUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not item:
         raise RecordNotFoundError("MenuItem", item_id)
 
-    # look up all requested modifiers
-    modifiers = db.query(Modifier).filter(Modifier.id.in_(data.modifier_ids)).all()
+    # look up all requested modifiers — also scoped to current tenant
+    modifiers = db.query(Modifier).filter(Modifier.id.in_(data.modifier_ids), Modifier.tenant_id == tenant_id).all()
     found_ids = {m.id for m in modifiers}
     missing = set(data.modifier_ids) - found_ids
     if missing:

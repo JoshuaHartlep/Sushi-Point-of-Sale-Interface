@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     SQL_ECHO: bool = os.getenv("SQL_ECHO", "False").lower() == "true"
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
 
+    # Multi-tenant: ID of the default (and currently only) tenant.
+    # All data is scoped to this tenant in single-tenant mode.
+    # Override via DEFAULT_TENANT_ID env var when running multiple tenants.
+    DEFAULT_TENANT_ID: int = int(os.getenv("DEFAULT_TENANT_ID", "1"))
+
     # AWS S3 settings for uploaded images
     AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")

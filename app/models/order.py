@@ -18,6 +18,10 @@ from datetime import datetime
 from enum import Enum
 from decimal import Decimal
 
+# Multi-tenant note: tenant_id is added to Table and Order (the root-level
+# entities for order data).  OrderItem and Discount inherit tenant scope through
+# their parent Order FK and do not need a separate tenant_id column.
+
 # this table connects order items with their modifiers (like extra sauce, no onions, etc)
 order_item_modifiers = Table(
     'order_item_modifiers',
@@ -48,6 +52,8 @@ class Table(Base):
 
     # basic table info
     id = Column(Integer, primary_key=True, index=True)  # unique number for each table
+    # tenant scope — which restaurant this table belongs to
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     number = Column(Integer, nullable=False, unique=True)  # table number
     capacity = Column(Integer, nullable=False)  # how many people can sit here
     status = Column(SQLEnum(TableStatus), nullable=False, default=TableStatus.AVAILABLE)  # current state
@@ -84,6 +90,8 @@ class Order(Base):
 
     # basic order info
     id = Column(Integer, primary_key=True, index=True)  # unique number for each order
+    # tenant scope — which restaurant this order belongs to
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     table_id = Column(Integer, ForeignKey("tables.id"), nullable=False)  # which table ordered this
     status = Column(SQLEnum(OrderStatus), nullable=False, default=OrderStatus.PENDING)  # current state
     total_amount = Column(Numeric(10, 2), nullable=False, default=0)  # total cost

@@ -5,18 +5,20 @@ This module imports all database models to ensure they are registered
 with SQLAlchemy for proper table creation and relationships.
 """
 
+from .tenant import Tenant
 from .menu import MenuItem, Category, Modifier, MealPeriodEnum, MenuItemImage, ImageReport, ImageStatusEnum
 from .order import Order, OrderItem, OrderStatus, Table, TableStatus, Discount
 from .user import User
 from .settings import Settings
 
 __all__ = [
+    "Tenant",
     "MenuItem",
-    "Category", 
+    "Category",
     "Modifier",
     "MealPeriodEnum",
     "Order",
-    "OrderItem", 
+    "OrderItem",
     "OrderStatus",
     "Table",
     "TableStatus",

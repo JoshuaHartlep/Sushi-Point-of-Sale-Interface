@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.core.database import get_db
+from app.core.tenant import get_tenant_id
 from app.models.menu import MenuItemImage, ImageReport, ImageStatusEnum, MenuItem
 from app.schemas.menu import MenuItemImageResponse, ImageReportCreate, ImageReportResponse, ImageStatusUpdate
 from app.core.error_handling import RecordNotFoundError
@@ -34,12 +35,13 @@ def _uploads_dir() -> str:
 def upload_user_image(
     menu_item_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     from app.core.s3 import upload_image
 
-    # make sure the menu item exists
-    item = db.query(MenuItem).filter(MenuItem.id == menu_item_id).first()
+    # ensure the menu item exists and belongs to this tenant
+    item = db.query(MenuItem).filter(MenuItem.id == menu_item_id, MenuItem.tenant_id == tenant_id).first()
     if not item:
         raise RecordNotFoundError("MenuItem", menu_item_id)
 
@@ -68,8 +70,8 @@ def upload_user_image(
 
 # get approved user-uploaded photos for a menu item (customer-facing), newest first
 @router.get("/menu-items/{menu_item_id}/images", response_model=List[MenuItemImageResponse])
-def get_user_images(menu_item_id: int, db: Session = Depends(get_db)):
-    item = db.query(MenuItem).filter(MenuItem.id == menu_item_id).first()
+def get_user_images(menu_item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    item = db.query(MenuItem).filter(MenuItem.id == menu_item_id, MenuItem.tenant_id == tenant_id).first()
     if not item:
         raise RecordNotFoundError("MenuItem", menu_item_id)
 
@@ -87,11 +89,13 @@ def get_user_images(menu_item_id: int, db: Session = Depends(get_db)):
 
 # get all pending images waiting for review (manager view) — must come before /{image_id}
 @router.get("/images/pending", response_model=List[MenuItemImageResponse])
-def get_pending_images(db: Session = Depends(get_db)):
+def get_pending_images(db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # join through MenuItem to ensure we only return images for this tenant's items
     images = (
         db.query(MenuItemImage)
+        .join(MenuItem, MenuItemImage.menu_item_id == MenuItem.id)
         .options(joinedload(MenuItemImage.menu_item))
-        .filter(MenuItemImage.status == ImageStatusEnum.PENDING)
+        .filter(MenuItem.tenant_id == tenant_id, MenuItemImage.status == ImageStatusEnum.PENDING)
         .order_by(MenuItemImage.uploaded_at.desc())
         .all()
     )
@@ -100,11 +104,13 @@ def get_pending_images(db: Session = Depends(get_db)):
 
 # get all images that have at least one report (manager view) — must come before /{image_id}
 @router.get("/images/reported", response_model=List[MenuItemImageResponse])
-def get_reported_images(db: Session = Depends(get_db)):
+def get_reported_images(db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # join through MenuItem to scope to this tenant's items
     images = (
         db.query(MenuItemImage)
+        .join(MenuItem, MenuItemImage.menu_item_id == MenuItem.id)
         .options(joinedload(MenuItemImage.menu_item))
-        .filter(MenuItemImage.report_count > 0)
+        .filter(MenuItem.tenant_id == tenant_id, MenuItemImage.report_count > 0)
         .order_by(MenuItemImage.report_count.desc())
         .all()
     )
@@ -113,11 +119,12 @@ def get_reported_images(db: Session = Depends(get_db)):
 
 # approve an image (manager only) — rejection is handled by the delete endpoint
 @router.patch("/images/{image_id}/status", response_model=MenuItemImageResponse)
-def update_image_status(image_id: int, update: ImageStatusUpdate, db: Session = Depends(get_db)):
+def update_image_status(image_id: int, update: ImageStatusUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     image = (
         db.query(MenuItemImage)
+        .join(MenuItem, MenuItemImage.menu_item_id == MenuItem.id)
         .options(joinedload(MenuItemImage.menu_item))
-        .filter(MenuItemImage.id == image_id)
+        .filter(MenuItemImage.id == image_id, MenuItem.tenant_id == tenant_id)
         .first()
     )
     if not image:
@@ -135,8 +142,14 @@ def update_image_status(image_id: int, update: ImageStatusUpdate, db: Session = 
 
 # report an image as inappropriate or incorrect
 @router.post("/images/{image_id}/report", response_model=ImageReportResponse)
-def report_image(image_id: int, report: ImageReportCreate, db: Session = Depends(get_db)):
-    image = db.query(MenuItemImage).filter(MenuItemImage.id == image_id).first()
+def report_image(image_id: int, report: ImageReportCreate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    # join through MenuItem to prevent reporting images from other tenants
+    image = (
+        db.query(MenuItemImage)
+        .join(MenuItem, MenuItemImage.menu_item_id == MenuItem.id)
+        .filter(MenuItemImage.id == image_id, MenuItem.tenant_id == tenant_id)
+        .first()
+    )
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
@@ -151,10 +164,16 @@ def report_image(image_id: int, report: ImageReportCreate, db: Session = Depends
 
 # delete an image (manager only)
 @router.delete("/images/{image_id}")
-def delete_image(image_id: int, db: Session = Depends(get_db)):
+def delete_image(image_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     from app.core.s3 import delete_image as s3_delete
 
-    image = db.query(MenuItemImage).filter(MenuItemImage.id == image_id).first()
+    # join through MenuItem to prevent deleting another tenant's images
+    image = (
+        db.query(MenuItemImage)
+        .join(MenuItem, MenuItemImage.menu_item_id == MenuItem.id)
+        .filter(MenuItemImage.id == image_id, MenuItem.tenant_id == tenant_id)
+        .first()
+    )
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
