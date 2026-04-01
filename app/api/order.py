@@ -42,6 +42,39 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _to_decimal(value: Optional[object]) -> Decimal:
+    return Decimal(str(value or 0))
+
+
+def _get_leftover_charge_amount(order: Order) -> Decimal:
+    return _to_decimal(getattr(order, "leftover_charge_amount", 0))
+
+
+def _calculate_ayce_surcharge_total(order: Order) -> Decimal:
+    surcharge_total = Decimal("0.00")
+    for item in order.items:
+        surcharge = _to_decimal(getattr(item.menu_item, "ayce_surcharge", 0))
+        surcharge_total += surcharge * Decimal(str(item.quantity))
+    return surcharge_total
+
+
+def _calculate_order_subtotal(order: Order, db: Session) -> Decimal:
+    if order.ayce_order:
+        return get_current_ayce_price(db) + _calculate_ayce_surcharge_total(order)
+
+    subtotal = Decimal("0.00")
+    for item in order.items:
+        item_total = Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
+        for modifier in item.modifiers:
+            item_total += Decimal(str(modifier.price)) * Decimal(str(item.quantity))
+        subtotal += item_total
+    return subtotal
+
+
+def _calculate_order_total_amount(order: Order, db: Session) -> Decimal:
+    return _calculate_order_subtotal(order, db) + _get_leftover_charge_amount(order)
+
+
 def get_current_ayce_price(db: Session) -> Decimal:
     """
     Get the current AYCE price based on the meal period setting.
@@ -378,6 +411,8 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
             notes=order.notes,
             ayce_order=order.ayce_order,
             ayce_price=get_current_ayce_price(db) if order.ayce_order else Decimal('0.00'),
+            leftover_charge_amount=order.leftover_charge_amount or Decimal('0.00'),
+            leftover_charge_note=order.leftover_charge_note,
             total_amount=Decimal('0.00')  # Will be calculated after items are added
         )
         db.add(db_order)
@@ -399,19 +434,13 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
                 menu_item_id=item.menu_item_id,
                 quantity=item.quantity,
                 unit_price=menu_item.price,  # Set the unit price from the menu item
-                notes=item.notes
+                notes=item.notes,
+                menu_item=menu_item,
             )
             db.add(db_item)
 
         # Calculate initial total
-        if db_order.ayce_order:
-            db_order.total_amount = get_current_ayce_price(db)
-        else:
-            # Calculate total from items
-            total = Decimal('0.00')
-            for item in db_order.items:
-                total += Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
-            db_order.total_amount = total
+        db_order.total_amount = _calculate_order_total_amount(db_order, db)
 
         db.commit()
         db.refresh(db_order)
@@ -496,6 +525,9 @@ def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db
         for key, value in update_data.items():
             if value is not None:  # Only update non-None values
                 setattr(db_order, key, value)
+
+        if any(key in update_data for key in ["ayce_order", "ayce_price", "leftover_charge_amount", "leftover_charge_note"]):
+            db_order.total_amount = _calculate_order_total_amount(db_order, db)
         
         db.commit()
         db.refresh(db_order)
@@ -702,22 +734,13 @@ def calculate_order_total(
         if not order:
             raise RecordNotFoundError("Order", order_id)
             
-        # Calculate subtotal based on order type
+        subtotal = _calculate_order_subtotal(order, db)
+        leftover_charge_amount = _get_leftover_charge_amount(order)
+        ayce_base_total = None
+        ayce_surcharge_total = None
         if order.ayce_order:
-            # AYCE orders use price based on current meal period from settings
-            subtotal = get_current_ayce_price(db)
-        else:
-            # Regular orders calculate from items and modifiers
-            subtotal = Decimal('0')
-            for item in order.items:
-                # Calculate item total
-                item_total = Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
-                
-                # Add modifier costs
-                for modifier in item.modifiers:
-                    item_total += Decimal(str(modifier.price)) * Decimal(str(item.quantity))
-                
-                subtotal += item_total
+            ayce_base_total = get_current_ayce_price(db)
+            ayce_surcharge_total = _calculate_ayce_surcharge_total(order)
         
         # Calculate discount amount
         discount_amount = None
@@ -728,7 +751,7 @@ def calculate_order_total(
                 discount_amount = (subtotal * Decimal(str(order.discount.value))) / Decimal('100')
         
         # Calculate final total
-        total = subtotal
+        total = subtotal + leftover_charge_amount
         if discount_amount:
             total -= discount_amount
         
@@ -743,6 +766,9 @@ def calculate_order_total(
             discount_amount=discount_amount,
             total=total,
             ayce_price=get_current_ayce_price(db) if order.ayce_order else None,
+            ayce_base_total=round(ayce_base_total, 2) if ayce_base_total is not None else None,
+            ayce_surcharge_total=round(ayce_surcharge_total, 2) if ayce_surcharge_total is not None else None,
+            leftover_charge_amount=round(leftover_charge_amount, 2),
             is_ayce=order.ayce_order
         )
     except Exception as e:
@@ -827,15 +853,7 @@ def add_items_to_order(
             order.status = OrderStatus.PREPARING
             
         # Recalculate order total
-        if order.ayce_order:
-            # For AYCE orders, total is based on current meal period from settings
-            order.total_amount = get_current_ayce_price(db)
-        else:
-            # For regular orders, recalculate from items
-            total = Decimal('0.00')
-            for item in order.items:
-                total += Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
-            order.total_amount = total
+        order.total_amount = _calculate_order_total_amount(order, db)
             
         db.commit()
         db.refresh(order)
@@ -939,16 +957,7 @@ def delete_order_item(
         db.delete(item)
         
         # Recalculate order total after item deletion
-        if order.ayce_order:
-            # For AYCE orders, total is based on current meal period from settings
-            order.total_amount = get_current_ayce_price(db)
-        else:
-            # For regular orders, recalculate from remaining items
-            total = Decimal('0.00')
-            for remaining_item in order.items:
-                if remaining_item.id != item_id:  # Exclude the deleted item
-                    total += Decimal(str(remaining_item.unit_price)) * Decimal(str(remaining_item.quantity))
-            order.total_amount = total
+        order.total_amount = _calculate_order_total_amount(order, db)
         
         db.commit()
         

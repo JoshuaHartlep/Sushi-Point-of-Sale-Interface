@@ -5,6 +5,7 @@ export interface CartItem {
   menuItemId: number;
   name: string;
   price: number; // always the a la carte price; display as $0 for AYCE
+  ayceSurcharge: number; // extra charge per item when order is AYCE
   quantity: number;
   notes?: string; // optional customer note (e.g. "no wasabi")
 }
@@ -33,7 +34,7 @@ interface CustomerOrderContextType {
 
   // actions
   setupOrder: (tableId: number, isAyce: boolean, partySize: number, mealPeriod: 'LUNCH' | 'DINNER', aycePrice: number) => Promise<void>;
-  addToCart: (menuItemId: number, name: string, price: number, notes?: string) => void;
+  addToCart: (menuItemId: number, name: string, price: number, ayceSurcharge?: number, notes?: string) => void;
   updateQty: (menuItemId: number, quantity: number) => void;
   removeFromCart: (menuItemId: number) => void;
   submitOrder: () => Promise<void>;
@@ -86,17 +87,17 @@ export function CustomerOrderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Add one unit of an item to the local cart; also updates the note if provided
-  const addToCart = useCallback((menuItemId: number, name: string, price: number, notes?: string) => {
+  const addToCart = useCallback((menuItemId: number, name: string, price: number, ayceSurcharge = 0, notes?: string) => {
     setCart(prev => {
       const existing = prev.find(i => i.menuItemId === menuItemId);
       if (existing) {
         return prev.map(i =>
           i.menuItemId === menuItemId
-            ? { ...i, quantity: i.quantity + 1, ...(notes !== undefined && { notes }) }
+            ? { ...i, quantity: i.quantity + 1, ayceSurcharge, ...(notes !== undefined && { notes }) }
             : i
         );
       }
-      return [...prev, { menuItemId, name, price, quantity: 1, notes }];
+      return [...prev, { menuItemId, name, price, ayceSurcharge, quantity: 1, notes }];
     });
   }, []);
 
@@ -144,7 +145,9 @@ export function CustomerOrderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const totalItemCount = cart.reduce((sum, i) => sum + i.quantity, 0);
-  const cartSubtotal = isAyce ? 0 : cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const cartSubtotal = isAyce
+    ? cart.reduce((sum, i) => sum + i.ayceSurcharge * i.quantity, 0)
+    : cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   return (
     <CustomerOrderContext.Provider value={{

@@ -150,12 +150,16 @@ def upload_menu_item_image(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, and GIF images are allowed")
 
+    from app.core.upload_limits import MANAGER_IMAGE_MAX_BYTES, buffer_upload_file
+
+    buf = buffer_upload_file(file, MANAGER_IMAGE_MAX_BYTES, "manager")
+
     # delete old image from S3 if one exists
     if db_item.image_url:
         delete_image(db_item.image_url)
 
     # upload new image to S3
-    s3_url = upload_image(file.file, "menu-images", item_id, file.filename or "image.jpg", file.content_type)
+    s3_url = upload_image(buf, "menu-images", item_id, file.filename or "image.jpg", file.content_type)
 
     db_item.image_url = s3_url
     db.commit()

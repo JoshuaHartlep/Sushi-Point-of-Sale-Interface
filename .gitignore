@@ -29,7 +29,10 @@ pnpm-debug.log*
 # TypeScript incremental build info
 *.tsbuildinfo.venv/
 __pycache__/
+*.pyc
 .venv/
 
 #All pems ignore
 *.pem
+ec2 command.txt
+cli-latest

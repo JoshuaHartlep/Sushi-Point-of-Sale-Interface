@@ -133,6 +133,7 @@ class MenuItem(Base):
     name = Column(String(100), nullable=False)  # item name
     description = Column(Text)  # what's in this item
     price = Column(Numeric(10, 2), nullable=False)  # how much it costs
+    ayce_surcharge = Column(Numeric(10, 2), nullable=True, server_default="0.00")  # optional extra charge when ordered under AYCE
     category_id = Column(Integer, ForeignKey("categories.id"))  # which category this is in
     image_url = Column(String(255))  # picture of the item
     is_available = Column(Boolean, default=True)  # whether we can order this right now

@@ -21,6 +21,7 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
+  ayce_surcharge?: number;
   category_id: number;
   is_available: boolean;
   meal_period: 'BOTH' | 'LUNCH' | 'DINNER'; // Meal period support - required field
@@ -61,8 +62,21 @@ export interface Order {
   total_amount: number;
   created_at: string;
   ayce_order: boolean;
+  leftover_charge_amount?: number;
+  leftover_charge_note?: string | null;
   notes?: string;
   items?: OrderItem[];
+}
+
+export interface OrderTotal {
+  subtotal?: number;
+  discount_amount?: number;
+  total: number;
+  ayce_price?: number;
+  ayce_base_total?: number;
+  ayce_surcharge_total?: number;
+  leftover_charge_amount?: number;
+  is_ayce?: boolean;
 }
 
 export type TableStatus = 'available' | 'occupied' | 'reserved' | 'cleaning';
@@ -163,6 +177,20 @@ const api = axios.create({
   },
 });
 
+/** Parses FastAPI/axios errors; maps 413 (including nginx HTML body) to a short message. */
+export function getUploadErrorMessage(error: unknown, fallback: string): string {
+  if (!axios.isAxiosError(error)) return fallback;
+  const data = error.response?.data;
+  if (data && typeof data === 'object' && 'detail' in data) {
+    const d = (data as { detail: unknown }).detail;
+    if (typeof d === 'string') return d;
+  }
+  if (error.response?.status === 413) {
+    return 'File is too large. Choose a smaller image.';
+  }
+  return fallback;
+}
+
 // Add response interceptor for logging
 api.interceptors.response.use(
   (response) => {
@@ -230,7 +258,7 @@ export const ordersApi = {
     const response = await api.post('/orders', order);
     return response.data;
   },
-  getTotal: async (orderId: number): Promise<{ total: number }> => {
+  getTotal: async (orderId: number): Promise<OrderTotal> => {
     const response = await api.get(`/orders/${orderId}/total`);
     return response.data;
   },
@@ -245,7 +273,14 @@ export const menuApi = {
   getItems: (params?: { skip?: number; limit?: number; category_id?: number }): Promise<MenuItem[]> => 
     api.get('/menu/menu-items/', { params }).then(res => res.data),
   getItem: (id: number): Promise<MenuItem> => api.get(`/menu/menu-items/${id}/`).then(res => res.data),
-  createItem: (data: { name: string; description: string; price: number; category_id: number; meal_period: 'BOTH' | 'LUNCH' | 'DINNER' }): Promise<MenuItem> => 
+  createItem: (data: {
+    name: string;
+    description: string;
+    price: number;
+    category_id: number;
+    meal_period: 'BOTH' | 'LUNCH' | 'DINNER';
+    ayce_surcharge?: number;
+  }): Promise<MenuItem> => 
     api.post('/menu/menu-items/', data).then(res => res.data),
   updateItem: (id: number, data: Partial<MenuItem>): Promise<MenuItem> => 
     api.patch(`/menu/menu-items/${id}/`, data).then(res => res.data),

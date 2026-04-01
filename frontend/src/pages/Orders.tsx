@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ordersApi, menuApi, settingsApi, Order, OrderCreate, OrderItemCreate, OrderItem } from '../services/api';
+import { ordersApi, menuApi, settingsApi, Order, OrderCreate, OrderItemCreate, OrderItem, OrderTotal } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import StatusDropdown from '../components/StatusDropdown';
 
@@ -43,7 +43,7 @@ const Orders = () => {
     enabled: !!selectedOrder && isViewModalOpen,
   });
 
-  const { data: orderTotal, isLoading: totalLoading } = useQuery<{ total: number } | null>({
+  const { data: orderTotal, isLoading: totalLoading } = useQuery<OrderTotal | null>({
     queryKey: ['orderTotal', selectedOrder?.id],
     queryFn: () => selectedOrder ? ordersApi.getTotal(selectedOrder.id) : null,
     enabled: !!selectedOrder && isViewModalOpen,
@@ -292,6 +292,12 @@ const Orders = () => {
 
                 {orderTotal && (
                   <div className="border-t border-outline-variant/10 pt-4">
+                    {Number(orderTotal.leftover_charge_amount ?? 0) > 0 && (
+                      <div className="flex justify-between text-sm mb-1">
+                        <p className="text-on-surface-variant">Leftover / Waste Charge</p>
+                        <p className="text-on-surface">${formatTotal(orderTotal.leftover_charge_amount)}</p>
+                      </div>
+                    )}
                     <div className="flex justify-between font-bold text-lg">
                       <p className="text-on-surface">Total</p>
                       <p className="text-primary font-headline">${formatTotal(orderTotal.total)}</p>

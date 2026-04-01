@@ -9,7 +9,7 @@ for the Sushi POS system. It includes:
 - Connection pooling
 """
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
@@ -55,6 +55,32 @@ def get_db():
     finally:
         db.close()
 
+def ensure_schema_columns() -> None:
+    """
+    Apply idempotent column additions for fields added after initial DB creation.
+
+    SQLAlchemy create_all() does not ALTER existing tables, so new ORM columns
+    would otherwise cause UndefinedColumn errors at query time.
+    """
+    statements = [
+        """
+        ALTER TABLE menu_items
+          ADD COLUMN IF NOT EXISTS ayce_surcharge NUMERIC(10, 2) DEFAULT 0.00
+        """,
+        """
+        ALTER TABLE orders
+          ADD COLUMN IF NOT EXISTS leftover_charge_amount NUMERIC(10, 2) DEFAULT 0.00
+        """,
+        """
+        ALTER TABLE orders
+          ADD COLUMN IF NOT EXISTS leftover_charge_note VARCHAR(255)
+        """,
+    ]
+    with engine.begin() as conn:
+        for stmt in statements:
+            conn.execute(text(stmt.strip()))
+
+
 def init_db():
     """
     Initialize the database by creating all tables.
@@ -71,6 +97,8 @@ def init_db():
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
+
+        ensure_schema_columns()
         
         # Check which tables were created
         new_tables = inspector.get_table_names()

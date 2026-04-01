@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, Plus, Minus, Camera, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
-import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, resolveImageUrl, getMenuImageStyle } from '../../services/api';
+import { menuApi, menuItemImagesApi, MenuItem, Modifier, MenuItemImage, resolveImageUrl, getMenuImageStyle, getUploadErrorMessage } from '../../services/api';
+import { CUSTOMER_IMAGE_MAX_BYTES } from '../../constants/uploadLimits';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 const NOTE_MAX = 50;
 
@@ -35,6 +36,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
   const touchStartX = useRef(0);
 
   const displayPrice = isAyce ? 0 : Number(item.price);
+  const ayceSurcharge = Number(item.ayce_surcharge ?? 0);
 
   const { data: modifiers = [] } = useQuery<Modifier[]>({
     queryKey: ['customer-modifiers', item.category_id],
@@ -55,7 +57,8 @@ export default function MenuItemModal({ item, onClose }: Props) {
       setUploadError(null);
       setUploadedForReview(true);
     },
-    onError: () => setUploadError('Upload failed. Please try again.'),
+    onError: (err) =>
+      setUploadError(getUploadErrorMessage(err, 'Upload failed. Please try again.')),
   });
 
   const reportMutation = useMutation({
@@ -101,6 +104,12 @@ export default function MenuItemModal({ item, onClose }: Props) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > CUSTOMER_IMAGE_MAX_BYTES) {
+      setUploadError('Photo must be 3 MB or smaller.');
+      e.target.value = '';
+      return;
+    }
+    setUploadError(null);
     uploadMutation.mutate(file);
     e.target.value = '';
   };
@@ -274,7 +283,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
                 {item.name}
               </h2>
               <span className={`font-bold text-lg flex-shrink-0 pt-0.5 ${isAyce ? 'text-on-surface-variant opacity-50' : 'text-primary'}`}>
-                {isAyce ? 'Included' : `$${displayPrice.toFixed(2)}`}
+                {isAyce ? (ayceSurcharge > 0 ? `+$${ayceSurcharge.toFixed(2)}` : 'Included') : `$${displayPrice.toFixed(2)}`}
               </span>
             </div>
 
@@ -307,6 +316,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
                   onChange={handleFileChange}
                 />
               </div>
+              <p className="text-[10px] text-on-surface-variant/50 mb-2">JPEG, PNG, WebP, or GIF. Max 3 MB.</p>
 
               {uploadError && (
                 <p className="text-xs text-error mb-2">{uploadError}</p>
@@ -409,7 +419,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
             <div className="flex items-center gap-3">
               {qty === 0 ? (
                 <button
-                  onClick={() => addToCart(item.id, item.name, Number(item.price), trimmedNote)}
+                  onClick={() => addToCart(item.id, item.name, Number(item.price), ayceSurcharge, trimmedNote)}
                   className="flex-1 py-3.5 bg-primary text-on-primary font-bold text-sm uppercase tracking-[0.15em] rounded-xl active:scale-[0.98] transition-transform"
                 >
                   Add to Order
@@ -425,7 +435,7 @@ export default function MenuItemModal({ item, onClose }: Props) {
                     </button>
                     <span className="w-6 text-center font-bold text-on-surface">{qty}</span>
                     <button
-                      onClick={() => addToCart(item.id, item.name, Number(item.price), trimmedNote)}
+                      onClick={() => addToCart(item.id, item.name, Number(item.price), ayceSurcharge, trimmedNote)}
                       className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center active:scale-90 transition-transform"
                     >
                       <Plus size={14} />

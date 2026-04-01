@@ -1,7 +1,8 @@
 import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl, getMenuImageStyle } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl, getMenuImageStyle, getUploadErrorMessage } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
+import { MANAGER_IMAGE_MAX_BYTES } from '../constants/uploadLimits';
 
 const ITEMS_PER_PAGE = 12;
 const DEFAULT_IMAGE_POSITION = { x: 50, y: 50, zoom: 1 };
@@ -19,6 +20,7 @@ export default function Menu() {
     name: '',
     description: '',
     price: '',
+    ayce_surcharge: '',
     category_id: '',
     meal_period: 'BOTH' as 'BOTH' | 'LUNCH' | 'DINNER',
   });
@@ -32,6 +34,7 @@ export default function Menu() {
   const [editorImageUrl, setEditorImageUrl] = useState<string | null>(null);
   const [editorImageFile, setEditorImageFile] = useState<File | null>(null);
   const [editorMode, setEditorMode] = useState<'add' | 'edit' | null>(null);
+  const [managerImageError, setManagerImageError] = useState<string | null>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +49,7 @@ export default function Menu() {
     name: '',
     description: '',
     price: '',
+    ayce_surcharge: '',
     category_id: categoryId ? String(categoryId) : '',
     meal_period: 'BOTH' as 'BOTH' | 'LUNCH' | 'DINNER',
   });
@@ -75,16 +79,25 @@ export default function Menu() {
     mutationFn: menuApi.createItem,
     onSuccess: async (newItem) => {
       if (newItemImageFile) {
-        await menuApi.uploadImage(newItem.id, newItemImageFile);
-        await menuApi.updateItem(newItem.id, {
-          image_position_x: newItemImagePosition.x,
-          image_position_y: newItemImagePosition.y,
-          image_zoom: newItemImagePosition.zoom,
-        });
+        try {
+          await menuApi.uploadImage(newItem.id, newItemImageFile);
+          await menuApi.updateItem(newItem.id, {
+            image_position_x: newItemImagePosition.x,
+            image_position_y: newItemImagePosition.y,
+            image_zoom: newItemImagePosition.zoom,
+          });
+        } catch (e) {
+          queryClient.invalidateQueries({ queryKey: ['menuItems'] });
+          setManagerImageError(
+            getUploadErrorMessage(e, 'Could not upload image. The item was saved without a photo.')
+          );
+          return;
+        }
       }
       queryClient.invalidateQueries({ queryKey: ['menuItems'] });
       setIsAddItemModalOpen(false);
-      setNewItemData({ name: '', description: '', price: '', category_id: '', meal_period: 'BOTH' });
+      setManagerImageError(null);
+      setNewItemData({ name: '', description: '', price: '', ayce_surcharge: '', category_id: '', meal_period: 'BOTH' });
       setNewItemImageFile(null);
       setNewItemImagePreview(null);
       setNewItemImagePosition(DEFAULT_IMAGE_POSITION);
@@ -93,7 +106,13 @@ export default function Menu() {
 
   const updateItemMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<MenuItem> }) => menuApi.updateItem(id, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['menuItems'] }); setIsEditItemModalOpen(false); setSelectedItem(null); setEditItemData({}); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menuItems'] });
+      setIsEditItemModalOpen(false);
+      setSelectedItem(null);
+      setEditItemData({});
+      setManagerImageError(null);
+    },
   });
 
   const deleteItemMutation = useMutation({
@@ -119,10 +138,13 @@ export default function Menu() {
 
   const handleCreateItem = () => {
     if (!newItemData.name || !newItemData.price || !newItemData.category_id) return;
+    const parsedSurcharge = parseFloat(newItemData.ayce_surcharge || '0');
+    if (!Number.isFinite(parsedSurcharge) || parsedSurcharge < 0) return;
     createItemMutation.mutate({
       name: newItemData.name,
       description: newItemData.description,
       price: parseFloat(newItemData.price),
+      ayce_surcharge: parsedSurcharge,
       category_id: parseInt(newItemData.category_id),
       meal_period: newItemData.meal_period,
     });
@@ -134,12 +156,21 @@ export default function Menu() {
     setNewItemImageFile(null);
     setNewItemImagePreview(null);
     setNewItemImagePosition(DEFAULT_IMAGE_POSITION);
+    setManagerImageError(null);
     setIsAddItemModalOpen(true);
   };
 
   const handleEditItem = (item: MenuItem) => {
     setSelectedItem(item);
-    setEditItemData({ name: item.name, description: item.description, price: item.price, category_id: item.category_id, is_available: item.is_available, meal_period: item.meal_period });
+    setEditItemData({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      ayce_surcharge: item.ayce_surcharge ?? 0,
+      category_id: item.category_id,
+      is_available: item.is_available,
+      meal_period: item.meal_period,
+    });
     setEditImageFile(null);
     setEditImagePreview(resolveImageUrl(item.image_url));
     setEditImagePosition({
@@ -147,6 +178,7 @@ export default function Menu() {
       y: item.image_position_y ?? 50,
       zoom: item.image_zoom ?? 1,
     });
+    setManagerImageError(null);
     setIsEditItemModalOpen(true);
   };
 
@@ -171,15 +203,20 @@ export default function Menu() {
 
     let uploadedImage = false;
     if (editImageFile) {
-      await menuApi.uploadImage(selectedItem.id, editImageFile);
-      await menuApi.updateItem(selectedItem.id, {
-        image_position_x: editImagePosition.x,
-        image_position_y: editImagePosition.y,
-        image_zoom: editImagePosition.zoom,
-      });
-      queryClient.invalidateQueries({ queryKey: ['menuItems'] });
-      setEditImageFile(null);
-      uploadedImage = true;
+      try {
+        await menuApi.uploadImage(selectedItem.id, editImageFile);
+        await menuApi.updateItem(selectedItem.id, {
+          image_position_x: editImagePosition.x,
+          image_position_y: editImagePosition.y,
+          image_zoom: editImagePosition.zoom,
+        });
+        queryClient.invalidateQueries({ queryKey: ['menuItems'] });
+        setEditImageFile(null);
+        uploadedImage = true;
+      } catch (e) {
+        setManagerImageError(getUploadErrorMessage(e, 'Could not upload image.'));
+        return;
+      }
     }
 
     if (!editImageFile && positionChanged && selectedItem.image_url) {
@@ -225,6 +262,12 @@ export default function Menu() {
   const handlePickNewImage = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > MANAGER_IMAGE_MAX_BYTES) {
+      setManagerImageError('Image must be 5 MB or smaller.');
+      e.target.value = '';
+      return;
+    }
+    setManagerImageError(null);
     const url = URL.createObjectURL(file);
     if (isEdit) {
       openImageEditor({
@@ -477,7 +520,7 @@ export default function Menu() {
           <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-headline text-on-surface">Edit Item</h2>
-              <button onClick={() => setIsEditItemModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+              <button onClick={() => { setIsEditItemModalOpen(false); setManagerImageError(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -500,6 +543,26 @@ export default function Menu() {
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Price</label>
                 <input type="number" step="0.01" value={editItemData.price || ''} onChange={(e) => setEditItemData({ ...editItemData, price: parseFloat(e.target.value) })}
                   className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">AYCE Surcharge</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editItemData.ayce_surcharge ?? ''}
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value);
+                    if (e.target.value === '') {
+                      setEditItemData({ ...editItemData, ayce_surcharge: 0 });
+                      return;
+                    }
+                    if (!Number.isFinite(parsed) || parsed < 0) return;
+                    setEditItemData({ ...editItemData, ayce_surcharge: parsed });
+                  }}
+                  className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+                <p className="mt-1 text-xs text-on-surface-variant">Applies only when this item is ordered under AYCE.</p>
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Category</label>
@@ -562,13 +625,15 @@ export default function Menu() {
                     Adjust Framing
                   </button>
                 )}
+                <p className="mt-1 text-xs text-on-surface-variant">JPEG, PNG, WebP, or GIF. Max 5 MB.</p>
+                {managerImageError ? <p className="mt-2 text-sm text-error">{managerImageError}</p> : null}
               </div>
             </div>
             {updateItemMutation.isError && (
               <div className="mt-4 p-3 bg-error/5 text-error rounded text-sm">Error updating item.</div>
             )}
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsEditItemModalOpen(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => { setIsEditItemModalOpen(false); setManagerImageError(null); }} className="btn-secondary">Cancel</button>
               <button onClick={handleUpdateItem} disabled={updateItemMutation.isPending} className="btn-primary disabled:opacity-50">
                 {updateItemMutation.isPending ? 'Saving…' : 'Save Changes'}
               </button>
@@ -665,7 +730,7 @@ export default function Menu() {
           <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-headline text-on-surface">Add Menu Item</h2>
-              <button onClick={() => setIsAddItemModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
+              <button onClick={() => { setIsAddItemModalOpen(false); setManagerImageError(null); }} className="text-on-surface-variant hover:text-on-surface">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -684,6 +749,19 @@ export default function Menu() {
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Price</label>
                 <input type="number" step="0.01" min="0" value={newItemData.price} onChange={(e) => setNewItemData({ ...newItemData, price: e.target.value })} placeholder="0.00"
                   className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">AYCE Surcharge</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={newItemData.ayce_surcharge}
+                  onChange={(e) => setNewItemData({ ...newItemData, ayce_surcharge: e.target.value })}
+                  placeholder="0.00"
+                  className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+                <p className="mt-1 text-xs text-on-surface-variant">Leave blank or 0 for items fully included in AYCE.</p>
               </div>
               <div>
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Category</label>
@@ -737,10 +815,12 @@ export default function Menu() {
                     Adjust Framing
                   </button>
                 )}
+                <p className="mt-1 text-xs text-on-surface-variant">JPEG, PNG, WebP, or GIF. Max 5 MB.</p>
+                {managerImageError ? <p className="mt-2 text-sm text-error">{managerImageError}</p> : null}
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => { setIsAddItemModalOpen(false); setNewItemImageFile(null); setNewItemImagePreview(null); }} className="btn-secondary">Cancel</button>
+              <button onClick={() => { setIsAddItemModalOpen(false); setNewItemImageFile(null); setNewItemImagePreview(null); setManagerImageError(null); }} className="btn-secondary">Cancel</button>
               <button
                 onClick={handleCreateItem}
                 disabled={!newItemData.name || !newItemData.price || !newItemData.category_id || createItemMutation.isPending}

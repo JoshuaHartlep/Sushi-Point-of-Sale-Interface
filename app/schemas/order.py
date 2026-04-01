@@ -71,6 +71,8 @@ class OrderBase(BaseModel):
     total_amount: Optional[float] = 0.00
     ayce_order: bool = False
     ayce_price: Decimal = Field(default=25.00, ge=0)
+    leftover_charge_amount: Decimal = Field(default=0, ge=0)
+    leftover_charge_note: Optional[str] = None
     price: Optional[float] = 0.00
 
 class OrderStatus(str, Enum):
@@ -97,6 +99,8 @@ class OrderUpdate(BaseModel):
     notes: Optional[str] = None
     ayce_order: Optional[bool] = None
     ayce_price: Optional[Decimal] = None
+    leftover_charge_amount: Optional[Decimal] = Field(default=None, ge=0)
+    leftover_charge_note: Optional[str] = None
 
 class OrderResponse(OrderBase):
     """Schema for order responses."""
@@ -117,6 +121,9 @@ class OrderTotalResponse(BaseModel):
     discount_amount: Optional[Decimal] = None
     total: Decimal
     ayce_price: Optional[Decimal] = None
+    ayce_base_total: Optional[Decimal] = None
+    ayce_surcharge_total: Optional[Decimal] = None
+    leftover_charge_amount: Optional[Decimal] = None
     is_ayce: bool
 
 class TableBase(BaseModel):

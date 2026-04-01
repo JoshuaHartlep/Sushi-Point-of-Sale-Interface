@@ -13,6 +13,8 @@ export default function CustomerOrderTab({ onGoToMenu }: { onGoToMenu: () => voi
   // ── Post-submission confirmation ──────────────────────────────────────────
   if (lastSubmittedOrder) {
     const submittedTotal = lastSubmittedCart.reduce((s, i) => s + i.price * i.quantity, 0);
+    const submittedAyceSurcharge = lastSubmittedCart.reduce((s, i) => s + i.ayceSurcharge * i.quantity, 0);
+    const submittedAyceBase = partySize * aycePrice;
     return (
       <div className="pb-28 px-5 pt-6 flex flex-col">
         <div className="flex flex-col items-center text-center mb-8">
@@ -38,21 +40,38 @@ export default function CustomerOrderTab({ onGoToMenu }: { onGoToMenu: () => voi
                   )}
                 </div>
               </div>
-              {!isAyce && (
-                <span className="text-primary font-bold text-sm">
-                  ${(item.price * item.quantity).toFixed(2)}
-                </span>
-              )}
+              <span className={`font-bold text-sm ${isAyce ? 'text-on-surface-variant' : 'text-primary'}`}>
+                {isAyce
+                  ? (item.ayceSurcharge > 0 ? `+$${(item.ayceSurcharge * item.quantity).toFixed(2)}` : 'Included')
+                  : `$${(item.price * item.quantity).toFixed(2)}`}
+              </span>
             </div>
           ))}
         </div>
 
-        {!isAyce && (
+        {!isAyce ? (
           <div className="flex justify-between items-baseline px-1 mb-6">
             <span className="text-sm text-on-surface-variant">Total sent to kitchen</span>
             <span className="font-headline font-bold text-on-surface text-lg">
               ${submittedTotal.toFixed(2)}
             </span>
+          </div>
+        ) : (
+          <div className="space-y-2 px-1 mb-6">
+            <div className="flex justify-between text-sm text-on-surface-variant">
+              <span>AYCE base ({partySize} x ${aycePrice.toFixed(2)})</span>
+              <span>${submittedAyceBase.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-on-surface-variant">
+              <span>Item surcharges</span>
+              <span>${submittedAyceSurcharge.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-baseline">
+              <span className="text-sm text-on-surface-variant">Total sent to kitchen</span>
+              <span className="font-headline font-bold text-on-surface text-lg">
+                ${Number(lastSubmittedOrder.total_amount ?? submittedAyceBase + submittedAyceSurcharge).toFixed(2)}
+              </span>
+            </div>
           </div>
         )}
 
@@ -137,7 +156,9 @@ export default function CustomerOrderTab({ onGoToMenu }: { onGoToMenu: () => voi
 
             {/* Price — $0.00 for AYCE, real price for a la carte */}
             <p className={`text-sm font-bold flex-shrink-0 ${isAyce ? 'text-on-surface-variant opacity-35' : 'text-primary'}`}>
-              {isAyce ? '$0.00' : `$${(item.price * item.quantity).toFixed(2)}`}
+              {isAyce
+                ? (item.ayceSurcharge > 0 ? `+$${(item.ayceSurcharge * item.quantity).toFixed(2)}` : 'Included')
+                : `$${(item.price * item.quantity).toFixed(2)}`}
             </p>
 
             <button
@@ -154,14 +175,22 @@ export default function CustomerOrderTab({ onGoToMenu }: { onGoToMenu: () => voi
       <div className="border-t border-outline-variant/15 pt-5 mb-4 space-y-3">
         {isAyce ? (
           <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
+            <div className="flex justify-between items-baseline mb-1.5">
+              <span className="text-sm text-on-surface-variant">AYCE base ({partySize} x ${aycePrice.toFixed(2)})</span>
+              <span className="text-sm font-bold text-on-surface">${(partySize * aycePrice).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-baseline mb-2.5">
+              <span className="text-sm text-on-surface-variant">Item surcharges</span>
+              <span className="text-sm font-bold text-on-surface">${cartSubtotal.toFixed(2)}</span>
+            </div>
             <div className="flex justify-between items-baseline">
-              <span className="text-sm font-bold text-primary">AYCE — {partySize} × ${aycePrice.toFixed(2)}</span>
+              <span className="text-sm font-bold text-primary">AYCE total</span>
               <span className="font-headline font-bold text-on-surface text-lg">
-                ${(partySize * aycePrice).toFixed(2)}
+                ${(partySize * aycePrice + cartSubtotal).toFixed(2)}
               </span>
             </div>
             <p className="text-xs text-on-surface-variant mt-1.5 opacity-60">
-              Flat rate covers all items. Individual items show as $0.
+              Included items are $0. Only marked add-on items increase the total.
             </p>
           </div>
         ) : (
