@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl, getMenuImageStyle, getUploadErrorMessage } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import { MANAGER_IMAGE_MAX_BYTES } from '../constants/uploadLimits';
+import AppModal from '../components/AppModal';
 
 const ITEMS_PER_PAGE = 12;
 const DEFAULT_IMAGE_POSITION = { x: 50, y: 50, zoom: 1 };
@@ -486,20 +487,10 @@ export default function Menu() {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && selectedItem && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-headline text-on-surface">Delete Item</h2>
-              <button onClick={() => setIsDeleteModalOpen(false)} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-            <p className="text-on-surface-variant text-sm mb-6">
-              Are you sure you want to delete "{selectedItem.name}" from the menu?
-            </p>
-            {deleteItemMutation.isError && (
-              <div className="mb-4 p-3 bg-error/5 text-error rounded text-sm">Error deleting menu item.</div>
-            )}
+        <AppModal
+          title="Delete Item"
+          onClose={() => setIsDeleteModalOpen(false)}
+          footer={(
             <div className="flex justify-end gap-3">
               <button onClick={() => setIsDeleteModalOpen(false)} className="btn-secondary">Cancel</button>
               <button
@@ -510,21 +501,31 @@ export default function Menu() {
                 {deleteItemMutation.isPending ? 'Deleting…' : 'Delete'}
               </button>
             </div>
-          </div>
-        </div>
+          )}
+        >
+          <p className="text-on-surface-variant text-sm">
+            Are you sure you want to delete "{selectedItem.name}" from the menu?
+          </p>
+          {deleteItemMutation.isError && (
+            <div className="p-3 bg-error/5 text-error rounded text-sm">Error deleting menu item.</div>
+          )}
+        </AppModal>
       )}
 
       {/* Edit Menu Item Modal */}
       {isEditItemModalOpen && selectedItem && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-headline text-on-surface">Edit Item</h2>
-              <button onClick={() => { setIsEditItemModalOpen(false); setManagerImageError(null); }} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
+        <AppModal
+          title="Edit Item"
+          onClose={() => { setIsEditItemModalOpen(false); setManagerImageError(null); }}
+          footer={(
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setIsEditItemModalOpen(false); setManagerImageError(null); }} className="btn-secondary">Cancel</button>
+              <button onClick={handleUpdateItem} disabled={updateItemMutation.isPending} className="btn-primary disabled:opacity-50">
+                {updateItemMutation.isPending ? 'Saving…' : 'Save Changes'}
               </button>
             </div>
-            <div className="space-y-4">
+          )}
+        >
               {[
                 { label: 'Name', key: 'name', type: 'text', value: editItemData.name || '' },
               ].map(({ label, key, type, value }) => (
@@ -628,18 +629,10 @@ export default function Menu() {
                 <p className="mt-1 text-xs text-on-surface-variant">JPEG, PNG, WebP, or GIF. Max 5 MB.</p>
                 {managerImageError ? <p className="mt-2 text-sm text-error">{managerImageError}</p> : null}
               </div>
-            </div>
-            {updateItemMutation.isError && (
-              <div className="mt-4 p-3 bg-error/5 text-error rounded text-sm">Error updating item.</div>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => { setIsEditItemModalOpen(false); setManagerImageError(null); }} className="btn-secondary">Cancel</button>
-              <button onClick={handleUpdateItem} disabled={updateItemMutation.isPending} className="btn-primary disabled:opacity-50">
-                {updateItemMutation.isPending ? 'Saving…' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
+          {updateItemMutation.isError && (
+            <div className="p-3 bg-error/5 text-error rounded text-sm">Error updating item.</div>
+          )}
+        </AppModal>
       )}
 
       {/* Customer Photo Gallery Modal */}
@@ -726,15 +719,22 @@ export default function Menu() {
 
       {/* Add Menu Item Modal */}
       {isAddItemModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-headline text-on-surface">Add Menu Item</h2>
-              <button onClick={() => { setIsAddItemModalOpen(false); setManagerImageError(null); }} className="text-on-surface-variant hover:text-on-surface">
-                <span className="material-symbols-outlined">close</span>
+        <AppModal
+          title="Add Menu Item"
+          onClose={() => { setIsAddItemModalOpen(false); setManagerImageError(null); }}
+          footer={(
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setIsAddItemModalOpen(false); setNewItemImageFile(null); setNewItemImagePreview(null); setManagerImageError(null); }} className="btn-secondary">Cancel</button>
+              <button
+                onClick={handleCreateItem}
+                disabled={!newItemData.name || !newItemData.price || !newItemData.category_id || createItemMutation.isPending}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createItemMutation.isPending ? 'Creating…' : 'Create Item'}
               </button>
             </div>
-            <div className="space-y-4">
+          )}
+        >
               <div>
                 <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5">Name</label>
                 <input type="text" value={newItemData.name} onChange={(e) => setNewItemData({ ...newItemData, name: e.target.value })} placeholder="Item name"
@@ -818,19 +818,7 @@ export default function Menu() {
                 <p className="mt-1 text-xs text-on-surface-variant">JPEG, PNG, WebP, or GIF. Max 5 MB.</p>
                 {managerImageError ? <p className="mt-2 text-sm text-error">{managerImageError}</p> : null}
               </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => { setIsAddItemModalOpen(false); setNewItemImageFile(null); setNewItemImagePreview(null); setManagerImageError(null); }} className="btn-secondary">Cancel</button>
-              <button
-                onClick={handleCreateItem}
-                disabled={!newItemData.name || !newItemData.price || !newItemData.category_id || createItemMutation.isPending}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {createItemMutation.isPending ? 'Creating…' : 'Create Item'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </AppModal>
       )}
 
       {isImageEditorOpen && editorImageUrl && editorMode && (

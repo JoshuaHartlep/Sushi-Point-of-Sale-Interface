@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, categoriesApi } from '../services/api';
+import AppModal from '../components/AppModal';
 
 interface Modifier {
   id: number;
@@ -161,13 +162,18 @@ const Modifiers = () => {
 
       {/* ── Create Modal ── */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-headline text-on-surface">New Modifier</h2>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <AppModal
+          title="New Modifier"
+          onClose={() => setIsCreateModalOpen(false)}
+          footer={(
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setIsCreateModalOpen(false)} className="btn-secondary">Cancel</button>
+              <button onClick={() => createModifierMutation.mutate(newModifier)} disabled={createModifierMutation.isPending} className="btn-primary disabled:opacity-50">
+                {createModifierMutation.isPending ? 'Creating…' : 'Create'}
+              </button>
             </div>
-            <div className="space-y-4">
+          )}
+        >
               <div><label className={labelClass}>Name</label><input type="text" value={newModifier.name} onChange={(e) => setNewModifier({ ...newModifier, name: e.target.value })} className={inputClass} /></div>
               <div><label className={labelClass}>Description</label><textarea value={newModifier.description} onChange={(e) => setNewModifier({ ...newModifier, description: e.target.value })} rows={3} className={inputClass} /></div>
               <div><label className={labelClass}>Price</label><input type="number" step="0.01" value={newModifier.price} onChange={(e) => setNewModifier({ ...newModifier, price: parseFloat(e.target.value) })} className={inputClass} /></div>
@@ -179,26 +185,23 @@ const Modifiers = () => {
                 </select>
               </div>
               <div><label className={labelClass}>Display Order</label><input type="number" value={newModifier.display_order} onChange={(e) => setNewModifier({ ...newModifier, display_order: parseInt(e.target.value) })} className={inputClass} /></div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsCreateModalOpen(false)} className="btn-secondary">Cancel</button>
-              <button onClick={() => createModifierMutation.mutate(newModifier)} disabled={createModifierMutation.isPending} className="btn-primary disabled:opacity-50">
-                {createModifierMutation.isPending ? 'Creating…' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </AppModal>
       )}
 
       {/* ── Edit Modal ── */}
       {isEditModalOpen && selectedModifier && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-headline text-on-surface">Edit Modifier</h2>
-              <button onClick={() => { setIsEditModalOpen(false); setSelectedModifier(null); setEditModifierData({}); }} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
+        <AppModal
+          title="Edit Modifier"
+          onClose={() => { setIsEditModalOpen(false); setSelectedModifier(null); setEditModifierData({}); }}
+          footer={(
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setIsEditModalOpen(false); setSelectedModifier(null); setEditModifierData({}); }} className="btn-secondary">Cancel</button>
+              <button onClick={handleUpdateModifier} disabled={updateModifierMutation.isPending} className="btn-primary disabled:opacity-50">
+                {updateModifierMutation.isPending ? 'Saving…' : 'Save'}
+              </button>
             </div>
-            <div className="space-y-4">
+          )}
+        >
               <div><label className={labelClass}>Name</label><input type="text" value={editModifierData.name ?? selectedModifier.name} onChange={(e) => setEditModifierData({ ...editModifierData, name: e.target.value })} className={inputClass} /></div>
               <div><label className={labelClass}>Description</label><textarea value={editModifierData.description ?? selectedModifier.description} onChange={(e) => setEditModifierData({ ...editModifierData, description: e.target.value })} rows={3} className={inputClass} /></div>
               <div><label className={labelClass}>Price</label><input type="number" step="0.01" value={editModifierData.price ?? selectedModifier.price} onChange={(e) => setEditModifierData({ ...editModifierData, price: parseFloat(e.target.value) })} className={inputClass} /></div>
@@ -210,29 +213,15 @@ const Modifiers = () => {
                 </select>
               </div>
               <div><label className={labelClass}>Display Order</label><input type="number" value={editModifierData.display_order ?? selectedModifier.display_order} onChange={(e) => setEditModifierData({ ...editModifierData, display_order: parseInt(e.target.value) })} className={inputClass} /></div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => { setIsEditModalOpen(false); setSelectedModifier(null); setEditModifierData({}); }} className="btn-secondary">Cancel</button>
-              <button onClick={handleUpdateModifier} disabled={updateModifierMutation.isPending} className="btn-primary disabled:opacity-50">
-                {updateModifierMutation.isPending ? 'Saving…' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
+        </AppModal>
       )}
 
       {/* ── Delete Modal ── */}
       {isDeleteModalOpen && selectedModifier && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-6 w-full max-w-md border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-headline text-on-surface">Delete Modifier</h2>
-              <button onClick={() => { setIsDeleteModalOpen(false); setSelectedModifier(null); }} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined">close</span></button>
-            </div>
-            <p className="text-on-surface-variant text-sm mb-6">Are you sure you want to delete "{selectedModifier.name}"? This action cannot be undone.</p>
-            {deleteModifierMutation.isError && (
-              <div className="mb-4 p-3 bg-error/5 text-error rounded text-sm">Failed to delete modifier.</div>
-            )}
+        <AppModal
+          title="Delete Modifier"
+          onClose={() => { setIsDeleteModalOpen(false); setSelectedModifier(null); }}
+          footer={(
             <div className="flex justify-end gap-3">
               <button onClick={() => { setIsDeleteModalOpen(false); setSelectedModifier(null); }} className="btn-secondary">Cancel</button>
               <button onClick={() => selectedModifier && deleteModifierMutation.mutate(selectedModifier.id)} disabled={deleteModifierMutation.isPending}
@@ -240,8 +229,13 @@ const Modifiers = () => {
                 {deleteModifierMutation.isPending ? 'Deleting…' : 'Delete'}
               </button>
             </div>
-          </div>
-        </div>
+          )}
+        >
+          <p className="text-on-surface-variant text-sm">Are you sure you want to delete "{selectedModifier.name}"? This action cannot be undone.</p>
+          {deleteModifierMutation.isError && (
+            <div className="p-3 bg-error/5 text-error rounded text-sm">Failed to delete modifier.</div>
+          )}
+        </AppModal>
       )}
     </div>
   );
