@@ -1,5 +1,6 @@
-# Build stage
-FROM node:20-alpine AS build
+# syntax=docker/dockerfile:1
+# Node build is arch-independent; run on native builder to avoid 30–60m QEMU per arm64 leg.
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
