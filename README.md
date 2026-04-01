@@ -73,9 +73,8 @@ frontend/
 scripts/
   start-backend.sh   # Local backend: venv + deps + uvicorn
 
-uploads/
-  menu-images/  # Official menu item images (uploaded by manager)
-  user-images/  # Customer-submitted photos (moderated before going public)
+# Image assets are stored in AWS S3 (bucket: sushi-pos-uploads)
+# and referenced via URL in the database.
 ```
 
 ---
@@ -149,7 +148,7 @@ Customer-uploaded images go through an approval workflow before becoming publicl
 
 1. Customer uploads a photo → stored with `status = pending`
 2. Pending images are **not** returned by the customer-facing list endpoint
-3. Manager uses **`/moderation`**: **Approve** sets `status = approved`; **reject/remove** uses **delete**, which removes the file from disk and the DB row
+3. Manager uses **`/moderation`**: **Approve** sets `status = approved`; **reject/remove** uses **delete**, which removes the object from S3 and the DB row
 4. **`/reported-images`** lists images with `report_count > 0` for review
 5. Public/customer views only show **`approved`** images
 
@@ -194,7 +193,7 @@ Current production split:
 - Frontend (React/Vite) on **Vercel** — redirects all traffic to EC2
 - Backend (FastAPI) on **AWS EC2** via Docker Compose
 - Database on **Supabase Postgres**
-- Images on **DockerHub** (`joshuadockerhartlep/sushi-pos-backend`, `joshuadockerhartlep/sushi-pos-frontend`)
+- Container images on **DockerHub** (`joshuadockerhartlep/sushi-pos-backend`, `joshuadockerhartlep/sushi-pos-frontend`)
 
 ### CI/CD — GitHub Actions
 
@@ -229,6 +228,10 @@ Required GitHub repository secrets:
    DATABASE_URL=postgresql://<supabase-connection-string>
    ENVIRONMENT=production
    SQL_ECHO=False
+   AWS_ACCESS_KEY_ID=<aws-access-key-id>
+   AWS_SECRET_ACCESS_KEY=<aws-secret-access-key>
+   AWS_REGION=us-east-1
+   S3_BUCKET_NAME=sushi-pos-uploads
    ```
 6. Pull and start:
    ```bash
@@ -296,8 +299,9 @@ The Vercel project is rooted at `frontend/`. It redirects all traffic to the EC2
 
 - **Dashboard** — order/revenue stats, recent orders with per-order totals
 - **Menu management** — categories, items, meal period (lunch/dinner/both), availability, official item images
-- **Manager view of customer photos** — per-item gallery on Menu; delete inappropriate uploads
+- **Manager view of customer photos** — per-item gallery on Menu; approve/reject/report moderation flow backed by S3
 - **Modifiers** — per-category modifiers and pricing
+- **Item-modifier assignment** — assign or replace menu-item modifier sets via dedicated item-modifier endpoints
 - **Orders** — list, create/edit flow, status updates, line items, order notes, **AYCE** vs regular orders, discounts (when applied on an order)
 - **Tables** — CRUD-style table management, status (available / occupied / …), party size and guest fields
 - **Customer ordering UI** — table-aware, onboarding, menu + cart tabs, meal-period-aware item availability, item detail modal, optional customer photos and reporting

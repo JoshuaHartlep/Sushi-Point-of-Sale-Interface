@@ -25,6 +25,9 @@ export interface MenuItem {
   is_available: boolean;
   meal_period: 'BOTH' | 'LUNCH' | 'DINNER'; // Meal period support - required field
   image_url?: string | null;
+  image_position_x?: number;
+  image_position_y?: number;
+  image_zoom?: number;
 }
 
 export interface Category {
@@ -139,6 +142,12 @@ export const resolveImageUrl = (imageUrl?: string | null): string | null => {
   if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
   return `${API_ORIGIN}${imageUrl}`;
 };
+
+export const getMenuImageStyle = (item: Pick<MenuItem, 'image_position_x' | 'image_position_y' | 'image_zoom'>) => ({
+  objectPosition: `${item.image_position_x ?? 50}% ${item.image_position_y ?? 50}%`,
+  transform: `scale(${item.image_zoom ?? 1})`,
+  transformOrigin: 'center',
+});
 
 const API_BASE_URL = `${API_ORIGIN}/api/v1`;
 
@@ -451,6 +460,29 @@ export interface SignalParams {
   order_type?: string;
 }
 
+export interface HourOrderItem {
+  name: string;
+  quantity: number;
+  unit_price: number;
+}
+
+export interface HourOrder {
+  id: number;
+  table_number: number | null;
+  status: string;
+  total_amount: number;
+  ayce_order: boolean;
+  created_at: string;
+  items: HourOrderItem[];
+}
+
+export interface HourOrdersParams {
+  start_date?: string;
+  end_date?: string;
+  hour: number;
+  meal_period?: string;
+}
+
 export const analyticsApi = {
   getSummary: (params: SummaryParams): Promise<AnalyticsSummary> =>
     api.get('/analytics/summary', { params }).then(r => r.data),
@@ -466,6 +498,9 @@ export const analyticsApi = {
 
   getSignals: (params?: SignalParams): Promise<Signal[]> =>
     api.get('/analytics/signals', { params }).then(r => r.data),
+
+  getHourOrders: (params: HourOrdersParams): Promise<HourOrder[]> =>
+    api.get('/analytics/orders', { params }).then(r => r.data),
 };
 
 export default api;

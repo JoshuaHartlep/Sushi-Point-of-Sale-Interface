@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl, getMenuImageStyle } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 
 const ITEMS_PER_PAGE = 12;
+const DEFAULT_IMAGE_POSITION = { x: 50, y: 50, zoom: 1 };
+type ImagePosition = typeof DEFAULT_IMAGE_POSITION;
 
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -24,6 +26,12 @@ export default function Menu() {
   const [newItemImagePreview, setNewItemImagePreview] = useState<string | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [newItemImagePosition, setNewItemImagePosition] = useState<ImagePosition>(DEFAULT_IMAGE_POSITION);
+  const [editImagePosition, setEditImagePosition] = useState<ImagePosition>(DEFAULT_IMAGE_POSITION);
+  const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
+  const [editorImageUrl, setEditorImageUrl] = useState<string | null>(null);
+  const [editorImageFile, setEditorImageFile] = useState<File | null>(null);
+  const [editorMode, setEditorMode] = useState<'add' | 'edit' | null>(null);
   const newImageInputRef = useRef<HTMLInputElement>(null);
   const editImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,12 +76,18 @@ export default function Menu() {
     onSuccess: async (newItem) => {
       if (newItemImageFile) {
         await menuApi.uploadImage(newItem.id, newItemImageFile);
+        await menuApi.updateItem(newItem.id, {
+          image_position_x: newItemImagePosition.x,
+          image_position_y: newItemImagePosition.y,
+          image_zoom: newItemImagePosition.zoom,
+        });
       }
       queryClient.invalidateQueries({ queryKey: ['menuItems'] });
       setIsAddItemModalOpen(false);
       setNewItemData({ name: '', description: '', price: '', category_id: '', meal_period: 'BOTH' });
       setNewItemImageFile(null);
       setNewItemImagePreview(null);
+      setNewItemImagePosition(DEFAULT_IMAGE_POSITION);
     },
   });
 
@@ -119,6 +133,7 @@ export default function Menu() {
     setNewItemData(getDefaultNewItemData(selectedCategory));
     setNewItemImageFile(null);
     setNewItemImagePreview(null);
+    setNewItemImagePosition(DEFAULT_IMAGE_POSITION);
     setIsAddItemModalOpen(true);
   };
 
@@ -127,6 +142,11 @@ export default function Menu() {
     setEditItemData({ name: item.name, description: item.description, price: item.price, category_id: item.category_id, is_available: item.is_available, meal_period: item.meal_period });
     setEditImageFile(null);
     setEditImagePreview(resolveImageUrl(item.image_url));
+    setEditImagePosition({
+      x: item.image_position_x ?? 50,
+      y: item.image_position_y ?? 50,
+      zoom: item.image_zoom ?? 1,
+    });
     setIsEditItemModalOpen(true);
   };
 
@@ -135,6 +155,15 @@ export default function Menu() {
     const changed: Partial<MenuItem> = {};
     Object.entries(editItemData).forEach(([k, v]) => { if (v !== selectedItem[k as keyof MenuItem]) (changed as any)[k] = v; });
     const changedCount = Object.keys(changed).length;
+    const selectedPosition = {
+      x: selectedItem.image_position_x ?? 50,
+      y: selectedItem.image_position_y ?? 50,
+      zoom: selectedItem.image_zoom ?? 1,
+    };
+    const positionChanged =
+      Math.abs(editImagePosition.x - selectedPosition.x) > 0.01 ||
+      Math.abs(editImagePosition.y - selectedPosition.y) > 0.01 ||
+      Math.abs(editImagePosition.zoom - selectedPosition.zoom) > 0.001;
 
     if (Object.keys(changed).length > 0) {
       updateItemMutation.mutate({ id: selectedItem.id, data: changed });
@@ -143,9 +172,23 @@ export default function Menu() {
     let uploadedImage = false;
     if (editImageFile) {
       await menuApi.uploadImage(selectedItem.id, editImageFile);
+      await menuApi.updateItem(selectedItem.id, {
+        image_position_x: editImagePosition.x,
+        image_position_y: editImagePosition.y,
+        image_zoom: editImagePosition.zoom,
+      });
       queryClient.invalidateQueries({ queryKey: ['menuItems'] });
       setEditImageFile(null);
       uploadedImage = true;
+    }
+
+    if (!editImageFile && positionChanged && selectedItem.image_url) {
+      await menuApi.updateItem(selectedItem.id, {
+        image_position_x: editImagePosition.x,
+        image_position_y: editImagePosition.y,
+        image_zoom: editImagePosition.zoom,
+      });
+      queryClient.invalidateQueries({ queryKey: ['menuItems'] });
     }
 
     // When the user only uploads a new image, close the modal after save.
@@ -157,9 +200,26 @@ export default function Menu() {
       return;
     }
 
-    if (changedCount === 0 && !uploadedImage) {
+    if (changedCount === 0 && !uploadedImage && !positionChanged) {
       setIsEditItemModalOpen(false);
     }
+  };
+
+  const openImageEditor = (params: {
+    mode: 'add' | 'edit';
+    imageUrl: string;
+    file?: File | null;
+    initialPosition: ImagePosition;
+  }) => {
+    setEditorMode(params.mode);
+    setEditorImageUrl(params.imageUrl);
+    setEditorImageFile(params.file ?? null);
+    if (params.mode === 'add') {
+      setNewItemImagePosition(params.initialPosition);
+    } else {
+      setEditImagePosition(params.initialPosition);
+    }
+    setIsImageEditorOpen(true);
   };
 
   const handlePickNewImage = (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean) => {
@@ -167,12 +227,43 @@ export default function Menu() {
     if (!file) return;
     const url = URL.createObjectURL(file);
     if (isEdit) {
-      setEditImageFile(file);
-      setEditImagePreview(url);
+      openImageEditor({
+        mode: 'edit',
+        imageUrl: url,
+        file,
+        initialPosition: DEFAULT_IMAGE_POSITION,
+      });
     } else {
-      setNewItemImageFile(file);
-      setNewItemImagePreview(url);
+      openImageEditor({
+        mode: 'add',
+        imageUrl: url,
+        file,
+        initialPosition: DEFAULT_IMAGE_POSITION,
+      });
     }
+    e.target.value = '';
+  };
+
+  const currentEditorPosition = useMemo(
+    () => (editorMode === 'edit' ? editImagePosition : newItemImagePosition),
+    [editorMode, editImagePosition, newItemImagePosition]
+  );
+
+  const handleApplyImageEditor = (position: ImagePosition) => {
+    if (!editorImageUrl || !editorMode) return;
+    if (editorMode === 'edit') {
+      if (editorImageFile) setEditImageFile(editorImageFile);
+      setEditImagePreview(editorImageUrl);
+      setEditImagePosition(position);
+    } else {
+      if (editorImageFile) setNewItemImageFile(editorImageFile);
+      setNewItemImagePreview(editorImageUrl);
+      setNewItemImagePosition(position);
+    }
+    setIsImageEditorOpen(false);
+    setEditorImageUrl(null);
+    setEditorImageFile(null);
+    setEditorMode(null);
   };
 
   return (
@@ -259,6 +350,7 @@ export default function Menu() {
                     src={resolveImageUrl(item.image_url) ?? undefined}
                     alt={item.name}
                     className="w-full h-full object-cover"
+                    style={getMenuImageStyle(item)}
                   />
                 </div>
               ) : (
@@ -437,12 +529,13 @@ export default function Menu() {
                 <input ref={editImageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handlePickNewImage(e, true)} />
                 {editImagePreview ? (
                   <div className="relative rounded overflow-hidden mb-2 h-32">
-                    <img src={editImagePreview} alt="preview" className="w-full h-full object-cover" />
+                    <img src={editImagePreview} alt="preview" className="w-full h-full object-cover" style={getMenuImageStyle({ image_position_x: editImagePosition.x, image_position_y: editImagePosition.y, image_zoom: editImagePosition.zoom })} />
                     <button
                       type="button"
                       onClick={() => {
                         setEditImageFile(null);
                         setEditImagePreview(null);
+                        setEditImagePosition(DEFAULT_IMAGE_POSITION);
                         if (selectedItem?.image_url) deleteImageMutation.mutate(selectedItem.id);
                       }}
                       className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-error transition-colors"
@@ -459,6 +552,16 @@ export default function Menu() {
                   <span className="material-symbols-outlined text-[16px]">upload</span>
                   {editImagePreview ? 'Change Photo' : 'Upload Photo'}
                 </button>
+                {editImagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => openImageEditor({ mode: 'edit', imageUrl: editImagePreview, initialPosition: editImagePosition })}
+                    className="ml-2 inline-flex items-center gap-2 px-4 py-2 border border-outline-variant/30 rounded text-sm text-on-surface-variant hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">crop</span>
+                    Adjust Framing
+                  </button>
+                )}
               </div>
             </div>
             {updateItemMutation.isError && (
@@ -606,10 +709,10 @@ export default function Menu() {
                 <input ref={newImageInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handlePickNewImage(e, false)} />
                 {newItemImagePreview && (
                   <div className="relative rounded overflow-hidden mb-2 h-32">
-                    <img src={newItemImagePreview} alt="preview" className="w-full h-full object-cover" />
+                    <img src={newItemImagePreview} alt="preview" className="w-full h-full object-cover" style={getMenuImageStyle({ image_position_x: newItemImagePosition.x, image_position_y: newItemImagePosition.y, image_zoom: newItemImagePosition.zoom })} />
                     <button
                       type="button"
-                      onClick={() => { setNewItemImageFile(null); setNewItemImagePreview(null); }}
+                      onClick={() => { setNewItemImageFile(null); setNewItemImagePreview(null); setNewItemImagePosition(DEFAULT_IMAGE_POSITION); }}
                       className="absolute top-1 right-1 w-6 h-6 flex items-center justify-center bg-black/60 rounded-full text-white hover:bg-error transition-colors"
                     >
                       <span className="material-symbols-outlined text-[14px]">close</span>
@@ -624,6 +727,16 @@ export default function Menu() {
                   <span className="material-symbols-outlined text-[16px]">upload</span>
                   {newItemImagePreview ? 'Change Photo' : 'Upload Photo'}
                 </button>
+                {newItemImagePreview && (
+                  <button
+                    type="button"
+                    onClick={() => openImageEditor({ mode: 'add', imageUrl: newItemImagePreview, initialPosition: newItemImagePosition })}
+                    className="ml-2 inline-flex items-center gap-2 px-4 py-2 border border-outline-variant/30 rounded text-sm text-on-surface-variant hover:bg-surface-container transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">crop</span>
+                    Adjust Framing
+                  </button>
+                )}
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
@@ -639,6 +752,169 @@ export default function Menu() {
           </div>
         </div>
       )}
+
+      {isImageEditorOpen && editorImageUrl && editorMode && (
+        <ImagePositionEditorModal
+          imageUrl={editorImageUrl}
+          initialPosition={currentEditorPosition}
+          onCancel={() => {
+            setIsImageEditorOpen(false);
+            setEditorImageUrl(null);
+            setEditorImageFile(null);
+            setEditorMode(null);
+          }}
+          onApply={handleApplyImageEditor}
+        />
+      )}
+    </div>
+  );
+}
+
+function ImagePositionEditorModal({
+  imageUrl,
+  initialPosition,
+  onCancel,
+  onApply,
+}: {
+  imageUrl: string;
+  initialPosition: ImagePosition;
+  onCancel: () => void;
+  onApply: (position: ImagePosition) => void;
+}) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
+  const [position, setPosition] = useState<ImagePosition>(initialPosition);
+  const draggingRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+  const updateFromDrag = (dx: number, dy: number) => {
+    if (!frameRef.current || !imageSize) return;
+    const frameRect = frameRef.current.getBoundingClientRect();
+    const frameW = frameRect.width;
+    const frameH = frameRect.height;
+    const coverScale = Math.max(frameW / imageSize.width, frameH / imageSize.height);
+    const renderW = imageSize.width * coverScale * position.zoom;
+    const renderH = imageSize.height * coverScale * position.zoom;
+    const movableX = Math.max(1, renderW - frameW);
+    const movableY = Math.max(1, renderH - frameH);
+    setPosition((prev) => ({
+      ...prev,
+      x: clamp(prev.x - (dx / movableX) * 100, 0, 100),
+      y: clamp(prev.y - (dy / movableY) * 100, 0, 100),
+    }));
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = true;
+    lastPointRef.current = { x: e.clientX, y: e.clientY };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || !lastPointRef.current) return;
+    const dx = e.clientX - lastPointRef.current.x;
+    const dy = e.clientY - lastPointRef.current.y;
+    lastPointRef.current = { x: e.clientX, y: e.clientY };
+    updateFromDrag(dx, dy);
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    draggingRef.current = false;
+    lastPointRef.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+      <div className="bg-surface-container-lowest dark:bg-sumi-800 rounded-xl p-5 w-full max-w-2xl border border-outline-variant/20 dark:border-sumi-700 shadow-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-headline text-on-surface">Adjust Photo Framing</h3>
+          <button onClick={onCancel} className="text-on-surface-variant hover:text-on-surface">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-2">Editor</p>
+            <div
+              ref={frameRef}
+              className="relative w-full aspect-square overflow-hidden rounded-xl bg-surface-container border border-outline-variant/20 cursor-grab active:cursor-grabbing touch-none"
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerLeave={onPointerUp}
+            >
+              <img
+                src={imageUrl}
+                alt="Edit preview"
+                className="w-full h-full object-cover pointer-events-none select-none"
+                style={{
+                  objectPosition: `${position.x}% ${position.y}%`,
+                  transform: `scale(${position.zoom})`,
+                  transformOrigin: 'center',
+                }}
+                onLoad={(e) => {
+                  const img = e.currentTarget;
+                  setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
+                }}
+                draggable={false}
+              />
+              <div className="absolute inset-0 border-2 border-white/20 pointer-events-none" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,transparent_33%,rgba(255,255,255,0.13)_33%,rgba(255,255,255,0.13)_34%,transparent_34%,transparent_66%,rgba(255,255,255,0.13)_66%,rgba(255,255,255,0.13)_67%,transparent_67%),linear-gradient(to_bottom,transparent_33%,rgba(255,255,255,0.13)_33%,rgba(255,255,255,0.13)_34%,transparent_34%,transparent_66%,rgba(255,255,255,0.13)_66%,rgba(255,255,255,0.13)_67%,transparent_67%)] pointer-events-none" />
+            </div>
+            <p className="mt-2 text-xs text-on-surface-variant">Drag to reposition. Image always covers the frame.</p>
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-2">Menu Card Preview</p>
+            <div className="rounded-xl overflow-hidden border border-outline-variant/20 bg-surface-container">
+              <div className="h-36">
+                <img
+                  src={imageUrl}
+                  alt="Card preview"
+                  className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: `${position.x}% ${position.y}%`,
+                    transform: `scale(${position.zoom})`,
+                    transformOrigin: 'center',
+                  }}
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-2">
+                Zoom ({position.zoom.toFixed(2)}x)
+              </label>
+              <input
+                type="range"
+                min={1}
+                max={2.5}
+                step={0.01}
+                value={position.zoom}
+                onChange={(e) => setPosition((prev) => ({ ...prev, zoom: Number(e.target.value) }))}
+                className="w-full accent-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setPosition(DEFAULT_IMAGE_POSITION)}
+                className="mt-3 px-3 py-1.5 text-xs border border-outline-variant/30 rounded text-on-surface-variant hover:bg-surface-container"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 flex justify-end gap-3">
+          <button onClick={onCancel} className="btn-secondary">Cancel</button>
+          <button onClick={() => onApply(position)} className="btn-primary">Apply</button>
+        </div>
+      </div>
     </div>
   );
 }
