@@ -1,8 +1,8 @@
-# Sushi POS
+# Shari POS
 
-A modern Point of Sale system built for restaurants, originally inspired by a local all-you-can-eat sushi place in Durham, NC. Started as a personal project to explore full-stack development and build something actually useful — covers menu management, order processing, table tracking, and a full customer-facing ordering UI.
+A modern Point of Sale system branded as **Shari POS**, originally inspired by a local all-you-can-eat sushi place in Durham, NC. Started as a personal project to explore full-stack development and build something actually useful — covers menu management, order processing, table tracking, and a full customer-facing ordering UI.
 
-Flexible enough to be used for any restaurant, not just sushi.
+Flexible enough to be used for any restaurant.
 
 ---
 

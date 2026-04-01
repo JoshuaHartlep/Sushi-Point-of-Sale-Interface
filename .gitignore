@@ -38,3 +38,5 @@ __pycache__/
 *.pem
 ec2 command.txt
 cli-latest
+
+.DS_Store
