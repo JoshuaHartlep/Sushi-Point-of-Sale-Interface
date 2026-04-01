@@ -14,6 +14,7 @@ from typing import List, Optional
 from datetime import datetime
 from decimal import Decimal
 from app.core.database import get_db
+from app.core.tenant import get_tenant_id
 from app.models.order import Order, OrderItem, Table, TableStatus, OrderStatus, Discount
 from app.models.menu import MenuItem, menu_item_modifiers
 from app.models.settings import Settings, MealPeriod
@@ -58,36 +59,20 @@ def _calculate_ayce_surcharge_total(order: Order) -> Decimal:
     return surcharge_total
 
 
-def _calculate_order_subtotal(order: Order, db: Session) -> Decimal:
-    if order.ayce_order:
-        return get_current_ayce_price(db) + _calculate_ayce_surcharge_total(order)
-
-    subtotal = Decimal("0.00")
-    for item in order.items:
-        item_total = Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
-        for modifier in item.modifiers:
-            item_total += Decimal(str(modifier.price)) * Decimal(str(item.quantity))
-        subtotal += item_total
-    return subtotal
-
-
-def _calculate_order_total_amount(order: Order, db: Session) -> Decimal:
-    return _calculate_order_subtotal(order, db) + _get_leftover_charge_amount(order)
-
-
-def get_current_ayce_price(db: Session) -> Decimal:
+def get_current_ayce_price(db: Session, tenant_id: int) -> Decimal:
     """
-    Get the current AYCE price based on the meal period setting.
-    
+    Get the current AYCE price based on the meal period setting for a tenant.
+
     Args:
         db: Database session
-        
+        tenant_id: Current tenant (restaurant) ID
+
     Returns:
         Decimal: Current AYCE price (lunch or dinner)
     """
     try:
-        # Get the current settings
-        settings = db.query(Settings).filter(Settings.id == 1).first()
+        # Get settings scoped to this tenant (one settings row per tenant)
+        settings = db.query(Settings).filter(Settings.tenant_id == tenant_id).first()
         
         if not settings:
             logger.warning("No settings found, using default dinner price")
@@ -105,6 +90,23 @@ def get_current_ayce_price(db: Session) -> Decimal:
         return Decimal('25.00')
 
 
+def _calculate_order_subtotal(order: Order, db: Session, tenant_id: int) -> Decimal:
+    if order.ayce_order:
+        return get_current_ayce_price(db, tenant_id) + _calculate_ayce_surcharge_total(order)
+
+    subtotal = Decimal("0.00")
+    for item in order.items:
+        item_total = Decimal(str(item.unit_price)) * Decimal(str(item.quantity))
+        for modifier in item.modifiers:
+            item_total += Decimal(str(modifier.price)) * Decimal(str(item.quantity))
+        subtotal += item_total
+    return subtotal
+
+
+def _calculate_order_total_amount(order: Order, db: Session, tenant_id: int) -> Decimal:
+    return _calculate_order_subtotal(order, db, tenant_id) + _get_leftover_charge_amount(order)
+
+
 class OrderItemsCreate(BaseModel):
     """Schema for creating multiple order items."""
     items: List[OrderItemCreate]
@@ -115,75 +117,78 @@ class DiscountType(str, Enum):
 
 # Table endpoints
 @router.post("/tables/", response_model=TableResponse)
-def create_table(table: TableCreate, db: Session = Depends(get_db)):
+def create_table(table: TableCreate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Create a new table.
-    
+
     Args:
         table: Table data
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Created table
-        
+
     Raises:
-        HTTPException: If table number already exists
+        HTTPException: If table number already exists within this tenant
     """
-    # Check if table number already exists
-    existing_table = db.query(Table).filter(Table.number == table.number).first()
+    # Check if table number already exists within this tenant
+    existing_table = db.query(Table).filter(Table.number == table.number, Table.tenant_id == tenant_id).first()
     if existing_table:
         raise HTTPException(
             status_code=409,
             detail=f"Table number {table.number} already exists"
         )
-        
-    db_table = Table(**table.model_dump())
+
+    db_table = Table(**table.model_dump(), tenant_id=tenant_id)
     db.add(db_table)
     db.commit()
     db.refresh(db_table)
     return db_table
 
 @router.get("/tables/", response_model=List[TableResponse])
-def get_tables(db: Session = Depends(get_db)):
+def get_tables(db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
-    Get all tables.
-    
+    Get all tables for the current tenant.
+
     Args:
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         List of tables
     """
-    return db.query(Table).order_by(Table.number).all()
+    return db.query(Table).filter(Table.tenant_id == tenant_id).order_by(Table.number).all()
 
 @router.get("/tables/{table_id}", response_model=TableResponse)
-def get_table(table_id: int, db: Session = Depends(get_db)):
+def get_table(table_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Get a specific table by ID.
-    
+
     Args:
         table_id: ID of the table
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Table details
-        
+
     Raises:
         HTTPException: If table not found
     """
-    table = db.query(Table).filter(Table.id == table_id).first()
+    table = db.query(Table).filter(Table.id == table_id, Table.tenant_id == tenant_id).first()
     if not table:
         raise RecordNotFoundError("Table", table_id)
     return table
 
 @router.patch("/tables/{table_id}", response_model=TableResponse)
-def update_table(table_id: int, data: TableUpdate, db: Session = Depends(get_db)):
+def update_table(table_id: int, data: TableUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """Update a table's number and/or capacity."""
-    table = db.query(Table).filter(Table.id == table_id).first()
+    table = db.query(Table).filter(Table.id == table_id, Table.tenant_id == tenant_id).first()
     if not table:
         raise RecordNotFoundError("Table", table_id)
     if data.number is not None:
-        existing = db.query(Table).filter(Table.number == data.number, Table.id != table_id).first()
+        existing = db.query(Table).filter(Table.number == data.number, Table.id != table_id, Table.tenant_id == tenant_id).first()
         if existing:
             raise HTTPException(status_code=400, detail=f"Table number {data.number} already exists")
         table.number = data.number
@@ -195,25 +200,27 @@ def update_table(table_id: int, data: TableUpdate, db: Session = Depends(get_db)
 
 @router.put("/tables/{table_id}/status", response_model=TableResponse)
 def update_table_status(
-    table_id: int, 
-    status: str = Query(..., description="Table status. Valid values: available, occupied, reserved, cleaning"), 
-    db: Session = Depends(get_db)
+    table_id: int,
+    status: str = Query(..., description="Table status. Valid values: available, occupied, reserved, cleaning"),
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Update a table's status.
-    
+
     Args:
         table_id: ID of the table
         status: New status (available, occupied, reserved, cleaning)
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Updated table
-        
+
     Raises:
         HTTPException: If table not found or invalid status
     """
-    table = db.query(Table).filter(Table.id == table_id).first()
+    table = db.query(Table).filter(Table.id == table_id, Table.tenant_id == tenant_id).first()
     if not table:
         raise RecordNotFoundError("Table", table_id)
         
@@ -231,27 +238,29 @@ def update_table_status(
         )
 
 @router.delete("/tables/{table_id}")
-def delete_table(table_id: int, db: Session = Depends(get_db)):
+def delete_table(table_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Delete a table.
-    
+
     Args:
         table_id: ID of the table
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Success message
-        
+
     Raises:
         HTTPException: If table not found or has active orders
     """
-    table = db.query(Table).filter(Table.id == table_id).first()
+    table = db.query(Table).filter(Table.id == table_id, Table.tenant_id == tenant_id).first()
     if not table:
         raise RecordNotFoundError("Table", table_id)
-        
-    # Check if table has any active orders
+
+    # Check if table has any active orders (scoped to tenant via table FK)
     active_orders = db.query(Order).filter(
         Order.table_id == table_id,
+        Order.tenant_id == tenant_id,
         Order.status.in_(["pending", "preparing", "ready", "served"])
     ).first()
     
@@ -266,26 +275,27 @@ def delete_table(table_id: int, db: Session = Depends(get_db)):
     return {"message": "Table deleted successfully"}
 
 @router.post("/tables/{table_id}/clear")
-def clear_table(table_id: int, db: Session = Depends(get_db)):
+def clear_table(table_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Clear all orders from a table.
-    
+
     Args:
         table_id: ID of the table
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Success message
-        
+
     Raises:
         HTTPException: If table not found
     """
-    table = db.query(Table).filter(Table.id == table_id).first()
+    table = db.query(Table).filter(Table.id == table_id, Table.tenant_id == tenant_id).first()
     if not table:
         raise RecordNotFoundError("Table", table_id)
-        
-    # Get all orders for this table
-    orders = db.query(Order).filter(Order.table_id == table_id).all()
+
+    # Get all orders for this table (already tenant-scoped via table ownership)
+    orders = db.query(Order).filter(Order.table_id == table_id, Order.tenant_id == tenant_id).all()
     
     # Delete all order items first
     for order in orders:
@@ -302,18 +312,19 @@ def clear_table(table_id: int, db: Session = Depends(get_db)):
     return {"message": "Table cleared successfully"}
 
 @router.get("/tables/{table_id}/orders/", response_model=List[OrderResponse])
-def get_table_orders(table_id: int, db: Session = Depends(get_db)):
+def get_table_orders(table_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Get all orders for a specific table.
-    
+
     Args:
         table_id: ID of the table
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         List of orders
     """
-    return db.query(Order).filter(Order.table_id == table_id).order_by(Order.created_at.desc()).all()
+    return db.query(Order).filter(Order.table_id == table_id, Order.tenant_id == tenant_id).order_by(Order.created_at.desc()).all()
 
 # Order endpoints
 @router.get("/", response_model=List[OrderResponse])
@@ -322,26 +333,29 @@ def get_orders(
     limit: int = Query(10, description="Maximum number of records to return"),
     status: Optional[str] = Query(None, description="Filter by order status. Valid values: pending, preparing, ready, delivered, cancelled, completed"),
     table_id: Optional[int] = Query(None, description="Filter by table ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Get a list of orders with optional filtering.
-    
+
     Args:
         skip: Number of records to skip (for pagination)
         limit: Maximum number of records to return
         status: Filter by order status
         table_id: Filter by table ID
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         List of orders
-        
+
     Raises:
         HTTPException: If invalid status is provided
     """
     try:
-        query = db.query(Order)
+        # scope to current tenant — never return another restaurant's orders
+        query = db.query(Order).filter(Order.tenant_id == tenant_id)
         
         # Apply filters if provided
         if status:
@@ -369,48 +383,51 @@ def get_orders(
         )
 
 @router.get("/{order_id}", response_model=OrderResponse)
-def get_order(order_id: int, db: Session = Depends(get_db)):
+def get_order(order_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Get a specific order by ID.
-    
+
     Args:
         order_id: ID of the order
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Order details
-        
+
     Raises:
         HTTPException: If order not found
     """
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
     if not order:
         raise RecordNotFoundError("Order", order_id)
     return order
 
 @router.post("/", response_model=OrderResponse)
-def create_order(order: OrderCreate, db: Session = Depends(get_db)):
+def create_order(order: OrderCreate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Create a new order.
-    
+
     Args:
         order: Order data
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Created order
-        
+
     Raises:
         HTTPException: If menu item not found
     """
     def _build_order() -> Order:
-        # Create the order
+        # Create the order — inject tenant_id so it's scoped to this restaurant
         db_order = Order(
+            tenant_id=tenant_id,
             table_id=order.table_id,
             status=order.status,  # Use the status from the request
             notes=order.notes,
             ayce_order=order.ayce_order,
-            ayce_price=get_current_ayce_price(db) if order.ayce_order else Decimal('0.00'),
+            ayce_price=get_current_ayce_price(db, tenant_id) if order.ayce_order else Decimal('0.00'),
             leftover_charge_amount=order.leftover_charge_amount or Decimal('0.00'),
             leftover_charge_note=order.leftover_charge_note,
             total_amount=Decimal('0.00')  # Will be calculated after items are added
@@ -440,7 +457,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
             db.add(db_item)
 
         # Calculate initial total
-        db_order.total_amount = _calculate_order_total_amount(db_order, db)
+        db_order.total_amount = _calculate_order_total_amount(db_order, db, tenant_id)
 
         db.commit()
         db.refresh(db_order)
@@ -478,24 +495,25 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         )
 
 @router.put("/{order_id}", response_model=OrderResponse)
-def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db)):
+def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Update an order.
-    
+
     Args:
         order_id: ID of the order
         order: Updated order data
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Updated order
-        
+
     Raises:
         HTTPException: If order not found, table not found, or invalid status
     """
     try:
-        # Get the order
-        db_order = db.query(Order).filter(Order.id == order_id).first()
+        # Tenant filter prevents updating another restaurant's order
+        db_order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
         if not db_order:
             raise RecordNotFoundError("Order", order_id)
             
@@ -527,7 +545,7 @@ def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db
                 setattr(db_order, key, value)
 
         if any(key in update_data for key in ["ayce_order", "ayce_price", "leftover_charge_amount", "leftover_charge_note"]):
-            db_order.total_amount = _calculate_order_total_amount(db_order, db)
+            db_order.total_amount = _calculate_order_total_amount(db_order, db, tenant_id)
         
         db.commit()
         db.refresh(db_order)
@@ -542,21 +560,22 @@ def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db
         )
 
 @router.delete("/{order_id}")
-def delete_order(order_id: int, db: Session = Depends(get_db)):
+def delete_order(order_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
     Delete an order.
-    
+
     Args:
         order_id: ID of the order
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Success message
-        
+
     Raises:
         HTTPException: If order not found
     """
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
     if not order:
         raise RecordNotFoundError("Order", order_id)
         
@@ -570,25 +589,27 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
 
 @router.put("/{order_id}/status", response_model=OrderResponse)
 def update_order_status(
-    order_id: int, 
-    status: OrderStatus = Query(..., description="Order status. Valid values: pending, preparing, ready, delivered, cancelled, completed"), 
-    db: Session = Depends(get_db)
+    order_id: int,
+    status: OrderStatus = Query(..., description="Order status. Valid values: pending, preparing, ready, delivered, cancelled, completed"),
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Update an order's status.
-    
+
     Args:
         order_id: ID of the order
         status: New status
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Updated order
-        
+
     Raises:
         HTTPException: If order not found
     """
-    order = db.query(Order).filter(Order.id == order_id).first()
+    order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
     if not order:
         raise RecordNotFoundError("Order", order_id)
         
@@ -605,21 +626,24 @@ def bulk_update_order_status(
     order_ids: List[int],
     status: str = Query(..., description="Order status. Valid values: pending, preparing, ready, delivered, cancelled, completed"),
     notes: Optional[str] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Bulk update order statuses.
-    
+
     Args:
         order_ids: List of order IDs
         status: New status
         notes: Optional notes about the status change
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Operation results
     """
-    orders = db.query(Order).filter(Order.id.in_(order_ids)).all()
+    # tenant filter prevents bulk-updating another restaurant's orders
+    orders = db.query(Order).filter(Order.id.in_(order_ids), Order.tenant_id == tenant_id).all()
     if not orders:
         raise HTTPException(status_code=404, detail="No orders found")
         
@@ -649,25 +673,27 @@ def bulk_update_order_status(
 def apply_discount(
     order_id: int,
     discount: DiscountCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Apply a discount to an order.
-    
+
     Args:
         order_id: ID of the order
         discount: Discount details
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Applied discount
-        
+
     Raises:
         HTTPException: If order not found or discount is invalid
     """
     try:
-        # Get the order
-        order = db.query(Order).filter(Order.id == order_id).first()
+        # Tenant filter prevents applying discounts to another restaurant's orders
+        order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
         if not order:
             raise RecordNotFoundError("Order", order_id)
             
@@ -714,34 +740,36 @@ def apply_discount(
 @router.get("/{order_id}/total", response_model=OrderTotalResponse)
 def calculate_order_total(
     order_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Calculate the total for an order.
-    
+
     Args:
         order_id: ID of the order
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Order total details
-        
+
     Raises:
         HTTPException: If order not found
     """
     try:
-        order = db.query(Order).filter(Order.id == order_id).first()
+        order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
         if not order:
             raise RecordNotFoundError("Order", order_id)
-            
-        subtotal = _calculate_order_subtotal(order, db)
+
+        subtotal = _calculate_order_subtotal(order, db, tenant_id)
         leftover_charge_amount = _get_leftover_charge_amount(order)
         ayce_base_total = None
         ayce_surcharge_total = None
         if order.ayce_order:
-            ayce_base_total = get_current_ayce_price(db)
+            ayce_base_total = get_current_ayce_price(db, tenant_id)
             ayce_surcharge_total = _calculate_ayce_surcharge_total(order)
-        
+
         # Calculate discount amount
         discount_amount = None
         if order.discount:
@@ -765,7 +793,7 @@ def calculate_order_total(
             subtotal=subtotal,
             discount_amount=discount_amount,
             total=total,
-            ayce_price=get_current_ayce_price(db) if order.ayce_order else None,
+            ayce_price=get_current_ayce_price(db, tenant_id) if order.ayce_order else None,
             ayce_base_total=round(ayce_base_total, 2) if ayce_base_total is not None else None,
             ayce_surcharge_total=round(ayce_surcharge_total, 2) if ayce_surcharge_total is not None else None,
             leftover_charge_amount=round(leftover_charge_amount, 2),
@@ -782,25 +810,27 @@ def calculate_order_total(
 def add_items_to_order(
     order_id: int,
     order_items: OrderItemsCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Add items to an existing order.
-    
+
     Args:
         order_id: ID of the order
         order_items: List of items to add
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Updated order
-        
+
     Raises:
         HTTPException: If order not found, menu items not found, or order is completed
     """
     try:
-        # Get the order
-        order = db.query(Order).filter(Order.id == order_id).first()
+        # Tenant filter prevents adding items to another restaurant's order
+        order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
         if not order:
             raise RecordNotFoundError("Order", order_id)
             
@@ -851,10 +881,10 @@ def add_items_to_order(
         # Update order status if needed
         if order.status == OrderStatus.PENDING:
             order.status = OrderStatus.PREPARING
-            
+
         # Recalculate order total
-        order.total_amount = _calculate_order_total_amount(order, db)
-            
+        order.total_amount = _calculate_order_total_amount(order, db, tenant_id)
+
         db.commit()
         db.refresh(order)
         return order
@@ -870,24 +900,26 @@ def add_items_to_order(
 @router.delete("/{order_id}/discount")
 def remove_discount(
     order_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Remove a discount from an order.
-    
+
     Args:
         order_id: ID of the order
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Success message
-        
+
     Raises:
         HTTPException: If order not found or no discount exists
     """
     try:
-        # Get the order
-        order = db.query(Order).filter(Order.id == order_id).first()
+        # Tenant filter prevents removing discounts from another restaurant's orders
+        order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
         if not order:
             raise RecordNotFoundError("Order", order_id)
             
@@ -916,25 +948,27 @@ def remove_discount(
 def delete_order_item(
     order_id: int,
     item_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Delete an item from an order.
-    
+
     Args:
         order_id: ID of the order
         item_id: ID of the item to delete
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Success message
-        
+
     Raises:
         HTTPException: If order or item not found, or order is completed
     """
     try:
-        # Get the order
-        order = db.query(Order).filter(Order.id == order_id).first()
+        # Tenant filter prevents deleting items from another restaurant's order
+        order = db.query(Order).filter(Order.id == order_id, Order.tenant_id == tenant_id).first()
         if not order:
             raise RecordNotFoundError("Order", order_id)
             
@@ -955,10 +989,11 @@ def delete_order_item(
             raise RecordNotFoundError("OrderItem", item_id)
             
         db.delete(item)
-        
+        db.flush()
+
         # Recalculate order total after item deletion
-        order.total_amount = _calculate_order_total_amount(order, db)
-        
+        order.total_amount = _calculate_order_total_amount(order, db, tenant_id)
+
         db.commit()
         
         return {"message": "Item deleted successfully"}

@@ -7,6 +7,7 @@ This module provides endpoints for managing application settings.
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.tenant import get_tenant_id
 from app.models.settings import Settings, MealPeriod
 from app.schemas.settings import SettingsResponse, SettingsUpdate
 from app.core.error_handling import RecordNotFoundError
@@ -20,22 +21,22 @@ router = APIRouter()
 
 # get current settings (always returns the single settings record)
 @router.get("/settings/", response_model=SettingsResponse)
-def get_settings(db: Session = Depends(get_db)):
+def get_settings(db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
-    Get current application settings.
-    
+    Get current application settings for the tenant.
+
     Returns the current settings including AYCE prices, restaurant name, and timezone.
-    If no settings exist, creates default settings first.
+    If no settings exist for this tenant, creates default settings first.
     """
     try:
-        # try to get the settings record (should be id=1)
-        settings = db.query(Settings).filter(Settings.id == 1).first()
-        
-        # if no settings exist, create default ones
+        # fetch settings scoped to this tenant (one row per restaurant)
+        settings = db.query(Settings).filter(Settings.tenant_id == tenant_id).first()
+
+        # if no settings exist for this tenant, create defaults
         if not settings:
-            logger.info("No settings found, creating default settings")
+            logger.info(f"No settings found for tenant {tenant_id}, creating defaults")
             settings = Settings(
-                id=1,
+                tenant_id=tenant_id,
                 restaurant_name="Sushi Restaurant",
                 timezone="America/New_York",
                 ayce_lunch_price=20.00,
@@ -54,23 +55,23 @@ def get_settings(db: Session = Depends(get_db)):
 
 # update settings (always updates the single settings record)
 @router.patch("/settings/", response_model=SettingsResponse)
-def update_settings(settings_update: SettingsUpdate, db: Session = Depends(get_db)):
+def update_settings(settings_update: SettingsUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
-    Update application settings.
-    
+    Update application settings for the tenant.
+
     Updates the current settings with provided values. Only provided fields will be updated.
-    Creates default settings if none exist.
+    Creates default settings if none exist for this tenant.
     """
     try:
-        # get the current settings record
-        settings = db.query(Settings).filter(Settings.id == 1).first()
-        
-        # if no settings exist, create default ones first
+        # fetch settings scoped to this tenant
+        settings = db.query(Settings).filter(Settings.tenant_id == tenant_id).first()
+
+        # if no settings exist, create defaults first
         if not settings:
-            logger.info("No settings found, creating default settings before update")
+            logger.info(f"No settings found for tenant {tenant_id}, creating defaults before update")
             settings = Settings(
-                id=1,
-                restaurant_name="Sushi Restaurant", 
+                tenant_id=tenant_id,
+                restaurant_name="Sushi Restaurant",
                 timezone="America/New_York",
                 ayce_lunch_price=20.00,
                 ayce_dinner_price=25.00
@@ -100,33 +101,34 @@ def update_settings(settings_update: SettingsUpdate, db: Session = Depends(get_d
 
 
 @router.patch("/settings/meal-period", response_model=SettingsResponse)
-def update_meal_period(meal_period: MealPeriod, db: Session = Depends(get_db)):
+def update_meal_period(meal_period: MealPeriod, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
     """
-    Update the current meal period setting.
-    
+    Update the current meal period setting for the tenant.
+
     This endpoint allows quick switching between lunch and dinner periods
     without needing to update other settings.
-    
+
     Args:
         meal_period: The new meal period (LUNCH or DINNER)
         db: Database session
-        
+        tenant_id: Current tenant
+
     Returns:
         Updated settings with new meal period
-        
+
     Raises:
         HTTPException: If settings not found or update fails
     """
     try:
-        # Get the current settings record
-        settings = db.query(Settings).filter(Settings.id == 1).first()
-        
-        # If no settings exist, create default ones with the specified meal period
+        # Get the settings record for this tenant
+        settings = db.query(Settings).filter(Settings.tenant_id == tenant_id).first()
+
+        # If no settings exist for this tenant, create defaults with the specified meal period
         if not settings:
-            logger.info("No settings found, creating default settings with specified meal period")
+            logger.info(f"No settings found for tenant {tenant_id}, creating defaults with meal period")
             settings = Settings(
-                id=1,
-                restaurant_name="Sushi Restaurant", 
+                tenant_id=tenant_id,
+                restaurant_name="Sushi Restaurant",
                 timezone="America/New_York",
                 current_meal_period=meal_period,
                 ayce_lunch_price=20.00,

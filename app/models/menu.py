@@ -10,12 +10,17 @@ It includes:
 """
 
 # all the database stuff we need
-from sqlalchemy import Boolean, Column, Integer, String, Text, Numeric, ForeignKey, DateTime, Table, Enum as SQLEnum
+from sqlalchemy import Boolean, Column, Integer, String, Text, Numeric, Float, ForeignKey, DateTime, Table, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 from datetime import datetime
 import enum
+
+# Multi-tenant note: tenant_id is added to every "root" business table so all
+# queries can be scoped to a single restaurant.  In single-tenant mode this is
+# always DEFAULT_TENANT_ID (1).  Sub-records (images, reports) inherit tenant
+# scope through their parent FK chain and don't need their own tenant_id.
 
 # this table connects menu items with their modifiers (like extra sauce, no onions, etc)
 menu_item_modifiers = Table(
@@ -47,6 +52,8 @@ class Category(Base):
 
     # basic category info
     id = Column(Integer, primary_key=True, index=True)  # unique number for each category
+    # tenant scope — which restaurant this category belongs to
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String(100), nullable=False)  # category name
     description = Column(String, nullable=True)  # optional description
     display_order = Column(Integer, nullable=False, default=0)  # where to show this in the menu
@@ -84,6 +91,8 @@ class Modifier(Base):
 
     # basic modifier info
     id = Column(Integer, primary_key=True, index=True)  # unique number for each modifier
+    # tenant scope — which restaurant this modifier belongs to
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String(100), nullable=False)  # modifier name
     description = Column(Text)  # what this modifier does
     price = Column(Numeric(10, 2), nullable=False)  # how much extra it costs
@@ -130,12 +139,17 @@ class MenuItem(Base):
 
     # basic item info
     id = Column(Integer, primary_key=True, index=True)  # unique number for each item
+    # tenant scope — which restaurant this menu item belongs to
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     name = Column(String(100), nullable=False)  # item name
     description = Column(Text)  # what's in this item
     price = Column(Numeric(10, 2), nullable=False)  # how much it costs
     ayce_surcharge = Column(Numeric(10, 2), nullable=True, server_default="0.00")  # optional extra charge when ordered under AYCE
     category_id = Column(Integer, ForeignKey("categories.id"))  # which category this is in
     image_url = Column(String(255))  # picture of the item
+    image_position_x = Column(Float, nullable=False, default=50.0)  # object-position x percentage (0-100)
+    image_position_y = Column(Float, nullable=False, default=50.0)  # object-position y percentage (0-100)
+    image_zoom = Column(Float, nullable=False, default=1.0)  # visual zoom multiplier (>=1)
     is_available = Column(Boolean, default=True)  # whether we can order this right now
     is_popular = Column(Boolean, default=False)  # whether this is a popular item
     display_order = Column(Integer, nullable=False, default=0)  # where to show this in the menu

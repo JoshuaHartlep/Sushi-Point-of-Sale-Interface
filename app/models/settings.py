@@ -9,7 +9,7 @@ It includes:
 - Timestamps for tracking changes
 """
 
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Numeric, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.sql import func
 from app.core.database import Base
 import enum
@@ -43,9 +43,13 @@ class Settings(Base):
     """
     __tablename__ = "settings"
 
-    # primary key - should always be 1 for singleton settings
-    id = Column(Integer, primary_key=True, index=True, default=1)
-    
+    # primary key
+    id = Column(Integer, primary_key=True, index=True)
+
+    # tenant scope — each tenant has exactly one settings row.
+    # Query by tenant_id rather than id=1 so multi-tenant works correctly.
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True, unique=True)
+
     # restaurant information
     restaurant_name = Column(String(255), nullable=False, default="Sushi Restaurant")  # restaurant name
     timezone = Column(String(100), nullable=False, default="America/New_York")  # restaurant timezone

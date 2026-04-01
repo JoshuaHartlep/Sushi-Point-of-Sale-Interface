@@ -18,12 +18,14 @@ import statistics as _stats
 from dataclasses import dataclass, field
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, extract as _sa_extract
 from typing import Any, Optional, List
 from datetime import date, datetime, timedelta
 from pydantic import BaseModel
 
 from app.core.database import get_db
+from app.core.tenant import get_tenant_id
+from app.models.order import Order, Table, OrderStatus
 
 router = APIRouter()
 
@@ -86,16 +88,22 @@ class FilterConditions:
     needs_items_join: bool
 
 
-def build_conditions(f: AnalyticsFilter) -> FilterConditions:
+def build_conditions(f: AnalyticsFilter, tenant_id: int) -> FilterConditions:
     """
     Translates an AnalyticsFilter into FilterConditions.
     This is the single source of truth for filter → SQL translation.
     All analytics endpoints call this; none build conditions inline.
+
+    tenant_id is always included in order_clause so every query is automatically
+    scoped to a single restaurant — a cross-tenant analytics query is impossible.
     """
     start_dt, end_dt = _resolve_dates(f.start_date, f.end_date)
-    params: dict = {"start_dt": start_dt, "end_dt": end_dt}
+    # tenant_id is a bind param so it is never interpolated into the SQL string
+    params: dict = {"start_dt": start_dt, "end_dt": end_dt, "tenant_id": tenant_id}
 
     order_parts: list[str] = [
+        # Tenant scope: always filter first — prevents cross-tenant data leaks.
+        "o.tenant_id = :tenant_id",
         # Cast enum to text — prevents Postgres from rejecting unknown enum
         # labels in raw SQL (enum drift / casing differences with SQLAlchemy).
         "LOWER(o.status::text) != 'cancelled'",
@@ -281,12 +289,13 @@ def get_analytics_summary(
     group_by: Optional[str] = Query(None),
     f: AnalyticsFilter = Depends(parse_filter),
     db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Aggregate metrics for the given window. group_by adds a breakdown list.
     group_by options: day, week, day_of_week, hour, item, category, order_type
     """
-    fc = build_conditions(f)
+    fc = build_conditions(f, tenant_id)
 
     totals_row = db.execute(
         text(f"""
@@ -455,6 +464,7 @@ def get_analytics_drill(
     dimension: str = Query("category"),
     f: AnalyticsFilter = Depends(parse_filter),
     db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Returns metric broken down by dimension, with cumulative filter support.
@@ -465,7 +475,7 @@ def get_analytics_drill(
     if dimension not in VALID_DIMENSIONS:
         dimension = "category"
 
-    fc = build_conditions(f)
+    fc = build_conditions(f, tenant_id)
     rows, total = _drill_query(db, dimension, metric, fc)
     return DrillResponse(metric=metric, dimension=dimension, rows=rows, total=total)
 
@@ -611,13 +621,14 @@ def _drill_query(
 def get_analytics_decompose(
     f: AnalyticsFilter = Depends(parse_filter),
     db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Breaks down revenue into its component drivers for a time window.
     Returns an aggregate total AND a daily timeseries of all three metrics.
     Use this to answer "why did revenue change?" for any filtered slice.
     """
-    fc = build_conditions(f)
+    fc = build_conditions(f, tenant_id)
 
     totals_row = db.execute(
         text(f"""
@@ -664,6 +675,7 @@ def get_analytics_compare(
     category_id: Optional[int] = Query(None),
     item_id: Optional[int] = Query(None),
     db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Runs the same aggregation over two cohorts and returns a side-by-side diff.
@@ -699,8 +711,9 @@ def get_analytics_compare(
     )
 
     # Run the same _drill_query logic for both cohorts — zero duplication
-    rows_a, _ = _drill_query(db, dimension, metric, build_conditions(filter_a))
-    rows_b, _ = _drill_query(db, dimension, metric, build_conditions(filter_b))
+    # Both cohorts are scoped to the same tenant (apples-to-apples comparison)
+    rows_a, _ = _drill_query(db, dimension, metric, build_conditions(filter_a, tenant_id))
+    rows_b, _ = _drill_query(db, dimension, metric, build_conditions(filter_b, tenant_id))
 
     # Align by label (full outer join semantics)
     a_map: dict[str, float] = {r.label: r.value for r in rows_a}
@@ -754,6 +767,7 @@ def get_analytics_signals(
     meal_period: Optional[str] = Query(None),
     order_type: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
 ):
     """
     Scans daily metrics over a rolling window and returns anomalous days.
@@ -777,7 +791,7 @@ def get_analytics_signals(
         meal_period=meal_period,
         order_type=order_type,
     )
-    fc = build_conditions(window_filter)
+    fc = build_conditions(window_filter, tenant_id)
     daily = _grouped_summary(db, "day", fc)
 
     if len(daily) < 3:
@@ -829,3 +843,82 @@ def get_analytics_signals(
     # Strongest anomalies first
     signals.sort(key=lambda s: abs(s.z_score), reverse=True)
     return signals
+
+
+# ---------------------------------------------------------------------------
+# GET /analytics/orders  — orders for a specific hour slot
+# ---------------------------------------------------------------------------
+
+class HourOrderItem(BaseModel):
+    name: str
+    quantity: int
+    unit_price: float
+
+class HourOrder(BaseModel):
+    id: int
+    table_number: Optional[int]
+    status: str
+    total_amount: float
+    ayce_order: bool
+    created_at: datetime
+    items: List[HourOrderItem]
+
+
+@router.get("/analytics/orders", response_model=List[HourOrder])
+def get_orders_for_hour(
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+    hour: int = Query(..., ge=0, le=23),
+    meal_period: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
+    """
+    Returns every non-cancelled order placed during a specific clock hour
+    (e.g. hour=14 → 2pm–3pm) within the given date range.
+    Used by the Lens hour-by-hour chart drill-down.
+    """
+    start_dt, end_dt = _resolve_dates(start_date, end_date)
+
+    query = (
+        db.query(Order)
+        .join(Table, Order.table_id == Table.id)
+        .filter(
+            Order.tenant_id == tenant_id,  # scope to current restaurant
+            Order.status != OrderStatus.CANCELLED,
+            Order.created_at >= start_dt,
+            Order.created_at <= end_dt,
+        )
+    )
+
+    if meal_period == "lunch":
+        query = query.filter(_sa_extract("hour", Order.created_at) < 16)
+    elif meal_period == "dinner":
+        query = query.filter(_sa_extract("hour", Order.created_at) >= 16)
+
+    query = query.filter(_sa_extract("hour", Order.created_at) == hour)
+    query = query.order_by(Order.created_at.asc())
+
+    orders = query.all()
+
+    result: List[HourOrder] = []
+    for o in orders:
+        items = []
+        for oi in o.items:
+            name = oi.menu_item.name if oi.menu_item else f"Item #{oi.menu_item_id}"
+            items.append(HourOrderItem(
+                name=name,
+                quantity=oi.quantity,
+                unit_price=float(oi.unit_price),
+            ))
+        result.append(HourOrder(
+            id=o.id,
+            table_number=o.table.number if o.table else None,
+            status=o.status.value if hasattr(o.status, "value") else str(o.status),
+            total_amount=float(o.total_amount),
+            ayce_order=bool(o.ayce_order),
+            created_at=o.created_at,
+            items=items,
+        ))
+
+    return result
