@@ -147,6 +147,7 @@ export default function CustomerMenuTab() {
     const qty = getCartQty(item.id);
     const isFeature = idx === 0 && !isUnavailable;
     const displayPrice = isAyce ? 0 : Number(item.price);
+    const ayceSurcharge = Number(item.ayce_surcharge ?? 0);
 
     return (
       <div
@@ -189,7 +190,7 @@ export default function CustomerMenuTab() {
               </p>
             )}
             <p className={`font-bold text-sm mt-1.5 ${isUnavailable ? 'text-on-surface-variant opacity-40' : isAyce ? 'text-on-surface-variant opacity-40' : 'text-primary'}`}>
-              {isUnavailable ? '—' : isAyce ? 'Included' : `$${displayPrice.toFixed(2)}`}
+              {isUnavailable ? '—' : isAyce ? (ayceSurcharge > 0 ? `+$${ayceSurcharge.toFixed(2)}` : 'Included') : `$${displayPrice.toFixed(2)}`}
             </p>
           </div>
 
@@ -197,7 +198,7 @@ export default function CustomerMenuTab() {
           {!isUnavailable && (
             qty === 0 ? (
               <button
-                onClick={e => { e.stopPropagation(); addToCart(item.id, item.name, Number(item.price)); }}
+                onClick={e => { e.stopPropagation(); addToCart(item.id, item.name, Number(item.price), ayceSurcharge); }}
                 className={`flex-shrink-0 flex items-center justify-center rounded-full transition-all active:scale-90 bg-surface-container-high text-on-surface hover:bg-primary hover:text-on-primary ${isFeature ? 'w-10 h-10' : 'w-9 h-9'}`}
               >
                 <Plus size={15} />
@@ -212,7 +213,7 @@ export default function CustomerMenuTab() {
                 </button>
                 <span className="w-5 text-center text-sm font-bold text-on-surface">{qty}</span>
                 <button
-                  onClick={() => addToCart(item.id, item.name, Number(item.price))}
+                  onClick={() => addToCart(item.id, item.name, Number(item.price), ayceSurcharge)}
                   className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-container transition-colors active:scale-90"
                 >
                   <Plus size={13} />

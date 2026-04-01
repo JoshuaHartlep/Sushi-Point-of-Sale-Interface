@@ -48,8 +48,12 @@ def upload_user_image(
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, and GIF images are allowed")
 
+    from app.core.upload_limits import CUSTOMER_IMAGE_MAX_BYTES, buffer_upload_file
+
+    buf = buffer_upload_file(file, CUSTOMER_IMAGE_MAX_BYTES, "customer")
+
     # upload to S3
-    s3_url = upload_image(file.file, "user-images", menu_item_id, file.filename or "image.jpg", file.content_type)
+    s3_url = upload_image(buf, "user-images", menu_item_id, file.filename or "image.jpg", file.content_type)
 
     # save the record in the database
     db_image = MenuItemImage(

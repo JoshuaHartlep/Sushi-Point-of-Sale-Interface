@@ -15,6 +15,7 @@ class MenuItemBase(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
+    ayce_surcharge: Optional[float] = Field(default=0.0, ge=0.0)
     category_id: Optional[int] = None
     is_available: bool = True
     meal_period: MealPeriodEnum = MealPeriodEnum.BOTH
@@ -32,6 +33,7 @@ class MenuItemUpdate(MenuItemBase):
     name: Optional[str] = None
     description: Optional[str] = None
     price: Optional[float] = None
+    ayce_surcharge: Optional[float] = Field(default=None, ge=0.0)
     category_id: Optional[int] = None
     is_available: Optional[bool] = None
     meal_period: Optional[MealPeriodEnum] = None
