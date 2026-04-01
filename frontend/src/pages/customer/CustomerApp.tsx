@@ -48,7 +48,7 @@ function CustomerInterface() {
     );
   }
 
-  if (tableData.status === 'occupied') {
+  if (tableData.status === 'OCCUPIED') {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 text-center gap-4">
         <UtensilsCrossed className="text-on-surface-variant opacity-30" size={48} />

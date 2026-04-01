@@ -226,7 +226,7 @@ def update_table_status(
         
     try:
         # Convert string to TableStatus enum
-        table_status = TableStatus(status.lower())
+        table_status = TableStatus(status.upper())
         table.status = table_status
         db.commit()
         db.refresh(table)
@@ -360,7 +360,7 @@ def get_orders(
         # Apply filters if provided
         if status:
             try:
-                order_status = OrderStatus(status.lower())
+                order_status = OrderStatus(status.upper())
                 query = query.filter(Order.status == order_status)
             except ValueError:
                 raise HTTPException(
@@ -428,8 +428,8 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db), tenant_id: i
             notes=order.notes,
             ayce_order=order.ayce_order,
             ayce_price=get_current_ayce_price(db, tenant_id) if order.ayce_order else Decimal('0.00'),
-            leftover_charge_amount=order.leftover_charge_amount or Decimal('0.00'),
-            leftover_charge_note=order.leftover_charge_note,
+            leftover_charge_amount=getattr(order, 'leftover_charge_amount', None) or Decimal('0.00'),
+            leftover_charge_note=getattr(order, 'leftover_charge_note', None),
             total_amount=Decimal('0.00')  # Will be calculated after items are added
         )
         db.add(db_order)
@@ -530,7 +530,7 @@ def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db
         if order.status:
             try:
                 # Convert string to OrderStatus enum
-                order_status = OrderStatus(order.status.lower())
+                order_status = OrderStatus(order.status.upper())
                 db_order.status = order_status
             except ValueError:
                 raise HTTPException(
@@ -649,7 +649,7 @@ def bulk_update_order_status(
         
     try:
         # Convert the status string to an OrderStatus enum
-        order_status = OrderStatus(status.lower())
+        order_status = OrderStatus(status.upper())
         
         for order in orders:
             order.status = order_status  # Store the enum directly

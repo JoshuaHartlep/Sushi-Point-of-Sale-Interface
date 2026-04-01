@@ -6,13 +6,13 @@ const inputClass = "w-full px-3 py-2 bg-surface-container border border-outline-
 const labelClass = "block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-1.5";
 
 const STATUS_META: Record<TableStatus, { label: string; color: string; icon: string }> = {
-  available: { label: 'Available', color: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800', icon: 'check_circle' },
-  occupied:  { label: 'Occupied',  color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',       icon: 'person' },
-  reserved:  { label: 'Reserved',  color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', icon: 'event' },
-  cleaning:  { label: 'Cleaning',  color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',   icon: 'cleaning_services' },
+  AVAILABLE: { label: 'Available', color: 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800', icon: 'check_circle' },
+  OCCUPIED:  { label: 'Occupied',  color: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800',       icon: 'person' },
+  RESERVED:  { label: 'Reserved',  color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800', icon: 'event' },
+  CLEANING:  { label: 'Cleaning',  color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',   icon: 'cleaning_services' },
 };
 
-const ALL_STATUSES: TableStatus[] = ['available', 'occupied', 'reserved', 'cleaning'];
+const ALL_STATUSES: TableStatus[] = ['AVAILABLE', 'OCCUPIED', 'RESERVED', 'CLEANING'];
 
 export default function Tables() {
   const queryClient = useQueryClient();

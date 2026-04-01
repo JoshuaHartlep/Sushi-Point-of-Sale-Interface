@@ -77,12 +77,12 @@ class OrderBase(BaseModel):
 
 class OrderStatus(str, Enum):
     """Order status enum."""
-    PENDING = "pending"
-    PREPARING = "preparing"
-    READY = "ready"
-    DELIVERED = "delivered"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
+    PENDING = "PENDING"
+    PREPARING = "PREPARING"
+    READY = "READY"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
 
 class OrderCreate(BaseModel):
     """Schema for creating an order."""

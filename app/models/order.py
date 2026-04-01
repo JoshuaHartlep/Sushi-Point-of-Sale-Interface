@@ -32,19 +32,19 @@ order_item_modifiers = Table(
 
 # different stages an order can be in
 class OrderStatus(str, Enum):
-    PENDING = "pending"  # just placed, waiting to be made
-    PREPARING = "preparing"  # kitchen is making it
-    READY = "ready"  # done cooking, waiting to be delivered
-    DELIVERED = "delivered"  # given to the customer
-    CANCELLED = "cancelled"  # customer cancelled it
-    COMPLETED = "completed"  # paid for and done
+    PENDING = "PENDING"  # just placed, waiting to be made
+    PREPARING = "PREPARING"  # kitchen is making it
+    READY = "READY"  # done cooking, waiting to be delivered
+    DELIVERED = "DELIVERED"  # given to the customer
+    CANCELLED = "CANCELLED"  # customer cancelled it
+    COMPLETED = "COMPLETED"  # paid for and done
 
 # different states a table can be in
 class TableStatus(str, Enum):
-    AVAILABLE = "available"  # ready for customers
-    OCCUPIED = "occupied"  # has customers
-    RESERVED = "reserved"  # booked for later
-    CLEANING = "cleaning"  # being cleaned
+    AVAILABLE = "AVAILABLE"  # ready for customers
+    OCCUPIED = "OCCUPIED"  # has customers
+    RESERVED = "RESERVED"  # booked for later
+    CLEANING = "CLEANING"  # being cleaned
 
 # a table where customers can sit
 class Table(Base):
