@@ -28,20 +28,20 @@ const ConfirmationModal = ({
 
   return (
     <AppModal
-      title={<span className="text-xl font-semibold text-gray-900 dark:text-white">{title}</span>}
+      title={<span className="text-xl font-semibold text-on-surface">{title}</span>}
       onClose={onClose}
       footer={(
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
+            className="px-4 py-2 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
           >
             {cancelText}
           </button>
           <button
             onClick={onConfirm}
             disabled={isPending}
-            className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-error text-on-error rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
           >
             {isPending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -52,10 +52,10 @@ const ConfirmationModal = ({
         </div>
       )}
     >
-      <p className="text-gray-600 dark:text-gray-400">{message}</p>
+      <p className="text-on-surface-variant">{message}</p>
 
       {error && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-md flex items-center">
+        <div className="p-3 bg-error/10 text-error rounded-md flex items-center">
           <AlertCircle className="w-5 h-5 mr-2" />
           {error}
         </div>

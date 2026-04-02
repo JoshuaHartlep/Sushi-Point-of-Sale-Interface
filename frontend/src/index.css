@@ -3,20 +3,65 @@
 @tailwind utilities;
 
 @layer base {
+  /* ── Design-token CSS variables ───────────────────────────────────────── */
+  /* Space-separated RGB channels so Tailwind opacity modifiers work:       */
+  /* e.g. text-on-surface/70  →  color: rgb(var(--color-on-surface) / 0.7) */
+
+  :root {
+    /* surfaces */
+    --color-background:                252 249 244;
+    --color-on-background:             28 28 25;
+    --color-surface:                   252 249 244;
+    --color-on-surface:                28 28 25;
+    --color-surface-variant:           229 226 221;
+    --color-on-surface-variant:        89 65 61;
+    --color-surface-container-lowest:  255 255 255;
+    --color-surface-container-low:     246 243 238;
+    --color-surface-container:         240 237 233;
+    --color-surface-container-high:    235 232 227;
+    --color-surface-container-highest: 229 226 221;
+    --color-surface-dim:               220 218 213;
+    --color-surface-bright:            252 249 244;
+    --color-inverse-surface:           49 48 45;
+    --color-inverse-on-surface:        243 240 235;
+    /* borders */
+    --color-outline:                   141 113 108;
+    --color-outline-variant:           225 191 185;
+  }
+
+  .dark {
+    /* surfaces — layered dark palette (sumi-900 → sumi-700) */
+    --color-background:                20 20 28;       /* sumi-900 */
+    --color-on-background:             232 229 224;
+    --color-surface:                   20 20 28;       /* sumi-900 */
+    --color-on-surface:                232 229 224;    /* warm near-white */
+    --color-surface-variant:           42 42 53;       /* sumi-700 */
+    --color-on-surface-variant:        180 162 158;    /* muted warm */
+    --color-surface-container-lowest:  30 30 40;       /* sumi-800 */
+    --color-surface-container-low:     33 33 44;
+    --color-surface-container:         36 36 47;
+    --color-surface-container-high:    42 42 53;       /* sumi-700 */
+    --color-surface-container-highest: 48 48 60;
+    --color-surface-dim:               18 18 26;
+    --color-surface-bright:            42 42 53;
+    --color-inverse-surface:           230 226 220;
+    --color-inverse-on-surface:        42 42 53;
+    /* borders — lighter values so /10-/30 opacity still produces visible borders */
+    --color-outline:                   120 112 118;
+    --color-outline-variant:           160 155 175;
+  }
+
   html {
     font-family: 'Noto Sans JP', 'Manrope', ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Smooth light ↔ dark transition */
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   body {
-    background-color: #fcf9f4;
-    color: #1c1c19;
-  }
-
-  .dark body {
-    background-color: #14141c;
-    color: #f3f0eb;
+    background-color: rgb(var(--color-background));
+    color: rgb(var(--color-on-surface));
   }
 }
 
@@ -44,17 +89,24 @@
     @apply bg-gradient-to-br from-primary to-primary-container text-white px-5 py-2.5 rounded font-label font-medium hover:opacity-90 transition-all active:scale-95 flex items-center gap-2 text-sm;
   }
 
-  /* Secondary/ghost button */
+  /* Secondary/ghost button — surface tokens now adapt via CSS variables */
   .btn-secondary {
     @apply bg-surface-container-high text-on-surface px-5 py-2.5 rounded font-label font-medium hover:bg-surface-variant transition-all text-sm;
+  }
+
+  /* Smooth color transitions on key surfaces for dark mode toggle */
+  .btn-primary, .btn-secondary {
+    transition-property: opacity, transform, background-color, color, border-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease;
   }
 }
 
 @layer utilities {
-  /* Custom scrollbar */
+  /* Custom scrollbar — uses outline-variant token so it adapts to dark mode */
   ::-webkit-scrollbar       { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #e1bfb9; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--color-outline-variant)); border-radius: 10px; }
 
   /* Hide scrollbar for horizontal category scroll */
   .hide-scrollbar::-webkit-scrollbar { display: none; }
