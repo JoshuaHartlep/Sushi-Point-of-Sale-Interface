@@ -17,16 +17,17 @@ export default function CustomerMenuTab() {
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [modalItem, setModalItem] = useState<MenuItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
 
   // ── AI search state ───────────────────────────────────────────────────────
   const [aiSearchOpen, setAiSearchOpen] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
-  const [debouncedAiQuery, setDebouncedAiQuery] = useState('');
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedAiQuery(aiQuery.trim()), 400);
-    return () => clearTimeout(t);
-  }, [aiQuery]);
+  const [submittedAiQuery, setSubmittedAiQuery] = useState('');
 
   // Map of catId -> section DOM element, populated by ref callbacks during render.
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
@@ -47,9 +48,9 @@ export default function CustomerMenuTab() {
   });
 
   const { data: aiResults, isFetching: aiFetching } = useQuery({
-    queryKey: ['customer-ai-search', debouncedAiQuery, mealPeriod],
-    queryFn: () => menuApi.search({ q: debouncedAiQuery, meal_period: mealPeriod, top_k: 30 }),
-    enabled: aiSearchOpen && debouncedAiQuery.length > 0,
+    queryKey: ['customer-ai-search', submittedAiQuery, mealPeriod],
+    queryFn: () => menuApi.search({ q: submittedAiQuery, meal_period: mealPeriod, top_k: 30 }),
+    enabled: aiSearchOpen && submittedAiQuery.length > 0,
   });
 
   // Filter to items relevant to the current meal period.
@@ -58,8 +59,8 @@ export default function CustomerMenuTab() {
     return true;
   });
 
-  const isSearching = searchTerm.trim().length > 0;
-  const searchLower = searchTerm.toLowerCase().trim();
+  const isSearching = debouncedSearchTerm.length > 0;
+  const searchLower = debouncedSearchTerm.toLowerCase();
 
   // Keyword filter (client-side — fast, no API call)
   const visibleItems = isSearching
@@ -290,7 +291,7 @@ export default function CustomerMenuTab() {
 
             {/* Ask Shari button */}
             <button
-              onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); setModalItem(null); }}
+              onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); setSubmittedAiQuery(''); setModalItem(null); }}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex-shrink-0 ${
                 aiSearchOpen
                   ? 'bg-primary text-on-primary border-primary'
@@ -311,7 +312,7 @@ export default function CustomerMenuTab() {
                   <p className="text-xs font-bold text-on-surface leading-tight">Ask Shari</p>
                   <p className="text-[10px] text-on-surface-variant/60 leading-tight">Smart search — describe exactly what you're craving</p>
                 </div>
-                <button onClick={() => setAiSearchOpen(false)} className="text-on-surface-variant/40">
+                <button onClick={() => { setAiSearchOpen(false); setAiQuery(''); setSubmittedAiQuery(''); }} className="text-on-surface-variant/40">
                   <span className="material-symbols-outlined text-[16px]">close</span>
                 </button>
               </div>
@@ -322,15 +323,24 @@ export default function CustomerMenuTab() {
                   type="text"
                   value={aiQuery}
                   onChange={e => setAiQuery(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && aiQuery.trim()) setSubmittedAiQuery(aiQuery.trim()); }}
                   placeholder="e.g. something spicy but not raw, light vegetarian option…"
-                  className="w-full px-3 py-2 bg-surface-container border border-outline-variant/20 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/40 pr-8"
+                  className="w-full px-3 py-2 bg-surface-container border border-outline-variant/20 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/40 pr-9"
                 />
-                {aiFetching && (
-                  <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-primary text-[16px] animate-spin" style={{ animationDuration: '1s' }}>progress_activity</span>
-                )}
+                <button
+                  onClick={() => { if (aiQuery.trim()) setSubmittedAiQuery(aiQuery.trim()); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-primary disabled:opacity-30 transition-opacity"
+                  disabled={!aiQuery.trim()}
+                  aria-label="Search"
+                >
+                  {aiFetching
+                    ? <span className="material-symbols-outlined text-[18px] animate-spin" style={{ animationDuration: '1s' }}>progress_activity</span>
+                    : <span className="material-symbols-outlined text-[18px]">send</span>
+                  }
+                </button>
               </div>
 
-              {aiResults && debouncedAiQuery && (
+              {aiResults && submittedAiQuery && (
                 <div className="space-y-0.5">
                   <p className="text-[10px] text-on-surface-variant/40 px-1">
                     {aiResults.results.length} match{aiResults.results.length !== 1 ? 'es' : ''} · {aiResults.scoring_method === 'hybrid' ? 'AI + keyword' : 'Keyword'}

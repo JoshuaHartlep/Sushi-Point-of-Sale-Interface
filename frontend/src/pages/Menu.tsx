@@ -93,21 +93,16 @@ export default function Menu() {
   // ── AI search state ───────────────────────────────────────────────────────
   const [aiSearchOpen, setAiSearchOpen] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
-  const [debouncedAiQuery, setDebouncedAiQuery] = useState('');
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedAiQuery(aiQuery.trim()), 400);
-    return () => clearTimeout(t);
-  }, [aiQuery]);
+  const [submittedAiQuery, setSubmittedAiQuery] = useState('');
 
   const { data: aiResults, isFetching: aiFetching } = useQuery({
-    queryKey: ['ai-search-manager', debouncedAiQuery, selectedCategory],
+    queryKey: ['ai-search-manager', submittedAiQuery, selectedCategory],
     queryFn: () => menuApi.search({
-      q: debouncedAiQuery,
+      q: submittedAiQuery,
       category_id: selectedCategory || undefined,
       top_k: 20,
     }),
-    enabled: aiSearchOpen && debouncedAiQuery.length > 0,
+    enabled: aiSearchOpen && submittedAiQuery.length > 0,
   });
 
   const deleteImageMutation = useMutation({
@@ -381,7 +376,7 @@ export default function Menu() {
 
           {/* Ask Shari AI search toggle */}
           <button
-            onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); }}
+            onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); setSubmittedAiQuery(''); }}
             title="Ask Shari — semantic search"
             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium border transition-all whitespace-nowrap ${
               aiSearchOpen
@@ -407,7 +402,7 @@ export default function Menu() {
                 <p className="text-sm font-semibold text-on-surface">Ask Shari</p>
                 <p className="text-xs text-on-surface-variant/70">Semantic search — describe what you're looking for in plain language</p>
               </div>
-              <button onClick={() => setAiSearchOpen(false)} className="ml-auto text-on-surface-variant/40 hover:text-on-surface-variant transition-colors">
+              <button onClick={() => { setAiSearchOpen(false); setAiQuery(''); setSubmittedAiQuery(''); }} className="ml-auto text-on-surface-variant/40 hover:text-on-surface-variant transition-colors">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
@@ -418,15 +413,24 @@ export default function Menu() {
                 type="text"
                 value={aiQuery}
                 onChange={e => setAiQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && aiQuery.trim()) setSubmittedAiQuery(aiQuery.trim()); }}
                 placeholder="e.g. spicy tuna no rice, cheap vegetarian rolls, mild cooked option…"
                 className="w-full px-4 py-2.5 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary pr-10"
               />
-              {aiFetching && (
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary text-[18px] animate-spin" style={{ animationDuration: '1s' }}>progress_activity</span>
-              )}
+              <button
+                onClick={() => { if (aiQuery.trim()) setSubmittedAiQuery(aiQuery.trim()); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-primary disabled:opacity-30 transition-opacity"
+                disabled={!aiQuery.trim()}
+                aria-label="Search"
+              >
+                {aiFetching
+                  ? <span className="material-symbols-outlined text-[18px] animate-spin" style={{ animationDuration: '1s' }}>progress_activity</span>
+                  : <span className="material-symbols-outlined text-[18px]">send</span>
+                }
+              </button>
             </div>
 
-            {aiResults && debouncedAiQuery && (
+            {aiResults && submittedAiQuery && (
               <div className="space-y-1">
                 <p className="text-xs text-on-surface-variant/50 px-1">
                   {aiResults.results.length} result{aiResults.results.length !== 1 ? 's' : ''} · {aiResults.scoring_method === 'hybrid' ? 'Semantic + keyword' : 'Keyword only'}
