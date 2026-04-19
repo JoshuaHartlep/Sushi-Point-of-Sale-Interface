@@ -290,7 +290,7 @@ export default function CustomerMenuTab() {
 
             {/* Ask Shari button */}
             <button
-              onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); setAiItem(null); }}
+              onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); setModalItem(null); }}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex-shrink-0 ${
                 aiSearchOpen
                   ? 'bg-primary text-on-primary border-primary'
