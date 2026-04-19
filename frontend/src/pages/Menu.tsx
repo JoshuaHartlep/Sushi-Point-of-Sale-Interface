@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl, getMenuImageStyle, getUploadErrorMessage } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
@@ -13,6 +13,7 @@ export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -47,6 +48,17 @@ export default function Menu() {
   const queryClient = useQueryClient();
   const { isLunch } = useMealPeriod();
 
+  // Debounce the search term so the API is only called 300ms after typing stops.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Reset to page 1 whenever the debounced search value actually changes.
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [debouncedSearch]);
+
   const getDefaultNewItemData = (categoryId: number | null) => ({
     name: '',
     description: '',
@@ -67,13 +79,13 @@ export default function Menu() {
     queryFn: categoriesApi.getAll,
   });
 
-  const { data: menuItems, isLoading: itemsLoading, error: itemsError } = useQuery<MenuItem[]>({
-    queryKey: ['menuItems', selectedCategory, currentPage, searchTerm],
+  const { data: menuItems, isLoading: itemsLoading, isFetching: itemsFetching, error: itemsError } = useQuery<MenuItem[]>({
+    queryKey: ['menuItems', selectedCategory, currentPage, debouncedSearch],
     queryFn: () => menuApi.getItems({
       skip: currentPage * ITEMS_PER_PAGE,
       limit: ITEMS_PER_PAGE,
       category_id: selectedCategory || undefined,
-      search: searchTerm || undefined,
+      search: debouncedSearch || undefined,
     }),
   });
 
@@ -338,11 +350,14 @@ export default function Menu() {
           <input
             type="search"
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search items…"
             className="w-full pl-9 pr-4 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
+        {(searchTerm !== debouncedSearch || (debouncedSearch && itemsFetching)) && (
+          <p className="mt-1.5 text-xs text-on-surface-variant/50 pl-1">Searching…</p>
+        )}
       </section>
 
       {/* ── Category filter pills ── */}
