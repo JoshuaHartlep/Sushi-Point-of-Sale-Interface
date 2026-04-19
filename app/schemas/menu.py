@@ -189,3 +189,38 @@ class ImageReportResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ── Semantic search schemas ───────────────────────────────────────────────────
+
+class MenuSearchItem(MenuItemBase):
+    """
+    A single result from the hybrid search endpoint.
+
+    Inherits all menu item fields from MenuItemBase.
+    The score fields are only populated when `debug=true` is passed to the
+    search endpoint (except hybrid_score which is always present).
+    """
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    # Scores — present on every result; semantic/keyword only when debug=True
+    hybrid_score: float = 0.0
+    semantic_score: Optional[float] = None
+    keyword_score: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MenuSearchResponse(BaseModel):
+    """Response envelope from GET /menu-items/search."""
+    results: List[MenuSearchItem]
+    # Total items that matched before top_k slicing (useful for UI feedback)
+    total_candidates: int
+    # "hybrid" when semantic path succeeded; "keyword_only" on fallback
+    scoring_method: Literal["hybrid", "keyword_only"]
+    # The model/version used (None when keyword-only)
+    model: Optional[str] = None
+    version: Optional[str] = None

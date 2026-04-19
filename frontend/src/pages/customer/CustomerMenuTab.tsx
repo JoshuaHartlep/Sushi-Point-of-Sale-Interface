@@ -18,6 +18,16 @@ export default function CustomerMenuTab() {
   const [modalItem, setModalItem] = useState<MenuItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // ── AI search state ───────────────────────────────────────────────────────
+  const [aiSearchOpen, setAiSearchOpen] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [debouncedAiQuery, setDebouncedAiQuery] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedAiQuery(aiQuery.trim()), 400);
+    return () => clearTimeout(t);
+  }, [aiQuery]);
+
   // Map of catId -> section DOM element, populated by ref callbacks during render.
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
   // Container ref for the scrollable nav pills (used to auto-scroll the active pill into view).
@@ -36,6 +46,12 @@ export default function CustomerMenuTab() {
     queryFn: () => menuApi.getItems({ limit: 500 }),
   });
 
+  const { data: aiResults, isFetching: aiFetching } = useQuery({
+    queryKey: ['customer-ai-search', debouncedAiQuery, mealPeriod],
+    queryFn: () => menuApi.search({ q: debouncedAiQuery, meal_period: mealPeriod, top_k: 30 }),
+    enabled: aiSearchOpen && debouncedAiQuery.length > 0,
+  });
+
   // Filter to items relevant to the current meal period.
   const periodItems = allItems.filter(item => {
     if (item.meal_period !== 'BOTH' && item.meal_period !== mealPeriod) return false;
@@ -45,7 +61,7 @@ export default function CustomerMenuTab() {
   const isSearching = searchTerm.trim().length > 0;
   const searchLower = searchTerm.toLowerCase().trim();
 
-  // When a search term is active, pre-filter period items by name/description.
+  // Keyword filter (client-side — fast, no API call)
   const visibleItems = isSearching
     ? periodItems.filter(item =>
         item.name.toLowerCase().includes(searchLower) ||
@@ -259,17 +275,103 @@ export default function CustomerMenuTab() {
         {/* Sticky category nav */}
         <nav className="sticky top-[57px] z-30 bg-background/95 backdrop-blur-md border-b border-outline-variant/10 px-6 pt-3 pb-2 space-y-2">
 
-          {/* Search bar */}
-          <div className="relative">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant pointer-events-none">search</span>
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Search menu…"
-              className="w-full pl-8 pr-4 py-1.5 bg-surface-container border border-outline-variant/20 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/50"
-            />
+          {/* Search bar row */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant pointer-events-none">search</span>
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search menu…"
+                className="w-full pl-8 pr-4 py-1.5 bg-surface-container border border-outline-variant/20 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/50"
+              />
+            </div>
+
+            {/* Ask Shari button */}
+            <button
+              onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); setAiItem(null); }}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap flex-shrink-0 ${
+                aiSearchOpen
+                  ? 'bg-primary text-on-primary border-primary'
+                  : 'bg-surface-container border-outline-variant/20 text-on-surface-variant'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+              Ask Shari
+            </button>
           </div>
+
+          {/* AI search panel — slides in below the nav */}
+          {aiSearchOpen && (
+            <div className="bg-surface-container-lowest border border-primary/20 rounded-2xl p-3 space-y-2.5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-on-surface leading-tight">Ask Shari</p>
+                  <p className="text-[10px] text-on-surface-variant/60 leading-tight">Smart search — describe exactly what you're craving</p>
+                </div>
+                <button onClick={() => setAiSearchOpen(false)} className="text-on-surface-variant/40">
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              </div>
+
+              <div className="relative">
+                <input
+                  autoFocus
+                  type="text"
+                  value={aiQuery}
+                  onChange={e => setAiQuery(e.target.value)}
+                  placeholder="e.g. something spicy but not raw, light vegetarian option…"
+                  className="w-full px-3 py-2 bg-surface-container border border-outline-variant/20 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/40 pr-8"
+                />
+                {aiFetching && (
+                  <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-primary text-[16px] animate-spin" style={{ animationDuration: '1s' }}>progress_activity</span>
+                )}
+              </div>
+
+              {aiResults && debouncedAiQuery && (
+                <div className="space-y-0.5">
+                  <p className="text-[10px] text-on-surface-variant/40 px-1">
+                    {aiResults.results.length} match{aiResults.results.length !== 1 ? 'es' : ''} · {aiResults.scoring_method === 'hybrid' ? 'AI + keyword' : 'Keyword'}
+                  </p>
+                  {aiResults.results.length === 0 ? (
+                    <p className="text-sm text-on-surface-variant/50 py-2 px-1">No matches — try describing it differently</p>
+                  ) : (
+                    <div className="max-h-52 overflow-y-auto space-y-0.5">
+                      {aiResults.results.map(item => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setAiSearchOpen(false);
+                            setModalItem(item as MenuItem);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container active:scale-[0.98] transition-all text-left"
+                        >
+                          {item.image_url ? (
+                            <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                              <span className="text-lg opacity-25">🍣</span>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
+                            {item.description && (
+                              <p className="text-xs text-on-surface-variant/55 truncate">{item.description}</p>
+                            )}
+                          </div>
+                          <p className="text-sm font-bold text-primary flex-shrink-0">
+                            {isAyce ? (Number(item.ayce_surcharge ?? 0) > 0 ? `+$${Number(item.ayce_surcharge).toFixed(2)}` : 'Incl.') : `$${Number(item.price).toFixed(2)}`}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div ref={navScrollRef} className="flex gap-6 overflow-x-auto hide-scrollbar">
 

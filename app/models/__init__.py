@@ -10,6 +10,7 @@ from .menu import MenuItem, Category, Modifier, MealPeriodEnum, MenuItemImage, I
 from .order import Order, OrderItem, OrderStatus, Table, TableStatus, Discount
 from .user import User
 from .settings import Settings
+from .embeddings import MenuItemEmbedding
 
 __all__ = [
     "Tenant",
@@ -28,4 +29,5 @@ __all__ = [
     "MenuItemImage",
     "ImageReport",
     "ImageStatusEnum",
+    "MenuItemEmbedding",
 ]

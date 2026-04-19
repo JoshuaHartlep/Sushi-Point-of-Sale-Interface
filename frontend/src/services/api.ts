@@ -157,6 +157,38 @@ export interface Tag {
   tag_group: string | null;
 }
 
+// ── Semantic / hybrid search ──────────────────────────────────────────────────
+
+/** A single result from GET /menu/menu-items/search. */
+export interface MenuSearchItem extends MenuItem {
+  /** Combined semantic + keyword score (always present). */
+  hybrid_score: number;
+  /** Raw cosine similarity score — only populated when debug=true. */
+  semantic_score?: number | null;
+  /** Raw keyword score — only populated when debug=true. */
+  keyword_score?: number | null;
+}
+
+export interface MenuSearchResponse {
+  results: MenuSearchItem[];
+  /** Total candidates before top_k slicing. */
+  total_candidates: number;
+  /** "hybrid" when vector search succeeded; "keyword_only" on fallback. */
+  scoring_method: 'hybrid' | 'keyword_only';
+  model: string | null;
+  version: string | null;
+}
+
+export interface MenuSearchParams {
+  q: string;
+  category_id?: number;
+  meal_period?: string;
+  min_price?: number;
+  max_price?: number;
+  top_k?: number;
+  debug?: boolean;
+}
+
 // API origin (no trailing slash) — used for constructing image URLs in components.
 // Set VITE_API_URL in .env.local (localhost) or run with --mode network (.env.network).
 export const API_ORIGIN = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -282,6 +314,9 @@ export const ordersApi = {
 export const menuApi = {
   getItems: (params?: { skip?: number; limit?: number; category_id?: number; search?: string }): Promise<MenuItem[]> =>
     api.get('/menu/menu-items/', { params }).then(res => res.data),
+  /** Hybrid semantic + keyword search. Falls back to keyword-only when embeddings unavailable. */
+  search: (params: MenuSearchParams): Promise<MenuSearchResponse> =>
+    api.get('/menu/menu-items/search', { params }).then(res => res.data),
   getItem: (id: number): Promise<MenuItem> => api.get(`/menu/menu-items/${id}/`).then(res => res.data),
   createItem: (data: {
     name: string;

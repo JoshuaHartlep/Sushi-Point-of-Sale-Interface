@@ -90,6 +90,26 @@ export default function Menu() {
     }),
   });
 
+  // ── AI search state ───────────────────────────────────────────────────────
+  const [aiSearchOpen, setAiSearchOpen] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [debouncedAiQuery, setDebouncedAiQuery] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedAiQuery(aiQuery.trim()), 400);
+    return () => clearTimeout(t);
+  }, [aiQuery]);
+
+  const { data: aiResults, isFetching: aiFetching } = useQuery({
+    queryKey: ['ai-search-manager', debouncedAiQuery, selectedCategory],
+    queryFn: () => menuApi.search({
+      q: debouncedAiQuery,
+      category_id: selectedCategory || undefined,
+      top_k: 20,
+    }),
+    enabled: aiSearchOpen && debouncedAiQuery.length > 0,
+  });
+
   const deleteImageMutation = useMutation({
     mutationFn: (id: number) => menuApi.deleteImage(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menuItems'] }),
@@ -345,19 +365,106 @@ export default function Menu() {
       </section>
 
       {/* ── Search ── */}
-      <section>
-        <div className="relative max-w-sm">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant pointer-events-none">search</span>
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search items…"
-            className="w-full pl-9 pr-4 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-          />
+      <section className="space-y-3">
+        {/* Row: keyword input + Ask Shari button */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 max-w-sm">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant pointer-events-none">search</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search items…"
+              className="w-full pl-9 pr-4 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          {/* Ask Shari AI search toggle */}
+          <button
+            onClick={() => { setAiSearchOpen(o => !o); setAiQuery(''); }}
+            title="Ask Shari — semantic search"
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium border transition-all whitespace-nowrap ${
+              aiSearchOpen
+                ? 'bg-primary text-on-primary border-primary shadow-md'
+                : 'bg-surface-container border-outline-variant/30 dark:border-sumi-600 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface dark:bg-sumi-700 dark:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+            Ask Shari
+          </button>
         </div>
+
         {(searchTerm !== debouncedSearch || (debouncedSearch && itemsFetching)) && (
-          <p className="mt-1.5 text-xs text-on-surface-variant/50 pl-1">Searching…</p>
+          <p className="text-xs text-on-surface-variant/50 pl-1">Searching…</p>
+        )}
+
+        {/* AI search panel */}
+        {aiSearchOpen && (
+          <div className="border border-primary/30 rounded-2xl bg-surface-container-lowest dark:bg-sumi-800 p-4 space-y-3 shadow-sm">
+            <div className="flex items-start gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">auto_awesome</span>
+              <div>
+                <p className="text-sm font-semibold text-on-surface">Ask Shari</p>
+                <p className="text-xs text-on-surface-variant/70">Semantic search — describe what you're looking for in plain language</p>
+              </div>
+              <button onClick={() => setAiSearchOpen(false)} className="ml-auto text-on-surface-variant/40 hover:text-on-surface-variant transition-colors">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                autoFocus
+                type="text"
+                value={aiQuery}
+                onChange={e => setAiQuery(e.target.value)}
+                placeholder="e.g. spicy tuna no rice, cheap vegetarian rolls, mild cooked option…"
+                className="w-full px-4 py-2.5 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary pr-10"
+              />
+              {aiFetching && (
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary text-[18px] animate-spin" style={{ animationDuration: '1s' }}>progress_activity</span>
+              )}
+            </div>
+
+            {aiResults && debouncedAiQuery && (
+              <div className="space-y-1">
+                <p className="text-xs text-on-surface-variant/50 px-1">
+                  {aiResults.results.length} result{aiResults.results.length !== 1 ? 's' : ''} · {aiResults.scoring_method === 'hybrid' ? 'Semantic + keyword' : 'Keyword only'}
+                </p>
+                {aiResults.results.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant/60 px-1 py-2">No matches found — try rephrasing</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto">
+                    {aiResults.results.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setAiSearchOpen(false);
+                          setSearchTerm(item.name);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-surface-container text-left transition-colors"
+                      >
+                        {item.image_url ? (
+                          <img src={item.image_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                            <span className="text-base opacity-30">🍣</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
+                          {item.description && (
+                            <p className="text-xs text-on-surface-variant/60 truncate">{item.description}</p>
+                          )}
+                        </div>
+                        <p className="text-sm font-semibold text-primary flex-shrink-0">${Number(item.price).toFixed(2)}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </section>
 

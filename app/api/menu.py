@@ -5,7 +5,7 @@ This module provides endpoints for managing menu items and categories.
 """
 
 # all the stuff we need to make the API work
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -16,6 +16,8 @@ from app.schemas.menu import (
     MenuItemCreate,
     MenuItemUpdate,
     MenuItemResponse,
+    MenuSearchItem,
+    MenuSearchResponse,
     CategoryCreate,
     CategoryResponse,
     ModifierCreate,
@@ -101,6 +103,98 @@ def get_menu_items(
             return query.offset(skip).limit(limit).all()
         raise
 
+# ── Hybrid semantic search ────────────────────────────────────────────────────
+# NOTE: this route MUST be declared before /menu-items/{item_id} so FastAPI
+# does not try to match the literal string "search" as an integer item_id.
+
+@router.get("/menu-items/search", response_model=MenuSearchResponse)
+def search_menu_items(
+    q: str = Query(..., min_length=1, description="Search query"),
+    category_id: Optional[int] = None,
+    meal_period: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    top_k: int = Query(20, ge=1, le=100, description="Maximum results to return"),
+    debug: bool = Query(False, description="Include per-item score breakdown"),
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
+    """
+    Hybrid semantic + keyword menu search.
+
+    Combines a vector cosine-similarity score (OpenAI embeddings) with a
+    lightweight keyword score over name / description / tags.  Falls back to
+    keyword-only automatically when no embeddings are available or the
+    embedding service is down.
+
+    Pass `debug=true` to receive semantic_score and keyword_score per result.
+    """
+    from app.services.embedding_service import hybrid_search
+
+    result = hybrid_search(
+        db,
+        tenant_id,
+        q,
+        category_id=category_id,
+        meal_period=meal_period,
+        min_price=min_price,
+        max_price=max_price,
+        top_k=top_k,
+        debug=debug,
+    )
+
+    # Build response — map service dicts to schema objects
+    search_items = []
+    for entry in result["results"]:
+        item = entry["item"]
+        # Build a dict of item attributes and merge score fields
+        item_data = {
+            "id": item.id,
+            "name": item.name,
+            "description": item.description,
+            "price": float(item.price),
+            "ayce_surcharge": float(item.ayce_surcharge) if item.ayce_surcharge is not None else 0.0,
+            "category_id": item.category_id,
+            "is_available": item.is_available,
+            "meal_period": item.meal_period,
+            "image_url": item.image_url,
+            "image_position_x": item.image_position_x,
+            "image_position_y": item.image_position_y,
+            "image_zoom": item.image_zoom,
+            "created_at": item.created_at,
+            "updated_at": item.updated_at,
+            "hybrid_score": entry["hybrid_score"],
+            "semantic_score": entry["semantic_score"],
+            "keyword_score": entry["keyword_score"],
+        }
+        search_items.append(MenuSearchItem(**item_data))
+
+    return MenuSearchResponse(
+        results=search_items,
+        total_candidates=result["total_candidates"],
+        scoring_method=result["scoring_method"],
+        model=result["model"],
+        version=result["version"],
+    )
+
+
+# ── Background re-embed helper ────────────────────────────────────────────────
+
+def _trigger_reembed(tenant_id: int, item_ids: list[int], db: Session) -> None:
+    """
+    Background task: re-embed specific items after a CRUD mutation.
+    Runs after the response is sent — failures are logged but do not affect
+    the already-committed data change.
+    """
+    try:
+        from app.services.embedding_service import upsert_menu_item_embeddings
+        upsert_menu_item_embeddings(db, tenant_id, item_ids=item_ids)
+    except Exception as exc:
+        logger.warning("Background re-embed failed for items %s: %s", item_ids, exc)
+
+
+# ── /menu-items/{item_id} ─────────────────────────────────────────────────────
+
 # get one specific menu item by its ID
 @router.get("/menu-items/{item_id}", response_model=MenuItemResponse)
 def get_menu_item(item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
@@ -112,28 +206,43 @@ def get_menu_item(item_id: int, db: Session = Depends(get_db), tenant_id: int = 
 
 # add a new menu item
 @router.post("/menu-items/", response_model=MenuItemResponse)
-def create_menu_item(item: MenuItemCreate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+def create_menu_item(
+    item: MenuItemCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
     # inject tenant_id so the new item is scoped to the current restaurant
     db_item = MenuItem(**item.model_dump(), tenant_id=tenant_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
+    # embed the new item asynchronously so the response is not delayed
+    background_tasks.add_task(_trigger_reembed, tenant_id, [db_item.id], db)
     return db_item
 
 # update some fields of a menu item
 @router.patch("/menu-items/{item_id}", response_model=MenuItemResponse)
-def patch_menu_item(item_id: int, item: MenuItemUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+def patch_menu_item(
+    item_id: int,
+    item: MenuItemUpdate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
     # tenant filter ensures we can't accidentally edit another restaurant's item
     db_item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not db_item:
         raise RecordNotFoundError("MenuItem", item_id)
-        
+
     # only update the fields that were actually provided
     for key, value in item.model_dump(exclude_unset=True).items():
         setattr(db_item, key, value)
-        
+
     db.commit()
     db.refresh(db_item)
+    # re-embed after any content change (hash check inside the service skips no-ops)
+    background_tasks.add_task(_trigger_reembed, tenant_id, [item_id], db)
     return db_item
 
 # upload an image for a menu item and store it in S3
@@ -583,7 +692,13 @@ def get_item_tags(item_id: int, db: Session = Depends(get_db), tenant_id: int = 
 
 # replace the full tag set on a menu item (idempotent PUT)
 @router.put("/menu-items/{item_id}/tags", response_model=List[TagResponse])
-def update_item_tags(item_id: int, data: ItemTagsUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+def update_item_tags(
+    item_id: int,
+    data: ItemTagsUpdate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
     item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
     if not item:
         raise RecordNotFoundError("MenuItem", item_id)
@@ -597,4 +712,6 @@ def update_item_tags(item_id: int, data: ItemTagsUpdate, db: Session = Depends(g
     item.tags = tags
     db.commit()
     db.refresh(item)
+    # Tags appear in the embedding text — re-embed so the index stays current
+    background_tasks.add_task(_trigger_reembed, tenant_id, [item_id], db)
     return item.tags

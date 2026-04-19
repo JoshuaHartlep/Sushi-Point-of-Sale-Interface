@@ -59,6 +59,21 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
     S3_BUCKET_NAME: str = os.getenv("S3_BUCKET_NAME", "sushi-pos-uploads")
+
+    # Semantic search — OpenAI embeddings
+    # Set OPENAI_API_KEY to enable; leave blank to fall back to keyword-only search.
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
+    # Embedding model name.  Changing this requires a new migration + full reindex.
+    EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
+    # Logical version tag — bump to force a full reindex without changing the model.
+    EMBEDDING_VERSION: str = os.getenv("EMBEDDING_VERSION", "v1")
+    # Vector dimensionality — must match the model above (text-embedding-3-small → 1536).
+    EMBEDDING_DIM: int = int(os.getenv("EMBEDDING_DIM", "1536"))
+    # Hybrid ranking weights (must sum to 1.0).
+    SEARCH_SEMANTIC_WEIGHT: float = float(os.getenv("SEARCH_SEMANTIC_WEIGHT", "0.6"))
+    SEARCH_KEYWORD_WEIGHT: float = float(os.getenv("SEARCH_KEYWORD_WEIGHT", "0.4"))
+    # How many semantic candidates to fetch before keyword re-ranking.
+    SEARCH_FETCH_CANDIDATES: int = int(os.getenv("SEARCH_FETCH_CANDIDATES", "100"))
     
     class Config:
         """
