@@ -90,9 +90,22 @@ def get_current_ayce_price(db: Session, tenant_id: int) -> Decimal:
         return Decimal('25.00')
 
 
+def _get_party_size(order: Order) -> int:
+    """Return the party size for an order. Prefers order.party_size, falls back to table, then 1."""
+    if order.party_size is not None and order.party_size > 0:
+        return order.party_size
+    table_size = getattr(order.table, "party_size", None)
+    if table_size is not None and table_size > 0:
+        logger.warning(f"Order {order.id} has no party_size — falling back to table.party_size={table_size}")
+        return table_size
+    logger.warning(f"Order {order.id} has no party_size and table has no party_size — defaulting to 1")
+    return 1
+
+
 def _calculate_order_subtotal(order: Order, db: Session, tenant_id: int) -> Decimal:
     if order.ayce_order:
-        return get_current_ayce_price(db, tenant_id) + _calculate_ayce_surcharge_total(order)
+        party_size = Decimal(str(_get_party_size(order)))
+        return (get_current_ayce_price(db, tenant_id) * party_size) + _calculate_ayce_surcharge_total(order)
 
     subtotal = Decimal("0.00")
     for item in order.items:
@@ -194,6 +207,8 @@ def update_table(table_id: int, data: TableUpdate, db: Session = Depends(get_db)
         table.number = data.number
     if data.capacity is not None:
         table.capacity = data.capacity
+    if data.party_size is not None:
+        table.party_size = data.party_size
     db.commit()
     db.refresh(table)
     return table
@@ -428,6 +443,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db), tenant_id: i
             notes=order.notes,
             ayce_order=order.ayce_order,
             ayce_price=get_current_ayce_price(db, tenant_id) if order.ayce_order else Decimal('0.00'),
+            party_size=order.party_size,  # stored on the order — single source of truth for AYCE math
             leftover_charge_amount=getattr(order, 'leftover_charge_amount', None) or Decimal('0.00'),
             leftover_charge_note=getattr(order, 'leftover_charge_note', None),
             total_amount=Decimal('0.00')  # Will be calculated after items are added
@@ -544,7 +560,7 @@ def update_order(order_id: int, order: OrderUpdate, db: Session = Depends(get_db
             if value is not None:  # Only update non-None values
                 setattr(db_order, key, value)
 
-        if any(key in update_data for key in ["ayce_order", "ayce_price", "leftover_charge_amount", "leftover_charge_note"]):
+        if any(key in update_data for key in ["ayce_order", "ayce_price", "party_size", "leftover_charge_amount", "leftover_charge_note"]):
             db_order.total_amount = _calculate_order_total_amount(db_order, db, tenant_id)
         
         db.commit()
@@ -766,8 +782,10 @@ def calculate_order_total(
         leftover_charge_amount = _get_leftover_charge_amount(order)
         ayce_base_total = None
         ayce_surcharge_total = None
+        party_size = None
         if order.ayce_order:
-            ayce_base_total = get_current_ayce_price(db, tenant_id)
+            party_size = _get_party_size(order)
+            ayce_base_total = get_current_ayce_price(db, tenant_id) * Decimal(str(party_size))
             ayce_surcharge_total = _calculate_ayce_surcharge_total(order)
 
         # Calculate discount amount
@@ -797,7 +815,8 @@ def calculate_order_total(
             ayce_base_total=round(ayce_base_total, 2) if ayce_base_total is not None else None,
             ayce_surcharge_total=round(ayce_surcharge_total, 2) if ayce_surcharge_total is not None else None,
             leftover_charge_amount=round(leftover_charge_amount, 2),
-            is_ayce=order.ayce_order
+            is_ayce=order.ayce_order,
+            party_size=party_size,
         )
     except Exception as e:
         logger.error(f"Error calculating order total for order {order_id}: {str(e)}")

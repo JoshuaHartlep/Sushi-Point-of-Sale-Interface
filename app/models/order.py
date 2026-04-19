@@ -98,6 +98,7 @@ class Order(Base):
     notes = Column(Text)  # any special instructions
     ayce_order = Column(Boolean, default=False)  # is this all-you-can-eat?
     ayce_price = Column(Numeric(10, 2), default=25.00)  # price for all-you-can-eat
+    party_size = Column(Integer, nullable=True)  # number of guests — used for AYCE total calculation
     leftover_charge_amount = Column(Numeric(10, 2), nullable=True, server_default="0.00")  # optional ticket-level waste/leftover adjustment
     leftover_charge_note = Column(String(255), nullable=True)  # optional manager note for leftover charge
     price = Column(Numeric(10, 2), default=0.00)  # regular price

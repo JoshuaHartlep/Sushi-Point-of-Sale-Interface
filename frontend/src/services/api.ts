@@ -62,6 +62,7 @@ export interface Order {
   total_amount: number;
   created_at: string;
   ayce_order: boolean;
+  party_size?: number | null;
   leftover_charge_amount?: number;
   leftover_charge_note?: string | null;
   notes?: string;
@@ -77,6 +78,7 @@ export interface OrderTotal {
   ayce_surcharge_total?: number;
   leftover_charge_amount?: number;
   is_ayce?: boolean;
+  party_size?: number | null;
 }
 
 export type TableStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
@@ -100,6 +102,7 @@ export interface OrderCreate {
   table_id: number;
   status: OrderStatus;
   ayce_order: boolean;
+  party_size?: number | null;
   items: OrderItemCreate[];
   notes?: string;
 }
@@ -270,7 +273,7 @@ export const ordersApi = {
 
 // Menu API
 export const menuApi = {
-  getItems: (params?: { skip?: number; limit?: number; category_id?: number }): Promise<MenuItem[]> => 
+  getItems: (params?: { skip?: number; limit?: number; category_id?: number; search?: string }): Promise<MenuItem[]> =>
     api.get('/menu/menu-items/', { params }).then(res => res.data),
   getItem: (id: number): Promise<MenuItem> => api.get(`/menu/menu-items/${id}/`).then(res => res.data),
   createItem: (data: {
@@ -348,7 +351,7 @@ export const tablesApi = {
   getById: (id: number): Promise<TableData> => api.get(`/orders/tables/${id}`).then(res => res.data),
   create: (data: { number: number; capacity: number }): Promise<TableData> =>
     api.post('/orders/tables/', data).then(res => res.data),
-  update: (id: number, data: { number?: number; capacity?: number }): Promise<TableData> =>
+  update: (id: number, data: { number?: number; capacity?: number; party_size?: number }): Promise<TableData> =>
     api.patch(`/orders/tables/${id}`, data).then(res => res.data),
   updateStatus: (id: number, status: TableStatus): Promise<TableData> =>
     api.put(`/orders/tables/${id}/status`, null, { params: { status } }).then(res => res.data),

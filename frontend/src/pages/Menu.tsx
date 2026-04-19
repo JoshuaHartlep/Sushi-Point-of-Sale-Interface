@@ -12,6 +12,7 @@ type ImagePosition = typeof DEFAULT_IMAGE_POSITION;
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -67,8 +68,13 @@ export default function Menu() {
   });
 
   const { data: menuItems, isLoading: itemsLoading, error: itemsError } = useQuery<MenuItem[]>({
-    queryKey: ['menuItems', selectedCategory, currentPage],
-    queryFn: () => menuApi.getItems({ skip: currentPage * ITEMS_PER_PAGE, limit: ITEMS_PER_PAGE, category_id: selectedCategory || undefined }),
+    queryKey: ['menuItems', selectedCategory, currentPage, searchTerm],
+    queryFn: () => menuApi.getItems({
+      skip: currentPage * ITEMS_PER_PAGE,
+      limit: ITEMS_PER_PAGE,
+      category_id: selectedCategory || undefined,
+      search: searchTerm || undefined,
+    }),
   });
 
   const deleteImageMutation = useMutation({
@@ -325,6 +331,20 @@ export default function Menu() {
         </button>
       </section>
 
+      {/* ── Search ── */}
+      <section>
+        <div className="relative max-w-sm">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant pointer-events-none">search</span>
+          <input
+            type="search"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
+            placeholder="Search items…"
+            className="w-full pl-9 pr-4 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      </section>
+
       {/* ── Category filter pills ── */}
       <section>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -380,6 +400,13 @@ export default function Menu() {
               </div>
             ))}
           </>
+        ) : menuItems?.length === 0 ? (
+          <div className="col-span-3 flex items-center justify-center h-48">
+            <div className="text-center space-y-2">
+              <span className="material-symbols-outlined text-[40px] text-outline-variant/40">search_off</span>
+              <p className="text-sm text-on-surface-variant">No items match your search.</p>
+            </div>
+          </div>
         ) : menuItems?.map((item) => {
           const available = isItemAvailable(item);
           return (

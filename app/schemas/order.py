@@ -71,6 +71,7 @@ class OrderBase(BaseModel):
     total_amount: Optional[float] = 0.00
     ayce_order: bool = False
     ayce_price: Decimal = Field(default=25.00, ge=0)
+    party_size: Optional[int] = None
     leftover_charge_amount: Decimal = Field(default=0, ge=0)
     leftover_charge_note: Optional[str] = None
     price: Optional[float] = 0.00
@@ -90,6 +91,7 @@ class OrderCreate(BaseModel):
     status: OrderStatus = OrderStatus.PENDING
     notes: Optional[str] = None
     ayce_order: bool = False
+    party_size: Optional[int] = None
     items: List[OrderItemCreate]
 
 class OrderUpdate(BaseModel):
@@ -99,6 +101,7 @@ class OrderUpdate(BaseModel):
     notes: Optional[str] = None
     ayce_order: Optional[bool] = None
     ayce_price: Optional[Decimal] = None
+    party_size: Optional[int] = None
     leftover_charge_amount: Optional[Decimal] = Field(default=None, ge=0)
     leftover_charge_note: Optional[str] = None
 
@@ -125,6 +128,7 @@ class OrderTotalResponse(BaseModel):
     ayce_surcharge_total: Optional[Decimal] = None
     leftover_charge_amount: Optional[Decimal] = None
     is_ayce: bool
+    party_size: Optional[int] = None
 
 class TableBase(BaseModel):
     """Base schema for tables."""
@@ -145,6 +149,7 @@ class TableUpdate(BaseModel):
     """Schema for updating a table's details."""
     number: Optional[int] = None
     capacity: Optional[int] = None
+    party_size: Optional[int] = None
 
 class TableResponse(TableBase):
     """Schema for table responses."""

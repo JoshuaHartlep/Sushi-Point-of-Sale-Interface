@@ -16,6 +16,7 @@ export default function CustomerMenuTab() {
   const { mealPeriod, addToCart, updateQty, cart, isAyce } = useCustomerOrder();
   const [activeCategory, setActiveCategory] = useState<number | null>(null);
   const [modalItem, setModalItem] = useState<MenuItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Map of catId -> section DOM element, populated by ref callbacks during render.
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
@@ -41,11 +42,22 @@ export default function CustomerMenuTab() {
     return true;
   });
 
+  const isSearching = searchTerm.trim().length > 0;
+  const searchLower = searchTerm.toLowerCase().trim();
+
+  // When a search term is active, pre-filter period items by name/description.
+  const visibleItems = isSearching
+    ? periodItems.filter(item =>
+        item.name.toLowerCase().includes(searchLower) ||
+        (item.description ?? '').toLowerCase().includes(searchLower)
+      )
+    : periodItems;
+
   // Build per-category groups (available first, then unavailable, each sorted A–Z).
   // Categories with zero items in the current period are omitted entirely.
   const itemsByCategory = categories.reduce<Record<number, { available: MenuItem[]; unavailable: MenuItem[] }>>(
     (acc, cat) => {
-      const catItems = periodItems.filter(i => i.category_id === cat.id);
+      const catItems = visibleItems.filter(i => i.category_id === cat.id);
       if (catItems.length === 0) return acc;
       acc[cat.id] = {
         available: catItems.filter(i => i.is_available).sort(sortMenuItemsByName),
@@ -145,7 +157,7 @@ export default function CustomerMenuTab() {
 
   const renderCard = (item: MenuItem, idx: number, isUnavailable = false) => {
     const qty = getCartQty(item.id);
-    const isFeature = idx === 0 && !isUnavailable;
+    const isFeature = idx === 0 && !isUnavailable && !isSearching;
     const displayPrice = isAyce ? 0 : Number(item.price);
     const ayceSurcharge = Number(item.ayce_surcharge ?? 0);
 
@@ -245,7 +257,20 @@ export default function CustomerMenuTab() {
       <div className="pb-28">
 
         {/* Sticky category nav */}
-        <nav className="sticky top-[57px] z-30 bg-background/95 backdrop-blur-md border-b border-outline-variant/10 px-6 py-3">
+        <nav className="sticky top-[57px] z-30 bg-background/95 backdrop-blur-md border-b border-outline-variant/10 px-6 pt-3 pb-2 space-y-2">
+
+          {/* Search bar */}
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant pointer-events-none">search</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder="Search menu…"
+              className="w-full pl-8 pr-4 py-1.5 bg-surface-container border border-outline-variant/20 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-primary text-on-surface placeholder:text-on-surface-variant/50"
+            />
+          </div>
+
           <div ref={navScrollRef} className="flex gap-6 overflow-x-auto hide-scrollbar">
 
             {/* "All" always scrolls to top — no active state of its own */}
@@ -306,8 +331,17 @@ export default function CustomerMenuTab() {
 
           {orderedCategoryIds.length === 0 && (
             <div className="text-center py-20 text-on-surface-variant opacity-40">
-              <p className="font-headline text-xl">No items available</p>
-              <p className="text-sm mt-2">Nothing on the {mealPeriod.toLowerCase()} menu right now</p>
+              {isSearching ? (
+                <>
+                  <p className="font-headline text-xl">No matches</p>
+                  <p className="text-sm mt-2">Try a different search term</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-headline text-xl">No items available</p>
+                  <p className="text-sm mt-2">Nothing on the {mealPeriod.toLowerCase()} menu right now</p>
+                </>
+              )}
             </div>
           )}
 

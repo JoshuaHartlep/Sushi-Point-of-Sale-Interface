@@ -38,10 +38,12 @@ interface OrderTotal {
   subtotal?: number;
   discount_amount?: number;
   total: number;
+  ayce_price?: number;
   ayce_base_total?: number;
   ayce_surcharge_total?: number;
   leftover_charge_amount?: number;
   is_ayce?: boolean;
+  party_size?: number | null;
 }
 
 const EditOrder = () => {
@@ -54,6 +56,7 @@ const EditOrder = () => {
   const [leftoverChargeAmountInput, setLeftoverChargeAmountInput] = useState<string>('0.00');
   const [leftoverChargeNoteInput, setLeftoverChargeNoteInput] = useState<string>('');
   const [isRemoveLeftoverModalOpen, setIsRemoveLeftoverModalOpen] = useState(false);
+  const [partySizeInput, setPartySizeInput] = useState<string>('');
   const { isLunch } = useMealPeriod();
 
   const isItemAvailable = (item: MenuItem): boolean => {
@@ -93,6 +96,13 @@ const EditOrder = () => {
     queryKey: ['order', id],
     queryFn: () => ordersApi.getById(Number(id)),
   });
+
+  // Sync party size input when order data loads
+  useEffect(() => {
+    if (order?.party_size != null) {
+      setPartySizeInput(String(order.party_size));
+    }
+  }, [order?.party_size]);
 
   const { data: orderTotal, isLoading: totalLoading } = useQuery<OrderTotal>({
     queryKey: ['orderTotal', id],
@@ -139,6 +149,15 @@ const EditOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['order', id] });
       queryClient.invalidateQueries({ queryKey: ['orderTotal', id] });
+    },
+  });
+
+  const updatePartySizeMutation = useMutation({
+    mutationFn: (party_size: number) => ordersApi.update(Number(id), { party_size }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['orderTotal', id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 
@@ -389,7 +408,7 @@ const EditOrder = () => {
         </div>
 
         <div className="flex-1 px-4 md:px-6 py-5 space-y-8">
-          <div>
+          <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -400,6 +419,31 @@ const EditOrder = () => {
               />
               <span className="text-sm font-medium text-on-surface">All You Can Eat order</span>
             </label>
+            {order.ayce_order && (
+              <div className="flex items-end gap-2 pl-7">
+                <div className="flex-1">
+                  <label className={labelClass}>Party size</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={partySizeInput}
+                    onChange={(e) => setPartySizeInput(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const n = parseInt(partySizeInput);
+                    if (n > 0) updatePartySizeMutation.mutate(n);
+                  }}
+                  disabled={updatePartySizeMutation.isPending}
+                  className="btn-primary disabled:opacity-50 whitespace-nowrap"
+                >
+                  {updatePartySizeMutation.isPending ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="rounded-xl border border-outline-variant/15 dark:border-sumi-600 bg-surface-container-lowest dark:bg-sumi-800 p-4 md:p-5 card-shadow">
@@ -502,7 +546,12 @@ const EditOrder = () => {
                 {order.ayce_order && (
                   <>
                     <div className="flex justify-between text-sm text-on-surface-variant">
-                      <span>AYCE base</span>
+                      <span>
+                        AYCE base
+                        {orderTotal?.party_size && orderTotal?.ayce_price
+                          ? ` (${orderTotal.party_size} × $${Number(orderTotal.ayce_price).toFixed(2)})`
+                          : ''}
+                      </span>
                       <span className="text-on-surface tabular-nums">
                         ${Number(orderTotal?.ayce_base_total ?? 0).toFixed(2)}
                       </span>

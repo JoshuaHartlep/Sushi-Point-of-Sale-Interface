@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import { ordersApi, Order, OrderCreate } from '../services/api';
+import { ordersApi, tablesApi, Order, OrderCreate } from '../services/api';
 
 export interface CartItem {
   menuItemId: number;
@@ -66,10 +66,12 @@ export function CustomerOrderProvider({ children }: { children: ReactNode }) {
   ) => {
     setIsLoading(true);
     try {
+      await tablesApi.update(tId, { party_size: size });
       const orderData: OrderCreate = {
         table_id: tId,
         status: 'PENDING',
         ayce_order: ayce,
+        party_size: size,
         items: [],
         notes: `Party of ${size}`,
       };

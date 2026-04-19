@@ -24,6 +24,7 @@ const Orders = () => {
     table_id: 1,
     status: 'PENDING',
     ayce_order: false,
+    party_size: null,
     items: [] as OrderItemCreate[],
   });
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -50,11 +51,11 @@ const Orders = () => {
     enabled: !!selectedOrder && isViewModalOpen,
   });
 
-  const { data: menuItemsMap } = useQuery<Record<number, { name: string; price: number }>>({
+  const { data: menuItemsMap } = useQuery<Record<number, { name: string; price: number; ayce_surcharge?: number }>>({
     queryKey: ['menuItemsForOrder', orderDetails?.items?.map((i: OrderItem) => i.menu_item_id)],
     queryFn: async () => {
       if (!orderDetails?.items) return {};
-      const map: Record<number, { name: string; price: number }> = {};
+      const map: Record<number, { name: string; price: number; ayce_surcharge?: number }> = {};
       for (const item of orderDetails.items) {
         try { map[item.menu_item_id] = await menuApi.getItem(item.menu_item_id); } catch {}
       }
@@ -68,7 +69,7 @@ const Orders = () => {
     onSuccess: (createdOrder) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       setIsNewOrderModalOpen(false);
-      setNewOrder({ table_id: 1, status: 'PENDING', ayce_order: false, items: [] });
+      setNewOrder({ table_id: 1, status: 'PENDING', ayce_order: false, party_size: null, items: [] });
       navigate(`/orders/${createdOrder.id}/edit`);
     },
   });
@@ -207,7 +208,7 @@ const Orders = () => {
                 <span className="text-sm text-on-surface font-medium">All You Can Eat Order</span>
               </label>
               {newOrder.ayce_order && settings && (
-                <div className="p-4 bg-primary/5 rounded border border-primary/20">
+                <div className="p-4 bg-primary/5 rounded border border-primary/20 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-primary">Current AYCE Price</p>
@@ -216,6 +217,17 @@ const Orders = () => {
                     <span className="text-xl font-headline font-bold text-primary">
                       ${settings.current_meal_period === 'LUNCH' ? formatPrice(settings.ayce_lunch_price) : formatPrice(settings.ayce_dinner_price)}
                     </span>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-primary font-bold mb-1.5">Party Size</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={newOrder.party_size ?? ''}
+                      onChange={(e) => setNewOrder({ ...newOrder, party_size: e.target.value ? parseInt(e.target.value) : null })}
+                      placeholder="e.g. 4"
+                      className="w-full px-3 py-2 bg-surface-container border border-outline-variant/30 dark:border-sumi-600 dark:bg-sumi-700 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                    />
                   </div>
                 </div>
               )}
@@ -265,6 +277,8 @@ const Orders = () => {
                     <div className="space-y-2">
                       {orderDetails.items.map((item: OrderItem) => {
                         const mi = menuItemsMap?.[item.menu_item_id];
+                        const isAyce = selectedOrder?.ayce_order;
+                        const surcharge = Number(mi?.ayce_surcharge ?? 0);
                         const itemTotal = mi ? item.quantity * mi.price : 0;
                         return (
                           <div key={item.id} className="flex justify-between items-start py-2 border-b border-outline-variant/5 last:border-0">
@@ -272,7 +286,13 @@ const Orders = () => {
                               <p className="font-medium text-on-surface text-sm">{mi?.name || 'Unknown item'}</p>
                               <p className="text-xs text-on-surface-variant">Qty: {item.quantity}</p>
                             </div>
-                            <p className="text-sm font-semibold text-on-surface">${formatTotal(itemTotal)}</p>
+                            {isAyce ? (
+                              <p className="text-sm font-semibold text-on-surface-variant">
+                                {surcharge > 0 ? `+$${(surcharge * item.quantity).toFixed(2)}` : 'Included'}
+                              </p>
+                            ) : (
+                              <p className="text-sm font-semibold text-on-surface">${formatTotal(itemTotal)}</p>
+                            )}
                           </div>
                         );
                       })}
@@ -288,14 +308,33 @@ const Orders = () => {
                 )}
 
                 {orderTotal && (
-                  <div className="border-t border-outline-variant/10 pt-4">
+                  <div className="border-t border-outline-variant/10 pt-4 space-y-2">
+                    {orderTotal.is_ayce && (
+                      <>
+                        <div className="flex justify-between text-sm">
+                          <p className="text-on-surface-variant">
+                            AYCE base
+                            {orderTotal.party_size && orderTotal.ayce_price
+                              ? ` (${orderTotal.party_size} × $${Number(orderTotal.ayce_price).toFixed(2)})`
+                              : ''}
+                          </p>
+                          <p className="text-on-surface">${formatTotal(orderTotal.ayce_base_total)}</p>
+                        </div>
+                        {Number(orderTotal.ayce_surcharge_total ?? 0) > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <p className="text-on-surface-variant">Item surcharges</p>
+                            <p className="text-on-surface">${formatTotal(orderTotal.ayce_surcharge_total)}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
                     {Number(orderTotal.leftover_charge_amount ?? 0) > 0 && (
-                      <div className="flex justify-between text-sm mb-1">
+                      <div className="flex justify-between text-sm">
                         <p className="text-on-surface-variant">Leftover / Waste Charge</p>
                         <p className="text-on-surface">${formatTotal(orderTotal.leftover_charge_amount)}</p>
                       </div>
                     )}
-                    <div className="flex justify-between font-bold text-lg">
+                    <div className="flex justify-between font-bold text-lg pt-1 border-t border-outline-variant/10">
                       <p className="text-on-surface">Total</p>
                       <p className="text-primary font-headline">${formatTotal(orderTotal.total)}</p>
                     </div>
