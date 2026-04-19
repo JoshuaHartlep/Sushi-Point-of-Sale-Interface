@@ -346,8 +346,91 @@ No route code changes are needed — every endpoint already passes `tenant_id` t
 - **Themes** — light / dark / system, persisted (localStorage)
 - **Lunch/dinner service** — manager-controlled current period; dinner-only items constrained during lunch
 - **Settings (General)** — name, timezone, meal period, AYCE prices
+- **Menu tags** — searchable labels on items (e.g. "spicy", "vegan", "salmon") organized by tag group; surface in semantic search
+- **Ask Shari** — hybrid semantic menu search (see below)
 - **Backend extras** — bulk menu operations and bulk order status updates via API (see OpenAPI); not all are exposed in the UI yet
 - **The Lens** — manager analytics panel (see below)
+
+---
+
+## Menu Tags
+
+Tags are searchable labels attached to menu items. They appear in both the keyword filter and the semantic embedding text for Ask Shari.
+
+### Data model
+
+- **`tags` table** — `id`, `tenant_id`, `name`, `slug` (auto-generated, unique per tenant), `tag_group` (optional group like `"dietary"`, `"protein"`, `"spice"`)
+- **`menu_item_tags`** — many-to-many join between `menu_items` and `tags`
+
+### API endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/tags/` | List tags; supports `?search=` (typeahead) and `?tag_group=` filter |
+| `POST` | `/api/v1/tags/` | Create a tag; slug auto-normalized and deduplicated |
+| `GET` | `/api/v1/menu-items/{id}/tags` | Get all tags on an item |
+| `PUT` | `/api/v1/menu-items/{id}/tags` | Replace the full tag set on an item (idempotent) |
+
+Updating an item's tags automatically triggers a background re-embed so the vector index stays current.
+
+### Manager UI
+
+The **Menu** page (`/menu`) exposes a tag editor on each item's edit modal — typeahead dropdown to add existing tags or create new ones inline, chips to remove them.
+
+---
+
+## Ask Shari — Hybrid Semantic Search
+
+**Ask Shari** is a natural-language menu search assistant available to both managers (`/menu`) and customers (`/customer`). It understands intent like *"something spicy but not raw"* or *"light vegetarian option"* rather than requiring exact keyword matches.
+
+### How it works
+
+Shari uses a two-stage hybrid approach:
+
+1. **Vector similarity** (primary signal) — each menu item is embedded into a 1536-dimension vector using OpenAI `text-embedding-3-small`. The embedding text is built from the item's name, description, category, meal period, and tags. Queries are also embedded at search time and ranked by cosine similarity via the **pgvector** extension on Postgres.
+
+2. **Keyword score** (secondary signal) — a lightweight BM25-style overlap score is computed over name, description, and tags. This boosts items that contain the exact words from the query even if vector similarity is moderate.
+
+3. **Hybrid ranking** — final score = `0.7 × vector_score + 0.3 × keyword_score`. Falls back to keyword-only automatically when embeddings are unavailable (pgvector not installed, OpenAI unreachable, or an item has no embedding yet).
+
+### Embedding pipeline
+
+- Embeddings are generated via `app/services/embedding_service.py`
+- Each embedding row is keyed by `(tenant_id, menu_item_id, embedding_model, embedding_version)` in the `menu_item_embeddings` table
+- A **content hash** (SHA-256 of the canonical text) prevents redundant API calls — re-embed is skipped when the item text hasn't changed
+- CRUD mutations (create item, update item, update tags) fire a **background task** to re-embed only the affected items, keeping the UI response fast
+- A CLI is available to bulk-embed all items: `python -m scripts.embed_menu --tenant-id 1`
+
+### Search API
+
+`GET /api/v1/menu-items/search`
+
+| Param | Type | Description |
+|---|---|---|
+| `q` | string | Natural language query |
+| `category_id` | int (optional) | Restrict to a category |
+| `meal_period` | string (optional) | `lunch`, `dinner`, or `both` |
+| `top_k` | int (optional, default 10) | Max results |
+
+Response includes `scoring_method` (`"hybrid"` or `"keyword_only"`) so the UI can surface which mode was used.
+
+### UI behavior
+
+- The search panel is opened with the **Ask Shari** button and closed with the **×** button or toggling the button again
+- Search fires only on explicit submission: **Enter** key or the **send** button (not on every keystroke)
+- A spinner replaces the send icon while the request is in flight
+- Result count and scoring method are shown below the input (`"Semantic + keyword"` or `"Keyword only"`)
+- Closing the panel or toggling it clears both the input and any previous results
+
+### Environment variables required
+
+Add these to `.backend-env` on EC2 (or your local `.env`):
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+Without this key, Ask Shari falls back to keyword-only search automatically — no errors are surfaced to the user.
 
 ---
 
