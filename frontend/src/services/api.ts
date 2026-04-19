@@ -150,6 +150,13 @@ export interface MenuItemImage {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+  tag_group: string | null;
+}
+
 // API origin (no trailing slash) — used for constructing image URLs in components.
 // Set VITE_API_URL in .env.local (localhost) or run with --mode network (.env.network).
 export const API_ORIGIN = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -304,6 +311,18 @@ export const menuApi = {
   createModifier: (data: Omit<Modifier, 'id'>): Promise<Modifier> => 
     api.post('/menu/modifiers/', data).then(res => res.data),
   deleteModifier: (id: number): Promise<void> => api.delete(`/menu/modifiers/${id}/`).then(res => res.data),
+};
+
+// Tags API
+export const tagsApi = {
+  getAll: (params?: { search?: string; tag_group?: string }): Promise<Tag[]> =>
+    api.get('/menu/tags/', { params }).then(res => res.data),
+  create: (data: { name: string; tag_group?: string | null }): Promise<Tag> =>
+    api.post('/menu/tags/', data).then(res => res.data),
+  getItemTags: (itemId: number): Promise<Tag[]> =>
+    api.get(`/menu/menu-items/${itemId}/tags`).then(res => res.data),
+  setItemTags: (itemId: number, tagIds: number[]): Promise<Tag[]> =>
+    api.put(`/menu/menu-items/${itemId}/tags`, { tag_ids: tagIds }).then(res => res.data),
 };
 
 // Categories API

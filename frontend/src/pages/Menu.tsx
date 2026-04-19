@@ -4,6 +4,7 @@ import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItem
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import { MANAGER_IMAGE_MAX_BYTES } from '../constants/uploadLimits';
 import AppModal from '../components/AppModal';
+import TagEditor from '../components/TagEditor';
 
 const ITEMS_PER_PAGE = 12;
 const DEFAULT_IMAGE_POSITION = { x: 50, y: 50, zoom: 1 };
@@ -628,6 +629,12 @@ export default function Menu() {
                   className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" />
                 <span className="text-sm text-on-surface font-medium">Available</span>
               </label>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-xs uppercase tracking-widest text-on-surface-variant font-bold mb-2">Tags</label>
+                <TagEditor itemId={selectedItem.id} />
+              </div>
 
               {/* Image upload */}
               <div>

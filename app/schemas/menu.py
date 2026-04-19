@@ -153,6 +153,28 @@ class MenuItemImageResponse(BaseModel):
         from_attributes = True
 
 
+class TagResponse(BaseModel):
+    """Schema for returning a single tag."""
+    id: int
+    name: str
+    slug: str
+    tag_group: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class TagCreate(BaseModel):
+    """Schema for creating a new tag."""
+    name: str
+    tag_group: Optional[str] = None
+
+
+class ItemTagsUpdate(BaseModel):
+    """Schema for replacing all tags on a menu item."""
+    tag_ids: List[int]
+
+
 class ImageReportCreate(BaseModel):
     """Schema for creating an image report."""
     reason: Optional[str] = None

@@ -30,6 +30,14 @@ menu_item_modifiers = Table(
     Column('modifier_id', Integer, ForeignKey('modifiers.id'), primary_key=True)
 )
 
+# this table connects menu items with their searchable tags (many-to-many)
+menu_item_tags = Table(
+    'menu_item_tags',
+    Base.metadata,
+    Column('menu_item_id', Integer, ForeignKey('menu_items.id', ondelete='CASCADE'), primary_key=True),
+    Column('tag_id', Integer, ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
+)
+
 # a category is like "Appetizers" or "Sushi Rolls"
 class Category(Base):
     """
@@ -159,11 +167,12 @@ class MenuItem(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # connect this item to its category, modifiers, and orders
+    # connect this item to its category, modifiers, orders, and tags
     category = relationship("Category", back_populates="menu_items")
     modifiers = relationship("Modifier", secondary=menu_item_modifiers, back_populates="menu_items")
     order_items = relationship("OrderItem", back_populates="menu_item")
     user_images = relationship("MenuItemImage", back_populates="menu_item", cascade="all, delete-orphan")
+    tags = relationship("Tag", secondary=menu_item_tags, back_populates="menu_items")
 
 
 # status for user-uploaded images (pending review, approved, or rejected by manager)
@@ -187,6 +196,22 @@ class MenuItemImage(Base):
 
     menu_item = relationship("MenuItem", back_populates="user_images")
     reports = relationship("ImageReport", back_populates="image", cascade="all, delete-orphan")
+
+
+# a tag is a searchable label attached to menu items (e.g. "spicy", "salmon", "vegan")
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), nullable=False)
+    tag_group = Column(String(50), nullable=True)  # e.g. "dietary", "protein", "spice"
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    menu_items = relationship("MenuItem", secondary=menu_item_tags, back_populates="tags")
 
 
 # a report submitted by a user saying an image is inappropriate or wrong

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.core.database import get_db
 from app.core.tenant import get_tenant_id
-from app.models.menu import MenuItem, Category, Modifier
+from app.models.menu import MenuItem, Category, Modifier, Tag
 from app.schemas.menu import (
     MenuItemCreate,
     MenuItemUpdate,
@@ -24,6 +24,9 @@ from app.schemas.menu import (
     CategoryUpdate,
     ItemModifiersResponse,
     ItemModifiersUpdate,
+    TagResponse,
+    TagCreate,
+    ItemTagsUpdate,
 )
 from app.schemas.bulk_operations import BulkMenuItemOperation, BulkMenuItemResponse, BulkOperationType
 from app.core.error_handling import RecordNotFoundError
@@ -528,3 +531,70 @@ def update_item_modifiers(item_id: int, data: ItemModifiersUpdate, db: Session =
         item_id=item.id,
         modifier_ids=[m.id for m in item.modifiers],
     )
+
+
+# ── Tags ─────────────────────────────────────────────────────────────────────
+
+# search/list all tags for this tenant — supports typeahead via `search` param
+@router.get("/tags/", response_model=List[TagResponse])
+def get_tags(
+    search: Optional[str] = None,  # partial name match for typeahead
+    tag_group: Optional[str] = None,  # filter by group (e.g. "dietary", "spice")
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
+    query = db.query(Tag).filter(Tag.tenant_id == tenant_id)
+    if search:
+        query = query.filter(Tag.name.ilike(f"%{search}%"))
+    if tag_group:
+        query = query.filter(Tag.tag_group == tag_group)
+    return query.order_by(Tag.tag_group, Tag.name).all()
+
+
+# create a new tag, normalizing slug and preventing duplicates
+@router.post("/tags/", response_model=TagResponse, status_code=201)
+def create_tag(data: TagCreate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    import re
+    name = data.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Tag name cannot be empty")
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+    # reject exact slug duplicate within this tenant
+    existing = db.query(Tag).filter(Tag.tenant_id == tenant_id, Tag.slug == slug).first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Tag '{name}' already exists")
+
+    tag = Tag(tenant_id=tenant_id, name=name, slug=slug, tag_group=data.tag_group)
+    db.add(tag)
+    db.commit()
+    db.refresh(tag)
+    return tag
+
+
+# get all tags currently assigned to a menu item
+@router.get("/menu-items/{item_id}/tags", response_model=List[TagResponse])
+def get_item_tags(item_id: int, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
+    if not item:
+        raise RecordNotFoundError("MenuItem", item_id)
+    return item.tags
+
+
+# replace the full tag set on a menu item (idempotent PUT)
+@router.put("/menu-items/{item_id}/tags", response_model=List[TagResponse])
+def update_item_tags(item_id: int, data: ItemTagsUpdate, db: Session = Depends(get_db), tenant_id: int = Depends(get_tenant_id)):
+    item = db.query(MenuItem).filter(MenuItem.id == item_id, MenuItem.tenant_id == tenant_id).first()
+    if not item:
+        raise RecordNotFoundError("MenuItem", item_id)
+
+    tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids), Tag.tenant_id == tenant_id).all()
+    found_ids = {t.id for t in tags}
+    missing = set(data.tag_ids) - found_ids
+    if missing:
+        raise HTTPException(status_code=404, detail=f"Tags not found: {sorted(missing)}")
+
+    item.tags = tags
+    db.commit()
+    db.refresh(item)
+    return item.tags
