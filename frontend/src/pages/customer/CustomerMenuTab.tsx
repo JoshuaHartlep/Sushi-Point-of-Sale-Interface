@@ -48,10 +48,15 @@ export default function CustomerMenuTab() {
   });
 
   const { data: aiResults, isFetching: aiFetching } = useQuery({
-    queryKey: ['customer-ai-search', submittedAiQuery, mealPeriod],
-    queryFn: () => menuApi.search({ q: submittedAiQuery, meal_period: mealPeriod, top_k: 30 }),
+    queryKey: ['customer-ask-shari', submittedAiQuery, mealPeriod],
+    queryFn: () => menuApi.askShari({ query: submittedAiQuery, meal_period: mealPeriod }),
     enabled: aiSearchOpen && submittedAiQuery.length > 0,
+    // Server-side cache already dedupes by tenant+query; still keep client cache
+    // so toggling the panel doesn't re-hit the network for the same query.
+    staleTime: 60_000,
   });
+  const [showMoreAi, setShowMoreAi] = useState(false);
+  useEffect(() => { setShowMoreAi(false); }, [submittedAiQuery]);
 
   // Filter to items relevant to the current meal period.
   const periodItems = allItems.filter(item => {
@@ -340,46 +345,127 @@ export default function CustomerMenuTab() {
                 </button>
               </div>
 
-              {aiResults && submittedAiQuery && (
-                <div className="space-y-0.5">
-                  <p className="text-[10px] text-on-surface-variant/40 px-1">
-                    {aiResults.results.length} match{aiResults.results.length !== 1 ? 'es' : ''} · {aiResults.scoring_method === 'hybrid' ? 'AI + keyword' : 'Keyword'}
-                  </p>
-                  {aiResults.results.length === 0 ? (
-                    <p className="text-sm text-on-surface-variant/50 py-2 px-1">No matches — try describing it differently</p>
-                  ) : (
-                    <div className="max-h-52 overflow-y-auto space-y-0.5">
-                      {aiResults.results.map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setAiSearchOpen(false);
-                            setModalItem(item as MenuItem);
-                          }}
-                          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container active:scale-[0.98] transition-all text-left"
-                        >
-                          {item.image_url ? (
-                            <img src={item.image_url} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
-                              <span className="text-lg opacity-25">🍣</span>
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
-                            {item.description && (
-                              <p className="text-xs text-on-surface-variant/55 truncate">{item.description}</p>
+              {aiResults && submittedAiQuery && (() => {
+                const recommendedIds = new Set(aiResults.recommendations.map(r => r.id));
+                const moreItems = aiResults.results.filter(r => !recommendedIds.has(r.id));
+                const priceLabel = (item: MenuItem) =>
+                  isAyce
+                    ? (Number(item.ayce_surcharge ?? 0) > 0 ? `+$${Number(item.ayce_surcharge).toFixed(2)}` : 'Incl.')
+                    : `$${Number(item.price).toFixed(2)}`;
+                return (
+                  <div className="space-y-2">
+                    <p className="text-[10px] text-on-surface-variant/40 px-1">
+                      {aiResults.llm_used ? 'Shari picked' : (aiResults.scoring_method === 'hybrid' ? 'AI + keyword match' : 'Keyword match')}
+                      {aiResults.results.length > 0 && ` · ${aiResults.results.length} total`}
+                    </p>
+
+                    {aiResults.recommendations.length === 0 ? (
+                      <p className="text-sm text-on-surface-variant/50 py-2 px-1">
+                        No matches — try describing it differently
+                      </p>
+                    ) : (
+                      <>
+                        {/* Recommendations — rich cards with reasoning */}
+                        <div className="space-y-1.5">
+                          {aiResults.recommendations.map((rec, idx) => (
+                            <button
+                              key={rec.id}
+                              onClick={() => {
+                                setAiSearchOpen(false);
+                                setModalItem(rec.item as MenuItem);
+                              }}
+                              className="w-full flex items-start gap-2.5 px-2.5 py-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container active:scale-[0.99] transition-all text-left border border-outline-variant/10"
+                            >
+                              {rec.item.image_url ? (
+                                <img
+                                  src={resolveImageUrl(rec.item.image_url) ?? undefined}
+                                  alt=""
+                                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                                  style={getMenuImageStyle(rec.item)}
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xl opacity-25">🍣</span>
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <p className="text-sm font-bold text-on-surface truncate">
+                                    <span className="text-primary mr-1">{idx + 1}.</span>{rec.name}
+                                  </p>
+                                  <p className="text-sm font-bold text-primary flex-shrink-0">{priceLabel(rec.item)}</p>
+                                </div>
+                                {rec.reason && (
+                                  <p className="text-xs text-on-surface-variant/80 mt-0.5 leading-snug line-clamp-2">{rec.reason}</p>
+                                )}
+                                {rec.highlights.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {rec.highlights.map((h, i) => (
+                                      <span key={i} className="text-[10px] text-primary/80 bg-primary/8 px-1.5 py-0.5 rounded-full">
+                                        {h}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Follow-up hint + "show more" reveal */}
+                        {moreItems.length > 0 && (
+                          <>
+                            {!showMoreAi ? (
+                              <button
+                                onClick={() => setShowMoreAi(true)}
+                                className="w-full text-center text-xs text-primary hover:underline py-1.5"
+                              >
+                                {aiResults.follow_up} ({moreItems.length})
+                              </button>
+                            ) : (
+                              <div className="space-y-0.5 pt-1 border-t border-outline-variant/10">
+                                <p className="text-[10px] text-on-surface-variant/40 px-1 pt-1">More suggestions</p>
+                                <div className="max-h-48 overflow-y-auto space-y-0.5">
+                                  {moreItems.map(item => (
+                                    <button
+                                      key={item.id}
+                                      onClick={() => {
+                                        setAiSearchOpen(false);
+                                        setModalItem(item as MenuItem);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container active:scale-[0.98] transition-all text-left"
+                                    >
+                                      {item.image_url ? (
+                                        <img
+                                          src={resolveImageUrl(item.image_url) ?? undefined}
+                                          alt=""
+                                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                          style={getMenuImageStyle(item)}
+                                        />
+                                      ) : (
+                                        <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                                          <span className="text-lg opacity-25">🍣</span>
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
+                                        {item.description && (
+                                          <p className="text-xs text-on-surface-variant/55 truncate">{item.description}</p>
+                                        )}
+                                      </div>
+                                      <p className="text-sm font-bold text-primary flex-shrink-0">{priceLabel(item)}</p>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             )}
-                          </div>
-                          <p className="text-sm font-bold text-primary flex-shrink-0">
-                            {isAyce ? (Number(item.ayce_surcharge ?? 0) > 0 ? `+$${Number(item.ayce_surcharge).toFixed(2)}` : 'Incl.') : `$${Number(item.price).toFixed(2)}`}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

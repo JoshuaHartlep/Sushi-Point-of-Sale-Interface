@@ -224,3 +224,44 @@ class MenuSearchResponse(BaseModel):
     # The model/version used (None when keyword-only)
     model: Optional[str] = None
     version: Optional[str] = None
+
+
+# ── Ask Shari schemas (LLM explanation layer) ────────────────────────────────
+
+class AskShariRequest(BaseModel):
+    """Body for POST /menu-items/ask-shari."""
+    query: str = Field(..., min_length=1, max_length=500)
+    category_id: Optional[int] = None
+    meal_period: Optional[str] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+
+
+class AskShariItem(MenuItemBase):
+    """Slim item payload bundled inside an Ask Shari response."""
+    id: int
+    hybrid_score: Optional[float] = None
+
+    class Config:
+        from_attributes = True
+
+
+class AskShariRecommendation(BaseModel):
+    """A single LLM-chosen (or retrieval-backfilled) recommendation."""
+    id: int
+    name: str
+    reason: str
+    highlights: List[str] = []
+    item: AskShariItem
+
+
+class AskShariResponse(BaseModel):
+    """Response envelope from POST /menu-items/ask-shari."""
+    recommendations: List[AskShariRecommendation]
+    follow_up: str
+    # Full ranked list — UI uses this for "more suggestions" without another LLM call.
+    results: List[AskShariItem]
+    more_count: int = 0
+    scoring_method: Literal["hybrid", "keyword_only"]
+    llm_used: bool = False
+    cache_hit: bool = False

@@ -18,6 +18,8 @@ from app.schemas.menu import (
     MenuItemResponse,
     MenuSearchItem,
     MenuSearchResponse,
+    AskShariRequest,
+    AskShariResponse,
     CategoryCreate,
     CategoryResponse,
     ModifierCreate,
@@ -30,6 +32,7 @@ from app.schemas.menu import (
     TagCreate,
     ItemTagsUpdate,
 )
+from app.services import ask_shari_cache
 from app.schemas.bulk_operations import BulkMenuItemOperation, BulkMenuItemResponse, BulkOperationType
 from app.core.error_handling import RecordNotFoundError
 import logging
@@ -178,6 +181,36 @@ def search_menu_items(
     )
 
 
+# ── Ask Shari (LLM explanation layer, cached) ─────────────────────────────────
+
+@router.post("/menu-items/ask-shari", response_model=AskShariResponse)
+def ask_shari_endpoint(
+    payload: AskShariRequest,
+    db: Session = Depends(get_db),
+    tenant_id: int = Depends(get_tenant_id),
+):
+    """
+    Free-text recommendation endpoint powered by retrieval + LLM explanation.
+
+    Retrieval (hybrid semantic + keyword) is the source of truth; the LLM
+    only reranks and explains the top slice.  Responses are cached per-tenant
+    per-query for `ASK_SHARI_CACHE_TTL_S` seconds, and invalidated instantly
+    whenever the menu changes.
+    """
+    from app.services.ask_shari_service import ask_shari
+
+    result = ask_shari(
+        db,
+        tenant_id,
+        payload.query,
+        category_id=payload.category_id,
+        meal_period=payload.meal_period,
+        min_price=payload.min_price,
+        max_price=payload.max_price,
+    )
+    return result
+
+
 # ── Background re-embed helper ────────────────────────────────────────────────
 
 def _trigger_reembed(tenant_id: int, item_ids: list[int], db: Session) -> None:
@@ -219,6 +252,8 @@ def create_menu_item(
     db.refresh(db_item)
     # embed the new item asynchronously so the response is not delayed
     background_tasks.add_task(_trigger_reembed, tenant_id, [db_item.id], db)
+    # Invalidate cached Ask Shari responses — stale recs could reference old menu.
+    ask_shari_cache.bump_menu_version(tenant_id)
     return db_item
 
 # update some fields of a menu item
@@ -243,6 +278,7 @@ def patch_menu_item(
     db.refresh(db_item)
     # re-embed after any content change (hash check inside the service skips no-ops)
     background_tasks.add_task(_trigger_reembed, tenant_id, [item_id], db)
+    ask_shari_cache.bump_menu_version(tenant_id)
     return db_item
 
 # upload an image for a menu item and store it in S3
@@ -310,6 +346,7 @@ def delete_menu_item(item_id: int, db: Session = Depends(get_db), tenant_id: int
         
     db.delete(db_item)
     db.commit()
+    ask_shari_cache.bump_menu_version(tenant_id)
     return {"message": "Menu item deleted successfully"}
 
 # do a bunch of operations on menu items at once
@@ -334,6 +371,8 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
             for item in items:
                 db.refresh(item)
                 affected_items.append(item.id)
+            if affected_items:
+                ask_shari_cache.bump_menu_version(tenant_id)
             return BulkMenuItemResponse(
                 success=True,
                 operation=BulkOperationType.CREATE,
@@ -359,6 +398,8 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
                     errors.append({"item_id": item.id, "error": str(e)})
 
             db.commit()
+            if affected_items:
+                ask_shari_cache.bump_menu_version(tenant_id)
             return BulkMenuItemResponse(
                 success=True,
                 operation=BulkOperationType.UPDATE,
@@ -383,6 +424,8 @@ def bulk_menu_item_operation(operation: BulkMenuItemOperation, db: Session = Dep
                     errors.append({"item_id": item.id, "error": str(e)})
                     
             db.commit()
+            if affected_items:
+                ask_shari_cache.bump_menu_version(tenant_id)
             return BulkMenuItemResponse(
                 success=True,
                 operation=BulkOperationType.DELETE,
@@ -417,8 +460,9 @@ def bulk_update_availability(
     # set their availability status
     for item in items:
         item.is_available = is_available
-        
+
     db.commit()
+    ask_shari_cache.bump_menu_version(tenant_id)
     return {
         "message": f"Updated availability for {len(items)} items",
         "affected_count": len(items)
@@ -714,4 +758,5 @@ def update_item_tags(
     db.refresh(item)
     # Tags appear in the embedding text — re-embed so the index stays current
     background_tasks.add_task(_trigger_reembed, tenant_id, [item_id], db)
+    ask_shari_cache.bump_menu_version(tenant_id)
     return item.tags

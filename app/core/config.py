@@ -74,7 +74,23 @@ class Settings(BaseSettings):
     SEARCH_KEYWORD_WEIGHT: float = float(os.getenv("SEARCH_KEYWORD_WEIGHT", "0.4"))
     # How many semantic candidates to fetch before keyword re-ranking.
     SEARCH_FETCH_CANDIDATES: int = int(os.getenv("SEARCH_FETCH_CANDIDATES", "100"))
-    
+
+    # ── Ask Shari (LLM explanation layer) ────────────────────────────────────
+    # Chat model used to explain / format retrieval results.
+    ASK_SHARI_MODEL: str = os.getenv("ASK_SHARI_MODEL", "gpt-4o-mini")
+    # How many retrieved items to pass to the LLM (top slice of the ranked list).
+    ASK_SHARI_LLM_ITEMS: int = int(os.getenv("ASK_SHARI_LLM_ITEMS", "6"))
+    # How many candidates to fetch from the retrieval layer overall.
+    ASK_SHARI_TOP_K: int = int(os.getenv("ASK_SHARI_TOP_K", "20"))
+    # Per-request LLM timeout in seconds — falls back to retrieval-only on expiry.
+    ASK_SHARI_TIMEOUT_S: float = float(os.getenv("ASK_SHARI_TIMEOUT_S", "8.0"))
+    # Max output tokens — hard ceiling on response size and cost.
+    ASK_SHARI_MAX_TOKENS: int = int(os.getenv("ASK_SHARI_MAX_TOKENS", "500"))
+    # Cache TTL in seconds — default 15 min balances freshness against cost.
+    ASK_SHARI_CACHE_TTL_S: int = int(os.getenv("ASK_SHARI_CACHE_TTL_S", "900"))
+    # Optional Redis URL — when unset, an in-memory cache is used instead.
+    ASK_SHARI_REDIS_URL: Optional[str] = os.getenv("ASK_SHARI_REDIS_URL")
+
     class Config:
         """
         Pydantic configuration.

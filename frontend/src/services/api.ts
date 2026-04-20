@@ -189,6 +189,35 @@ export interface MenuSearchParams {
   debug?: boolean;
 }
 
+// ── Ask Shari (LLM-explained recommendations) ────────────────────────────────
+
+export interface AskShariRequest {
+  query: string;
+  category_id?: number;
+  meal_period?: string;
+  min_price?: number;
+  max_price?: number;
+}
+
+export interface AskShariRecommendation {
+  id: number;
+  name: string;
+  reason: string;
+  highlights: string[];
+  item: MenuItem & { hybrid_score?: number | null };
+}
+
+export interface AskShariResponse {
+  recommendations: AskShariRecommendation[];
+  follow_up: string;
+  /** Full ranked list — use for "Show more suggestions" without another LLM call. */
+  results: Array<MenuItem & { hybrid_score?: number | null }>;
+  more_count: number;
+  scoring_method: 'hybrid' | 'keyword_only';
+  llm_used: boolean;
+  cache_hit: boolean;
+}
+
 // API origin (no trailing slash) — used for constructing image URLs in components.
 // Set VITE_API_URL in .env.local (localhost) or run with --mode network (.env.network).
 export const API_ORIGIN = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -317,6 +346,9 @@ export const menuApi = {
   /** Hybrid semantic + keyword search. Falls back to keyword-only when embeddings unavailable. */
   search: (params: MenuSearchParams): Promise<MenuSearchResponse> =>
     api.get('/menu/menu-items/search', { params }).then(res => res.data),
+  /** LLM-explained recommendations (Ask Shari). Cached server-side per tenant/query. */
+  askShari: (body: AskShariRequest): Promise<AskShariResponse> =>
+    api.post('/menu/menu-items/ask-shari', body).then(res => res.data),
   getItem: (id: number): Promise<MenuItem> => api.get(`/menu/menu-items/${id}/`).then(res => res.data),
   createItem: (data: {
     name: string;
