@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, resolveImageUrl, getMenuImageStyle, getUploadErrorMessage } from '../services/api';
+import { menuApi, menuItemImagesApi, categoriesApi, MenuItem, Category, MenuItemImage, AskShariFeaturedItem, resolveImageUrl, getMenuImageStyle, getUploadErrorMessage } from '../services/api';
 import { useMealPeriod } from '../contexts/MealPeriodContext';
 import { MANAGER_IMAGE_MAX_BYTES } from '../constants/uploadLimits';
 import AppModal from '../components/AppModal';
@@ -9,6 +9,45 @@ import TagEditor from '../components/TagEditor';
 const ITEMS_PER_PAGE = 12;
 const DEFAULT_IMAGE_POSITION = { x: 50, y: 50, zoom: 1 };
 type ImagePosition = typeof DEFAULT_IMAGE_POSITION;
+
+const NARRATIVE_BOLD_RE = /\*\*([^*\n]+?)\*\*/g;
+
+function renderAskShariNarrative(
+  narrative: string,
+  featured: AskShariFeaturedItem[],
+  onItemClick: (item: MenuItem) => void,
+) {
+  const byLower = new Map(featured.map(f => [f.name.toLowerCase(), f]));
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  NARRATIVE_BOLD_RE.lastIndex = 0;
+  while ((match = NARRATIVE_BOLD_RE.exec(narrative)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(narrative.slice(lastIndex, match.index));
+    }
+    const name = match[1].trim();
+    const hit = byLower.get(name.toLowerCase());
+    if (hit) {
+      nodes.push(
+        <button
+          key={`${match.index}-${hit.id}`}
+          onClick={() => onItemClick(hit.item as MenuItem)}
+          className="font-bold text-primary hover:underline inline"
+        >
+          {name}
+        </button>
+      );
+    } else {
+      nodes.push(<strong key={`b-${match.index}`}>{name}</strong>);
+    }
+    lastIndex = NARRATIVE_BOLD_RE.lastIndex;
+  }
+  if (lastIndex < narrative.length) {
+    nodes.push(narrative.slice(lastIndex));
+  }
+  return nodes;
+}
 
 export default function Menu() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -97,10 +136,9 @@ export default function Menu() {
 
   const { data: aiResults, isFetching: aiFetching } = useQuery({
     queryKey: ['ai-search-manager', submittedAiQuery, selectedCategory],
-    queryFn: () => menuApi.search({
-      q: submittedAiQuery,
+    queryFn: () => menuApi.askShari({
+      query: submittedAiQuery,
       category_id: selectedCategory || undefined,
-      top_k: 20,
     }),
     enabled: aiSearchOpen && submittedAiQuery.length > 0,
   });
@@ -430,44 +468,85 @@ export default function Menu() {
               </button>
             </div>
 
-            {aiResults && submittedAiQuery && (
-              <div className="space-y-1">
-                <p className="text-xs text-on-surface-variant/50 px-1">
-                  {aiResults.results.length} result{aiResults.results.length !== 1 ? 's' : ''} · {aiResults.scoring_method === 'hybrid' ? 'Semantic + keyword' : 'Keyword only'}
-                </p>
-                {aiResults.results.length === 0 ? (
-                  <p className="text-sm text-on-surface-variant/60 px-1 py-2">No matches found — try rephrasing</p>
-                ) : (
-                  <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto">
-                    {aiResults.results.map(item => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setAiSearchOpen(false);
-                          setSearchTerm(item.name);
-                        }}
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-surface-container text-left transition-colors"
-                      >
-                        {item.image_url ? (
-                          <img src={item.image_url} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
-                        ) : (
-                          <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
-                            <span className="text-base opacity-30">🍣</span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
-                          {item.description && (
-                            <p className="text-xs text-on-surface-variant/60 truncate">{item.description}</p>
-                          )}
+            {aiResults && submittedAiQuery && (() => {
+              const featuredIds = new Set(aiResults.featured.map(f => f.id));
+              const moreItems = aiResults.results.filter(r => !featuredIds.has(r.id)).slice(0, 10);
+              const hasAnything = aiResults.narrative.length > 0 || aiResults.results.length > 0;
+              return (
+                <div className="space-y-3">
+                  <p className="text-xs text-on-surface-variant/50 px-1">
+                    {aiResults.results.length} result{aiResults.results.length !== 1 ? 's' : ''} · {aiResults.scoring_method === 'hybrid' ? 'Semantic + keyword' : 'Keyword only'}
+                    {aiResults.llm_used ? ' · Shari wrote this' : ''}
+                  </p>
+                  {!hasAnything ? (
+                    <p className="text-sm text-on-surface-variant/60 px-1 py-2">No matches found — try rephrasing</p>
+                  ) : (
+                    <>
+                      {aiResults.narrative && (
+                        <p className="text-sm text-on-surface leading-relaxed px-1">
+                          {renderAskShariNarrative(aiResults.narrative, aiResults.featured, handleEditItem)}
+                        </p>
+                      )}
+                      {aiResults.featured.length > 0 && (
+                        <div className={`grid gap-3 pt-1 ${aiResults.featured.length === 1 ? 'grid-cols-1' : aiResults.featured.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                          {aiResults.featured.map(f => (
+                            <button
+                              key={f.id}
+                              onClick={() => handleEditItem(f.item as MenuItem)}
+                              className="flex flex-col items-center text-center p-3 rounded-2xl bg-gradient-to-b from-primary/10 to-primary/[0.02] ring-1 ring-primary/25 hover:ring-primary/60 shadow-sm hover:shadow-md transition-all"
+                            >
+                              {f.item.image_url ? (
+                                <img
+                                  src={resolveImageUrl(f.item.image_url) ?? undefined}
+                                  alt=""
+                                  className="w-full aspect-square rounded-xl object-cover"
+                                  style={getMenuImageStyle(f.item as MenuItem)}
+                                />
+                              ) : (
+                                <div className="w-full aspect-square rounded-xl bg-surface-container flex items-center justify-center">
+                                  <span className="text-3xl opacity-25">🍣</span>
+                                </div>
+                              )}
+                              <p className="text-sm font-semibold text-on-surface mt-2 line-clamp-2 leading-tight">{f.name}</p>
+                              <p className="text-xs font-bold text-primary mt-1">${Number(f.item.price).toFixed(2)}</p>
+                            </button>
+                          ))}
                         </div>
-                        <p className="text-sm font-semibold text-primary flex-shrink-0">${Number(item.price).toFixed(2)}</p>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                      )}
+                      {moreItems.length > 0 && (
+                        <div className="space-y-1 pt-2 border-t border-outline-variant/10">
+                          <p className="text-xs text-on-surface-variant/50 px-1 pt-1.5">{aiResults.follow_up || 'Want a few more?'}</p>
+                          <div className="grid grid-cols-1 gap-1 max-h-64 overflow-y-auto">
+                            {moreItems.map(item => (
+                              <button
+                                key={item.id}
+                                onClick={() => handleEditItem(item as MenuItem)}
+                                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-surface-container text-left transition-colors"
+                              >
+                                {item.image_url ? (
+                                  <img src={resolveImageUrl(item.image_url) ?? undefined} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                                ) : (
+                                  <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                                    <span className="text-base opacity-30">🍣</span>
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
+                                  {item.description && (
+                                    <p className="text-xs text-on-surface-variant/60 truncate">{item.description}</p>
+                                  )}
+                                </div>
+                                <p className="text-sm font-semibold text-primary flex-shrink-0">${Number(item.price).toFixed(2)}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </section>

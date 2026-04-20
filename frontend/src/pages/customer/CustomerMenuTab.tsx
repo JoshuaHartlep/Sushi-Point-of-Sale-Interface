@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Minus, Loader2 } from 'lucide-react';
-import { menuApi, categoriesApi, MenuItem, Category, resolveImageUrl, getMenuImageStyle } from '../../services/api';
+import { menuApi, categoriesApi, MenuItem, Category, AskShariFeaturedItem, resolveImageUrl, getMenuImageStyle } from '../../services/api';
 import { useCustomerOrder } from '../../contexts/CustomerOrderContext';
 import MenuItemModal from './MenuItemModal';
 
@@ -11,6 +11,51 @@ const STICKY_OFFSET = 108;
 
 const sortMenuItemsByName = (a: MenuItem, b: MenuItem) =>
   a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+
+// Parses a narrative like "Try the **Spicy Tuna Roll** — it's light and spicy."
+// Each `**...**` span is replaced with a clickable button that opens the item
+// modal when its name matches one of the `featured` entries.  Unknown tokens
+// are rendered as plain bold text (shouldn't happen — server-side validation
+// rejects hallucinated bolds — but we fail open rather than showing raw **s).
+const NARRATIVE_BOLD_RE = /\*\*([^*\n]+?)\*\*/g;
+
+function renderAskShariNarrative(
+  narrative: string,
+  featured: AskShariFeaturedItem[],
+  onItemClick: (item: MenuItem) => void,
+) {
+  const byLower = new Map(featured.map(f => [f.name.toLowerCase(), f]));
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  // reset because the regex is module-scoped with /g
+  NARRATIVE_BOLD_RE.lastIndex = 0;
+  while ((match = NARRATIVE_BOLD_RE.exec(narrative)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(narrative.slice(lastIndex, match.index));
+    }
+    const name = match[1].trim();
+    const hit = byLower.get(name.toLowerCase());
+    if (hit) {
+      nodes.push(
+        <button
+          key={`${match.index}-${hit.id}`}
+          onClick={() => onItemClick(hit.item as MenuItem)}
+          className="font-bold text-primary hover:underline inline"
+        >
+          {name}
+        </button>
+      );
+    } else {
+      nodes.push(<strong key={`b-${match.index}`}>{name}</strong>);
+    }
+    lastIndex = NARRATIVE_BOLD_RE.lastIndex;
+  }
+  if (lastIndex < narrative.length) {
+    nodes.push(narrative.slice(lastIndex));
+  }
+  return nodes;
+}
 
 export default function CustomerMenuTab() {
   const { mealPeriod, addToCart, updateQty, cart, isAyce } = useCustomerOrder();
@@ -55,8 +100,6 @@ export default function CustomerMenuTab() {
     // so toggling the panel doesn't re-hit the network for the same query.
     staleTime: 60_000,
   });
-  const [showMoreAi, setShowMoreAi] = useState(false);
-  useEffect(() => { setShowMoreAi(false); }, [submittedAiQuery]);
 
   // Filter to items relevant to the current meal period.
   const periodItems = allItems.filter(item => {
@@ -346,120 +389,103 @@ export default function CustomerMenuTab() {
               </div>
 
               {aiResults && submittedAiQuery && (() => {
-                const recommendedIds = new Set(aiResults.recommendations.map(r => r.id));
-                const moreItems = aiResults.results.filter(r => !recommendedIds.has(r.id));
+                const featuredIds = new Set(aiResults.featured.map(f => f.id));
+                const moreItems = aiResults.results.filter(r => !featuredIds.has(r.id)).slice(0, 10);
                 const priceLabel = (item: MenuItem) =>
                   isAyce
                     ? (Number(item.ayce_surcharge ?? 0) > 0 ? `+$${Number(item.ayce_surcharge).toFixed(2)}` : 'Incl.')
                     : `$${Number(item.price).toFixed(2)}`;
+                const openItem = (item: MenuItem) => {
+                  setAiSearchOpen(false);
+                  setModalItem(item);
+                };
+
+                const hasAnything = aiResults.narrative.length > 0 || aiResults.results.length > 0;
+
                 return (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <p className="text-[10px] text-on-surface-variant/40 px-1">
                       {aiResults.llm_used ? 'Shari picked' : (aiResults.scoring_method === 'hybrid' ? 'AI + keyword match' : 'Keyword match')}
                       {aiResults.results.length > 0 && ` · ${aiResults.results.length} total`}
                     </p>
 
-                    {aiResults.recommendations.length === 0 ? (
+                    {!hasAnything ? (
                       <p className="text-sm text-on-surface-variant/50 py-2 px-1">
                         No matches — try describing it differently
                       </p>
                     ) : (
                       <>
-                        {/* Recommendations — rich cards with reasoning */}
-                        <div className="space-y-1.5">
-                          {aiResults.recommendations.map((rec, idx) => (
-                            <button
-                              key={rec.id}
-                              onClick={() => {
-                                setAiSearchOpen(false);
-                                setModalItem(rec.item as MenuItem);
-                              }}
-                              className="w-full flex items-start gap-2.5 px-2.5 py-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container active:scale-[0.99] transition-all text-left border border-outline-variant/10"
-                            >
-                              {rec.item.image_url ? (
-                                <img
-                                  src={resolveImageUrl(rec.item.image_url) ?? undefined}
-                                  alt=""
-                                  className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                                  style={getMenuImageStyle(rec.item)}
-                                />
-                              ) : (
-                                <div className="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0">
-                                  <span className="text-xl opacity-25">🍣</span>
-                                </div>
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline justify-between gap-2">
-                                  <p className="text-sm font-bold text-on-surface truncate">
-                                    <span className="text-primary mr-1">{idx + 1}.</span>{rec.name}
-                                  </p>
-                                  <p className="text-sm font-bold text-primary flex-shrink-0">{priceLabel(rec.item)}</p>
-                                </div>
-                                {rec.reason && (
-                                  <p className="text-xs text-on-surface-variant/80 mt-0.5 leading-snug line-clamp-2">{rec.reason}</p>
-                                )}
-                                {rec.highlights.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {rec.highlights.map((h, i) => (
-                                      <span key={i} className="text-[10px] text-primary/80 bg-primary/8 px-1.5 py-0.5 rounded-full">
-                                        {h}
-                                      </span>
-                                    ))}
+                        {/* LLM narrative with clickable item names */}
+                        {aiResults.narrative && (
+                          <p className="text-sm text-on-surface leading-relaxed px-1">
+                            {renderAskShariNarrative(aiResults.narrative, aiResults.featured, openItem)}
+                          </p>
+                        )}
+
+                        {/* Featured top picks — larger image cards that "pop" */}
+                        {aiResults.featured.length > 0 && (
+                          <div className={`grid gap-2 pt-1 ${aiResults.featured.length === 1 ? 'grid-cols-1' : aiResults.featured.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                            {aiResults.featured.map(f => (
+                              <button
+                                key={f.id}
+                                onClick={() => openItem(f.item as MenuItem)}
+                                className="flex flex-col items-center text-center p-2.5 rounded-2xl bg-gradient-to-b from-primary/10 to-primary/[0.02] ring-1 ring-primary/25 hover:ring-primary/60 shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
+                              >
+                                {f.item.image_url ? (
+                                  <img
+                                    src={resolveImageUrl(f.item.image_url) ?? undefined}
+                                    alt=""
+                                    className="w-full aspect-square rounded-xl object-cover"
+                                    style={getMenuImageStyle(f.item as MenuItem)}
+                                  />
+                                ) : (
+                                  <div className="w-full aspect-square rounded-xl bg-surface-container flex items-center justify-center">
+                                    <span className="text-2xl opacity-25">🍣</span>
                                   </div>
                                 )}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Follow-up hint + "show more" reveal */}
-                        {moreItems.length > 0 && (
-                          <>
-                            {!showMoreAi ? (
-                              <button
-                                onClick={() => setShowMoreAi(true)}
-                                className="w-full text-center text-xs text-primary hover:underline py-1.5"
-                              >
-                                {aiResults.follow_up} ({moreItems.length})
+                                <p className="text-xs font-semibold text-on-surface mt-2 line-clamp-2 leading-tight">{f.name}</p>
+                                <p className="text-[11px] font-bold text-primary mt-1">{priceLabel(f.item as MenuItem)}</p>
                               </button>
-                            ) : (
-                              <div className="space-y-0.5 pt-1 border-t border-outline-variant/10">
-                                <p className="text-[10px] text-on-surface-variant/40 px-1 pt-1">More suggestions</p>
-                                <div className="max-h-48 overflow-y-auto space-y-0.5">
-                                  {moreItems.map(item => (
-                                    <button
-                                      key={item.id}
-                                      onClick={() => {
-                                        setAiSearchOpen(false);
-                                        setModalItem(item as MenuItem);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container active:scale-[0.98] transition-all text-left"
-                                    >
-                                      {item.image_url ? (
-                                        <img
-                                          src={resolveImageUrl(item.image_url) ?? undefined}
-                                          alt=""
-                                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                                          style={getMenuImageStyle(item)}
-                                        />
-                                      ) : (
-                                        <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
-                                          <span className="text-lg opacity-25">🍣</span>
-                                        </div>
-                                      )}
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
-                                        {item.description && (
-                                          <p className="text-xs text-on-surface-variant/55 truncate">{item.description}</p>
-                                        )}
-                                      </div>
-                                      <p className="text-sm font-bold text-primary flex-shrink-0">{priceLabel(item)}</p>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Native list: remaining ranked RAG results */}
+                        {moreItems.length > 0 && (
+                          <div className="space-y-0.5 pt-1 border-t border-outline-variant/10">
+                            <p className="text-[10px] text-on-surface-variant/40 px-1 pt-1.5">
+                              {aiResults.follow_up || 'Want a few more?'}
+                            </p>
+                            <div className="max-h-56 overflow-y-auto space-y-0.5">
+                              {moreItems.map(item => (
+                                <button
+                                  key={item.id}
+                                  onClick={() => openItem(item as MenuItem)}
+                                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container active:scale-[0.98] transition-all text-left"
+                                >
+                                  {item.image_url ? (
+                                    <img
+                                      src={resolveImageUrl(item.image_url) ?? undefined}
+                                      alt=""
+                                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                      style={getMenuImageStyle(item)}
+                                    />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                                      <span className="text-lg opacity-25">🍣</span>
+                                    </div>
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
+                                    {item.description && (
+                                      <p className="text-xs text-on-surface-variant/55 truncate">{item.description}</p>
+                                    )}
+                                  </div>
+                                  <p className="text-sm font-bold text-primary flex-shrink-0">{priceLabel(item as MenuItem)}</p>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </>
                     )}

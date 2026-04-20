@@ -3,18 +3,21 @@ Ask Shari — LLM explanation + formatting layer.
 
 Design philosophy:
   * The retrieval system (hybrid_search) is the source of truth.
-  * The LLM's only job is to *choose* and *explain* 3-5 items from the
-    top-ranked slice we hand it.  It never invents items.
-  * If anything goes wrong (no API key, timeout, bad JSON, hallucinated names),
-    we return a retrieval-only response so the UI stays fast and correct.
+  * The LLM's only job is to write ONE short paragraph recommending 3 items
+    from the ranked slice we hand it, using markdown bold (**Item Name**) to
+    reference each item so the frontend can linkify them into modal openers.
+  * If anything goes wrong (no API key, timeout, bad JSON, hallucinated names
+    inside **...**), we fall back to a template narrative built from the
+    top-ranked retrieval results so the UI stays fast and correct.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import re
 import time
-from typing import Any, Optional
+from typing import Optional
 
 from app.core.config import settings
 from app.models.menu import MenuItem
@@ -27,32 +30,29 @@ logger = logging.getLogger(__name__)
 # ── LLM prompt ───────────────────────────────────────────────────────────────
 
 _SYSTEM_PROMPT = (
-    "You are Shari, a concise sushi restaurant recommender. "
-    "You are given a customer query and a short list of menu items that the "
-    "retrieval system has already selected. Your job is to pick the 3-5 best "
-    "items for the customer and explain, briefly, why.\n\n"
+    "You are Shari, a warm and concise sushi restaurant recommender. "
+    "You are given a customer query and a short list of menu items the "
+    "retrieval system has already selected. Write ONE short, friendly "
+    "paragraph (2-4 sentences, max ~70 words total) that recommends up to 3 "
+    "items from the list and briefly explains why each one fits the query.\n\n"
     "Strict rules:\n"
-    "1. Only recommend items whose name appears EXACTLY in the provided list. "
-    "Do not invent, rename, or combine items.\n"
-    "2. Return at least 3 recommendations and at most 5, always in ranked order "
-    "(best first).\n"
-    "3. For each item, write one short reason (max 20 words) that references "
-    "the query. Use the item's tags / description for grounding; do not fabricate "
-    "ingredients.\n"
-    "4. Each item's `highlights` must be 1-3 short tags/phrases copied or "
-    "lightly paraphrased from the item's own tags / description.\n"
-    "5. Close with a single `follow_up` line that hints more items are "
-    "available (e.g. \"Want a few more suggestions?\").\n"
-    "6. Output MUST be valid JSON matching the schema provided. No extra prose."
+    "1. Reference items using markdown bold: **Item Name**. The text inside "
+    "the ** markers MUST match a name from the provided list EXACTLY (same "
+    "spelling and casing). Do not invent, rename, combine, or abbreviate items.\n"
+    "2. Mention up to 3 items, ordered best-fit first. Prefer 3 when possible.\n"
+    "3. Ground each reason in the item's tags / description — do not fabricate "
+    "ingredients, heat levels, or claims.\n"
+    "4. Write flowing prose, not a bulleted list. Vary sentence structure.\n"
+    "5. Also return a short `follow_up` line (one sentence) hinting that more "
+    "items are available (e.g. \"Want a few more suggestions?\").\n"
+    "6. Output MUST be valid JSON: {\"narrative\": \"...\", \"follow_up\": \"...\"} — "
+    "nothing else."
 )
 
 _SCHEMA_HINT = (
     "Schema:\n"
     "{\n"
-    '  "recommendations": [\n'
-    '    {"name": "<exact menu item name>", "reason": "<=20 words>", '
-    '"highlights": ["<tag or phrase>", ...]}\n'
-    "  ],\n"
+    '  "narrative": "<one short paragraph using **Item Name** for each pick>",\n'
     '  "follow_up": "<short sentence>"\n'
     "}"
 )
@@ -94,7 +94,8 @@ def _item_for_llm(entry: dict) -> dict:
         "tags": tag_names,
         "price_bucket": _price_bucket(price),
         "price": round(price, 2),
-        # Retrieval signals the LLM can use to justify a pick, but must not invent.
+        # Retrieval signal — lets the LLM know how confident the system is, but
+        # it must not invent anything on top.
         "retrieval_score": entry.get("hybrid_score"),
     }
 
@@ -178,56 +179,74 @@ def _call_llm(query: str, llm_items: list[dict]) -> Optional[dict]:
         return None
 
 
-# ── Response validation ──────────────────────────────────────────────────────
+# ── Narrative parsing ────────────────────────────────────────────────────────
 
-def _sanitize_recommendations(
-    raw: Any,
-    allowed_names: dict[str, dict],  # name → public item dict
-) -> list[dict]:
+_BOLD_TOKEN_RE = re.compile(r"\*\*([^*\n]+?)\*\*")
+
+
+def _extract_bold_tokens(narrative: str) -> list[str]:
+    """Return every `**...**` span in `narrative`, preserving order."""
+    return [m.group(1).strip() for m in _BOLD_TOKEN_RE.finditer(narrative) if m.group(1).strip()]
+
+
+def _build_fallback_narrative(items: list[dict]) -> str:
     """
-    Enforce the no-hallucination rule.
-
-    Accepts only recommendations whose `name` exists verbatim (case-insensitive)
-    in the list we handed the LLM.  Each valid recommendation is enriched with
-    the item's id / price / image so the frontend can render it without a
-    second lookup.
+    Template narrative used when the LLM is disabled / times out / produces bad
+    output.  Always mentions its items with `**Name**` so the frontend renders
+    them identically to an LLM-authored narrative.
     """
-    if not isinstance(raw, list):
-        return []
+    top = items[:3]
+    if not top:
+        return ""
+    if len(top) == 1:
+        return f"Try the **{top[0]['name']}** — our top match for what you're looking for."
+    if len(top) == 2:
+        return (
+            f"Two picks worth trying: **{top[0]['name']}** and **{top[1]['name']}** — "
+            f"both match your search closely."
+        )
+    return (
+        f"A few picks for you: **{top[0]['name']}**, **{top[1]['name']}**, "
+        f"and **{top[2]['name']}** — each one lines up well with what you're after."
+    )
 
-    # Lookup is case-insensitive because OpenAI sometimes normalises casing.
-    by_lower = {name.lower(): item for name, item in allowed_names.items()}
-    cleaned: list[dict] = []
-    seen: set[int] = set()
 
-    for rec in raw:
-        if not isinstance(rec, dict):
+def _build_featured(narrative: str, allowed_by_lower: dict[str, dict]) -> list[dict]:
+    """
+    Extract the `**...**` tokens from `narrative` (in order, deduplicated) and
+    resolve each to the corresponding public item dict.  Tokens that don't
+    match an allowed name are skipped — but `_validate_narrative` should have
+    already rejected such narratives, so this is belt-and-suspenders.
+    """
+    featured: list[dict] = []
+    seen_ids: set[int] = set()
+    for token in _extract_bold_tokens(narrative):
+        item = allowed_by_lower.get(token.lower())
+        if item is None or item["id"] in seen_ids:
             continue
-        name = str(rec.get("name", "")).strip()
-        item = by_lower.get(name.lower())
-        if item is None:
-            logger.info("Dropping hallucinated recommendation: %r", name)
-            continue
-        if item["id"] in seen:
-            continue  # LLM occasionally duplicates a name; keep first only
-        seen.add(item["id"])
+        seen_ids.add(item["id"])
+        featured.append({"id": item["id"], "name": item["name"], "item": item})
+    return featured
 
-        reason = str(rec.get("reason", "")).strip()
-        highlights_raw = rec.get("highlights") or []
-        if not isinstance(highlights_raw, list):
-            highlights_raw = []
-        highlights = [str(h).strip() for h in highlights_raw if str(h).strip()][:3]
 
-        cleaned.append({
-            "id": item["id"],
-            "name": item["name"],
-            "reason": reason,
-            "highlights": highlights,
-            "item": item,
-        })
+def _validate_narrative(narrative: str, allowed_by_lower: dict[str, dict]) -> bool:
+    """
+    The no-hallucination guard for free-text output.
 
-    # Schema says 3-5 — cap at 5; if fewer than 3 survived we'll backfill later.
-    return cleaned[:5]
+    Accepts the narrative only when:
+      * there's at least one `**...**` token, and
+      * every `**...**` token maps to an item we actually handed the LLM.
+
+    Anything else and we discard the LLM output and use the template fallback.
+    """
+    tokens = _extract_bold_tokens(narrative)
+    if not tokens:
+        return False
+    unknown = [t for t in tokens if t.lower() not in allowed_by_lower]
+    if unknown:
+        logger.info("Ask Shari dropping narrative with unknown items: %r", unknown)
+        return False
+    return True
 
 
 # ── Public entry point ───────────────────────────────────────────────────────
@@ -247,20 +266,20 @@ def ask_shari(
 
     Shape:
       {
-        "recommendations": [{id, name, reason, highlights, item}, ...],
+        "narrative": "<one paragraph with **Item Name** for each pick>",
+        "featured": [{id, name, item}, ...],  # items mentioned in narrative order
         "follow_up": "...",
-        "results": [item, ...],          # full ranked list (top_k)
-        "more_count": int,               # len(results) - len(recommendations)
+        "results": [item, ...],               # full ranked list (top_k)
+        "more_count": int,                    # len(results) - len(featured)
         "scoring_method": "hybrid" | "keyword_only",
         "llm_used": bool,
-        "cache_hit": bool,               # set by the endpoint wrapper on return
+        "cache_hit": bool,
       }
     """
     # ── Cache lookup ────────────────────────────────────────────────────────
     cached = ask_shari_cache.get_cached(tenant_id, query)
     if cached is not None:
-        cached = {**cached, "cache_hit": True}
-        return cached
+        return {**cached, "cache_hit": True}
 
     # ── Retrieval (always runs — source of truth) ───────────────────────────
     retrieval = hybrid_search(
@@ -280,7 +299,8 @@ def ask_shari(
     # Zero-result case — skip the LLM entirely.
     if not entries:
         response = {
-            "recommendations": [],
+            "narrative": "",
+            "featured": [],
             "follow_up": "I couldn't find anything matching that — try describing it differently?",
             "results": [],
             "more_count": 0,
@@ -288,52 +308,43 @@ def ask_shari(
             "llm_used": False,
             "cache_hit": False,
         }
-        ask_shari_cache.set_cached(tenant_id, query, {**response, "cache_hit": False})
+        ask_shari_cache.set_cached(tenant_id, query, response)
         return response
 
     # ── LLM call on the top slice ───────────────────────────────────────────
     llm_slice_entries = entries[: settings.ASK_SHARI_LLM_ITEMS]
     llm_input = [_item_for_llm(e) for e in llm_slice_entries]
-    allowed_names = {item["name"]: item for item in public_items[: settings.ASK_SHARI_LLM_ITEMS]}
+    allowed_by_lower = {
+        item["name"].lower(): item for item in public_items[: settings.ASK_SHARI_LLM_ITEMS]
+    }
 
     llm_raw = _call_llm(query, llm_input)
 
-    recommendations: list[dict] = []
-    follow_up = "Would you like more suggestions?"
+    narrative = ""
+    follow_up = "Would you like a few more suggestions?"
     llm_used = False
 
     if llm_raw is not None:
-        recommendations = _sanitize_recommendations(
-            llm_raw.get("recommendations"), allowed_names
-        )
-        if recommendations:
+        candidate_narrative = str(llm_raw.get("narrative") or "").strip()
+        candidate_follow_up = str(llm_raw.get("follow_up") or "").strip()
+
+        if candidate_narrative and _validate_narrative(candidate_narrative, allowed_by_lower):
+            narrative = candidate_narrative
             llm_used = True
-            fu = str(llm_raw.get("follow_up", "")).strip()
-            if fu:
-                follow_up = fu
+            if candidate_follow_up:
+                follow_up = candidate_follow_up
 
-    # Fallback / backfill: if the LLM produced fewer than 3 valid recs (or was
-    # skipped entirely), use the top retrieval results in their ranked order.
-    if len(recommendations) < 3:
-        existing_ids = {r["id"] for r in recommendations}
-        for item in public_items[: settings.ASK_SHARI_LLM_ITEMS]:
-            if len(recommendations) >= 3:
-                break
-            if item["id"] in existing_ids:
-                continue
-            recommendations.append({
-                "id": item["id"],
-                "name": item["name"],
-                "reason": "Top match for your query based on our retrieval ranking.",
-                "highlights": [],
-                "item": item,
-            })
+    # Fallback to a template narrative when the LLM was skipped, failed, or
+    # produced a hallucinated response.
+    if not narrative:
+        narrative = _build_fallback_narrative(public_items)
 
-    rec_ids = {r["id"] for r in recommendations}
-    more_count = max(0, len(public_items) - len(rec_ids))
+    featured = _build_featured(narrative, allowed_by_lower)
+    more_count = max(0, len(public_items) - len(featured))
 
     response = {
-        "recommendations": recommendations,
+        "narrative": narrative,
+        "featured": featured,
         "follow_up": follow_up,
         "results": public_items,
         "more_count": more_count,

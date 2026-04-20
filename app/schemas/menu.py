@@ -246,20 +246,28 @@ class AskShariItem(MenuItemBase):
         from_attributes = True
 
 
-class AskShariRecommendation(BaseModel):
-    """A single LLM-chosen (or retrieval-backfilled) recommendation."""
+class AskShariFeaturedItem(BaseModel):
+    """
+    An item referenced inside the narrative.
+
+    The frontend uses the `name` (case-insensitive) to linkify `**Item Name**`
+    tokens in the narrative string; `item` carries everything needed to open
+    the item modal without a second API call.
+    """
     id: int
     name: str
-    reason: str
-    highlights: List[str] = []
     item: AskShariItem
 
 
 class AskShariResponse(BaseModel):
     """Response envelope from POST /menu-items/ask-shari."""
-    recommendations: List[AskShariRecommendation]
+    # Natural-language paragraph; item names are wrapped in markdown bold
+    # (`**Item Name**`) so the frontend can render them as clickable tokens.
+    narrative: str
+    # Items mentioned inside `narrative`, in order of first appearance.
+    featured: List[AskShariFeaturedItem]
     follow_up: str
-    # Full ranked list — UI uses this for "more suggestions" without another LLM call.
+    # Full ranked list — UI shows the non-featured tail as a native list.
     results: List[AskShariItem]
     more_count: int = 0
     scoring_method: Literal["hybrid", "keyword_only"]

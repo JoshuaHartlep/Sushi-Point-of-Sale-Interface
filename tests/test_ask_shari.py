@@ -3,10 +3,10 @@ Tests for the Ask Shari LLM explanation layer.
 
 Coverage:
   - Cache: hit/miss, invalidation, tenant isolation, query normalization
-  - Service: LLM fallback on failure, hallucination filtering, backfill,
-    tenant-scoped retrieval, schema shape
-  - Response schema (Pydantic round-trip) with `llm_used`, `cache_hit`,
-    `more_count`, and `recommendations`/`results`
+  - Service: LLM fallback on failure, hallucination rejection, narrative
+    parsing, featured-item extraction, tenant-scoped retrieval
+  - Response schema (Pydantic round-trip) with the new narrative / featured
+    / llm_used / cache_hit / more_count fields
 """
 
 from __future__ import annotations
@@ -88,14 +88,12 @@ class TestAskShariCache(unittest.TestCase):
     def test_normalization_makes_queries_equivalent(self):
         from app.services import ask_shari_cache
         ask_shari_cache.set_cached(1, "Spicy Tuna", {"ok": True})
-        # Different casing + whitespace should still hit the same entry
         self.assertEqual(ask_shari_cache.get_cached(1, "  spicy   tuna "), {"ok": True})
 
     def test_tenant_isolation(self):
         from app.services import ask_shari_cache
         ask_shari_cache.set_cached(1, "spicy tuna", {"tenant": 1})
         ask_shari_cache.set_cached(2, "spicy tuna", {"tenant": 2})
-        # Each tenant sees only its own entry
         self.assertEqual(ask_shari_cache.get_cached(1, "spicy tuna"), {"tenant": 1})
         self.assertEqual(ask_shari_cache.get_cached(2, "spicy tuna"), {"tenant": 2})
 
@@ -104,7 +102,6 @@ class TestAskShariCache(unittest.TestCase):
         ask_shari_cache.set_cached(1, "spicy tuna", {"stale": True})
         ask_shari_cache.bump_menu_version(1)
         self.assertIsNone(ask_shari_cache.get_cached(1, "spicy tuna"))
-        # Other tenants untouched
         ask_shari_cache.set_cached(2, "vegan", {"fresh": True})
         ask_shari_cache.bump_menu_version(1)
         self.assertEqual(ask_shari_cache.get_cached(2, "vegan"), {"fresh": True})
@@ -116,6 +113,53 @@ class TestAskShariCache(unittest.TestCase):
             self.assertIsNone(ask_shari_cache.get_cached(1, "q"))
 
 
+# ── Narrative parsing helpers ────────────────────────────────────────────────
+
+class TestNarrativeHelpers(unittest.TestCase):
+
+    def test_extract_bold_tokens_preserves_order(self):
+        from app.services.ask_shari_service import _extract_bold_tokens
+        narrative = "Try the **Spicy Tuna Roll**, then the **Dragon Roll**, and maybe **Salmon Nigiri**."
+        self.assertEqual(
+            _extract_bold_tokens(narrative),
+            ["Spicy Tuna Roll", "Dragon Roll", "Salmon Nigiri"],
+        )
+
+    def test_extract_bold_tokens_empty(self):
+        from app.services.ask_shari_service import _extract_bold_tokens
+        self.assertEqual(_extract_bold_tokens("No bold here at all."), [])
+
+    def test_validate_narrative_accepts_when_all_known(self):
+        from app.services.ask_shari_service import _validate_narrative
+        allowed = {"spicy tuna roll": {"id": 1, "name": "Spicy Tuna Roll"}}
+        self.assertTrue(_validate_narrative("Try the **Spicy Tuna Roll**.", allowed))
+
+    def test_validate_narrative_rejects_unknown_bold(self):
+        from app.services.ask_shari_service import _validate_narrative
+        allowed = {"spicy tuna roll": {"id": 1, "name": "Spicy Tuna Roll"}}
+        self.assertFalse(_validate_narrative("Try the **Phantom Roll**.", allowed))
+
+    def test_validate_narrative_rejects_when_no_bold(self):
+        from app.services.ask_shari_service import _validate_narrative
+        allowed = {"spicy tuna roll": {"id": 1, "name": "Spicy Tuna Roll"}}
+        self.assertFalse(_validate_narrative("Just a plain sentence.", allowed))
+
+    def test_fallback_narrative_mentions_top_three(self):
+        from app.services.ask_shari_service import _build_fallback_narrative
+        items = [
+            {"id": 1, "name": "Alpha Roll"},
+            {"id": 2, "name": "Bravo Roll"},
+            {"id": 3, "name": "Charlie Roll"},
+            {"id": 4, "name": "Delta Roll"},
+        ]
+        text = _build_fallback_narrative(items)
+        self.assertIn("**Alpha Roll**", text)
+        self.assertIn("**Bravo Roll**", text)
+        self.assertIn("**Charlie Roll**", text)
+        # Fourth item is not referenced.
+        self.assertNotIn("Delta Roll", text)
+
+
 # ── Service: LLM fallback + hallucination guard ───────────────────────────────
 
 class TestAskShariService(unittest.TestCase):
@@ -124,8 +168,8 @@ class TestAskShariService(unittest.TestCase):
         from app.services import ask_shari_cache
         ask_shari_cache.reset_for_tests()
 
-    def test_falls_back_when_llm_returns_none(self):
-        """If the LLM call fails (timeout, no key, bad JSON), we backfill from retrieval."""
+    def test_falls_back_to_template_when_llm_returns_none(self):
+        """If the LLM call fails, the narrative is filled from a template."""
         from app.services import ask_shari_service
 
         items = [
@@ -140,17 +184,14 @@ class TestAskShariService(unittest.TestCase):
             result = ask_shari_service.ask_shari(db=None, tenant_id=1, query="spicy")
 
         self.assertFalse(result["llm_used"])
-        # Backfilled with at least 3 recommendations from top retrieval results
-        self.assertGreaterEqual(len(result["recommendations"]), 3)
-        # All recommendations reference items that actually came from retrieval
-        rec_ids = {r["id"] for r in result["recommendations"]}
-        self.assertTrue(rec_ids.issubset({i.id for i in items}))
-        # Full ranked list preserved for "more suggestions"
+        self.assertIn("**Spicy Tuna Roll**", result["narrative"])
+        # Featured should mirror the items bolded in the narrative.
+        featured_ids = [f["id"] for f in result["featured"]]
+        self.assertEqual(featured_ids[:3], [1, 2, 3])
         self.assertEqual(len(result["results"]), 4)
         self.assertFalse(result["cache_hit"])
 
-    def test_drops_hallucinated_items(self):
-        """Recommendations whose name isn't in the provided list are dropped."""
+    def test_uses_llm_narrative_when_all_bolds_are_valid(self):
         from app.services import ask_shari_service
 
         items = [
@@ -158,25 +199,47 @@ class TestAskShariService(unittest.TestCase):
             _make_item(id=2, name="Salmon Nigiri"),
             _make_item(id=3, name="Dragon Roll"),
         ]
-        fake_llm_response = {
-            "recommendations": [
-                {"name": "Spicy Tuna Roll", "reason": "Matches spicy", "highlights": ["spicy"]},
-                {"name": "Made-Up Phantom Roll", "reason": "Invented", "highlights": []},
-                {"name": "Salmon Nigiri", "reason": "Classic", "highlights": ["salmon"]},
-            ],
+        llm_response = {
+            "narrative": (
+                "If you're after something spicy, the **Spicy Tuna Roll** is a great "
+                "pick, with **Salmon Nigiri** and **Dragon Roll** close behind."
+            ),
+            "follow_up": "Want a few more suggestions?",
+        }
+
+        with patch.object(ask_shari_service, "hybrid_search", return_value=_retrieval_result(items)), \
+             patch.object(ask_shari_service, "_call_llm", return_value=llm_response):
+            result = ask_shari_service.ask_shari(db=None, tenant_id=1, query="spicy")
+
+        self.assertTrue(result["llm_used"])
+        self.assertEqual(result["narrative"], llm_response["narrative"])
+        self.assertEqual(result["follow_up"], "Want a few more suggestions?")
+        self.assertEqual([f["id"] for f in result["featured"]], [1, 2, 3])
+
+    def test_rejects_llm_narrative_with_hallucinated_item(self):
+        """If any **...** token isn't in the retrieved set, fall back to template."""
+        from app.services import ask_shari_service
+
+        items = [
+            _make_item(id=1, name="Spicy Tuna Roll"),
+            _make_item(id=2, name="Salmon Nigiri"),
+            _make_item(id=3, name="Dragon Roll"),
+        ]
+        llm_response = {
+            "narrative": "Try the **Spicy Tuna Roll** or the made-up **Phantom Roll**.",
             "follow_up": "Want more?",
         }
 
         with patch.object(ask_shari_service, "hybrid_search", return_value=_retrieval_result(items)), \
-             patch.object(ask_shari_service, "_call_llm", return_value=fake_llm_response):
+             patch.object(ask_shari_service, "_call_llm", return_value=llm_response):
             result = ask_shari_service.ask_shari(db=None, tenant_id=1, query="spicy")
 
-        rec_names = [r["name"] for r in result["recommendations"]]
-        self.assertIn("Spicy Tuna Roll", rec_names)
-        self.assertIn("Salmon Nigiri", rec_names)
-        self.assertNotIn("Made-Up Phantom Roll", rec_names)
-        self.assertTrue(result["llm_used"])
-        self.assertEqual(result["follow_up"], "Want more?")
+        # LLM output was rejected — we should have fallen back to the template.
+        self.assertFalse(result["llm_used"])
+        self.assertNotIn("Phantom Roll", result["narrative"])
+        # Featured items are all real.
+        for f in result["featured"]:
+            self.assertIn(f["id"], {1, 2, 3})
 
     def test_zero_retrieval_skips_llm(self):
         from app.services import ask_shari_service
@@ -186,7 +249,8 @@ class TestAskShariService(unittest.TestCase):
             result = ask_shari_service.ask_shari(db=None, tenant_id=1, query="nonsense")
 
         mock_llm.assert_not_called()
-        self.assertEqual(result["recommendations"], [])
+        self.assertEqual(result["narrative"], "")
+        self.assertEqual(result["featured"], [])
         self.assertEqual(result["results"], [])
         self.assertEqual(result["more_count"], 0)
         self.assertFalse(result["llm_used"])
@@ -198,25 +262,22 @@ class TestAskShariService(unittest.TestCase):
 
         with patch.object(ask_shari_service, "hybrid_search", return_value=_retrieval_result(items)) as mock_ret, \
              patch.object(ask_shari_service, "_call_llm", return_value=None) as mock_llm:
-            # First call populates the cache
             first = ask_shari_service.ask_shari(db=None, tenant_id=1, query="spicy")
-            # Second call with the same (normalized) query must return the cached dict
             second = ask_shari_service.ask_shari(db=None, tenant_id=1, query="  SPICY  ")
 
         self.assertEqual(mock_ret.call_count, 1)
         self.assertEqual(mock_llm.call_count, 1)
         self.assertTrue(second["cache_hit"])
         self.assertFalse(first["cache_hit"])
-        # Payload identity preserved
-        self.assertEqual(first["recommendations"], second["recommendations"])
+        self.assertEqual(first["narrative"], second["narrative"])
+        self.assertEqual(first["featured"], second["featured"])
 
     def test_tenant_cache_isolation(self):
         """Two tenants querying the same string get independent cache entries."""
         from app.services import ask_shari_service
 
-        items_a = [_make_item(id=101, tenant_id=1, name="Tenant A Roll")] * 1
-        items_b = [_make_item(id=202, tenant_id=2, name="Tenant B Roll")] * 1
-        # Pad so retrieval layer has at least 3 items per tenant
+        items_a = [_make_item(id=101, tenant_id=1, name="Tenant A Roll")]
+        items_b = [_make_item(id=202, tenant_id=2, name="Tenant B Roll")]
         items_a += [_make_item(id=102, tenant_id=1, name="A2"), _make_item(id=103, tenant_id=1, name="A3")]
         items_b += [_make_item(id=203, tenant_id=2, name="B2"), _make_item(id=204, tenant_id=2, name="B3")]
 
@@ -228,11 +289,10 @@ class TestAskShariService(unittest.TestCase):
             a = ask_shari_service.ask_shari(db=None, tenant_id=1, query="rolls")
             b = ask_shari_service.ask_shari(db=None, tenant_id=2, query="rolls")
 
-        a_ids = {r["id"] for r in a["recommendations"]}
-        b_ids = {r["id"] for r in b["recommendations"]}
+        a_ids = {f["id"] for f in a["featured"]}
+        b_ids = {f["id"] for f in b["featured"]}
         self.assertTrue(a_ids.issubset({101, 102, 103}))
         self.assertTrue(b_ids.issubset({202, 203, 204}))
-        # Nothing leaks across tenants
         self.assertFalse(a_ids & b_ids)
 
 
@@ -260,9 +320,8 @@ class TestAskShariSchema(unittest.TestCase):
             "hybrid_score": 0.95,
         }
         payload = {
-            "recommendations": [
-                {"id": 1, "name": "Spicy Tuna Roll", "reason": "spicy", "highlights": ["spicy"], "item": item}
-            ],
+            "narrative": "Try the **Spicy Tuna Roll** — a light bite with medium heat.",
+            "featured": [{"id": 1, "name": "Spicy Tuna Roll", "item": item}],
             "follow_up": "Want more?",
             "results": [item],
             "more_count": 0,
@@ -272,7 +331,8 @@ class TestAskShariSchema(unittest.TestCase):
         }
 
         parsed = AskShariResponse(**payload)
-        self.assertEqual(parsed.recommendations[0].name, "Spicy Tuna Roll")
+        self.assertEqual(parsed.featured[0].name, "Spicy Tuna Roll")
+        self.assertIn("**Spicy Tuna Roll**", parsed.narrative)
         self.assertEqual(parsed.scoring_method, "hybrid")
         self.assertTrue(parsed.llm_used)
 

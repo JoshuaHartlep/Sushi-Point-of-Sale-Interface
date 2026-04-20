@@ -199,18 +199,19 @@ export interface AskShariRequest {
   max_price?: number;
 }
 
-export interface AskShariRecommendation {
+export interface AskShariFeaturedItem {
   id: number;
   name: string;
-  reason: string;
-  highlights: string[];
   item: MenuItem & { hybrid_score?: number | null };
 }
 
 export interface AskShariResponse {
-  recommendations: AskShariRecommendation[];
+  /** Paragraph with `**Item Name**` markdown; frontend linkifies the bolds. */
+  narrative: string;
+  /** Items referenced inside the narrative, in order of first mention. */
+  featured: AskShariFeaturedItem[];
   follow_up: string;
-  /** Full ranked list — use for "Show more suggestions" without another LLM call. */
+  /** Full ranked retrieval list — render the non-featured tail as a native list. */
   results: Array<MenuItem & { hybrid_score?: number | null }>;
   more_count: number;
   scoring_method: 'hybrid' | 'keyword_only';
