@@ -391,7 +391,7 @@ Shari uses a two-stage hybrid approach:
 
 2. **Keyword score** (secondary signal) — a lightweight BM25-style overlap score is computed over name, description, and tags. This boosts items that contain the exact words from the query even if vector similarity is moderate.
 
-3. **Hybrid ranking** — final score = `0.7 × vector_score + 0.3 × keyword_score`. Falls back to keyword-only automatically when embeddings are unavailable (pgvector not installed, OpenAI unreachable, or an item has no embedding yet).
+3. **Hybrid ranking** — final score = `0.6 × vector_score + 0.4 × keyword_score` (weights configurable via `SEARCH_SEMANTIC_WEIGHT` / `SEARCH_KEYWORD_WEIGHT`). Falls back to keyword-only automatically when embeddings are unavailable (pgvector not installed, OpenAI unreachable, or an item has no embedding yet).
 
 ### Embedding pipeline
 
@@ -414,12 +414,25 @@ Shari uses a two-stage hybrid approach:
 
 Response includes `scoring_method` (`"hybrid"` or `"keyword_only"`) so the UI can surface which mode was used.
 
+### LLM narrative layer (`POST /menu-items/ask-shari`)
+
+On top of the hybrid search, Ask Shari adds a **short recommendation paragraph** written by a small chat model (`gpt-4o-mini` by default). The retrieval system stays the source of truth — the LLM's only job is to explain, in plain language, why 2–3 of the top-ranked items fit the query.
+
+- **Prompt contract**: the LLM must reference every pick using markdown bold (`**Item Name**`), and every `**…**` token must match a retrieved item's name exactly. The server extracts those tokens, verifies them against the allowed set, and **rejects any narrative containing a hallucinated name** — falling back to a deterministic template like *"A few picks for you: **A**, **B**, and **C** …"*.
+- **Graceful fallback**: no API key, timeout, bad JSON, or hallucinated bold all collapse to the template path. The UI never sees an error.
+- **Per-tenant cache**: responses are cached in-memory (Redis optional) keyed by `(tenant_id, menu_version, normalized_query)` with a TTL. Any menu mutation (create / update / delete / bulk ops / tag change) bumps `menu_version` for that tenant — O(1) invalidation, no scans. Normalization lowercases and collapses whitespace so `"Spicy Tuna "` and `"spicy tuna"` share a cache entry.
+- **Response shape**: `{ narrative, featured[], follow_up, results[], more_count, scoring_method, llm_used, cache_hit }`. `featured` is the list of items referenced inside the narrative (in first-mention order) with full item payloads bundled so the UI can open the item modal without a second API call.
+
 ### UI behavior
 
 - The search panel is opened with the **Ask Shari** button and closed with the **×** button or toggling the button again
 - Search fires only on explicit submission: **Enter** key or the **send** button (not on every keystroke)
 - A spinner replaces the send icon while the request is in flight
-- Result count and scoring method are shown below the input (`"Semantic + keyword"` or `"Keyword only"`)
+- The panel renders, in order:
+  1. **Narrative paragraph** with each `**Item Name**` linkified as a clickable button that opens the item modal (customer) or edit modal (manager)
+  2. **Featured top 3** as compact image cards with a primary-tinted ring so they visually "pop"
+  3. **"Want a few more?"** section — a short inline list of the remaining ranked results (first 3 on customer, expandable via a **Show N more** button to avoid a cramped scroll area on mobile)
+- A status line shows whether the narrative was LLM-written (`Shari picked`) vs. template, and whether retrieval was hybrid or keyword-only
 - Closing the panel or toggling it clears both the input and any previous results
 
 ### Environment variables required
@@ -428,9 +441,17 @@ Add these to `.backend-env` on EC2 (or your local `.env`):
 
 ```env
 OPENAI_API_KEY=sk-...
+# Optional overrides (defaults shown):
+# ASK_SHARI_MODEL=gpt-4o-mini
+# ASK_SHARI_TOP_K=20
+# ASK_SHARI_LLM_ITEMS=6
+# ASK_SHARI_TIMEOUT_S=8.0
+# ASK_SHARI_MAX_TOKENS=500
+# ASK_SHARI_CACHE_TTL_S=900
+# ASK_SHARI_REDIS_URL=redis://...
 ```
 
-Without this key, Ask Shari falls back to keyword-only search automatically — no errors are surfaced to the user.
+Without `OPENAI_API_KEY`, retrieval falls back to keyword-only and the LLM layer is skipped — the template narrative still renders so the UI behaves identically from the user's point of view.
 
 ---
 

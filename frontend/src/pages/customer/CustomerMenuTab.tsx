@@ -73,6 +73,9 @@ export default function CustomerMenuTab() {
   const [aiSearchOpen, setAiSearchOpen] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
   const [submittedAiQuery, setSubmittedAiQuery] = useState('');
+  const [showAllMore, setShowAllMore] = useState(false);
+
+  useEffect(() => { setShowAllMore(false); }, [submittedAiQuery]);
 
   // Map of catId -> section DOM element, populated by ref callbacks during render.
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
@@ -402,8 +405,12 @@ export default function CustomerMenuTab() {
 
                 const hasAnything = aiResults.narrative.length > 0 || aiResults.results.length > 0;
 
+                const INITIAL_MORE = 3;
+                const visibleMore = showAllMore ? moreItems : moreItems.slice(0, INITIAL_MORE);
+                const hiddenCount = moreItems.length - visibleMore.length;
+
                 return (
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     <p className="text-[10px] text-on-surface-variant/40 px-1">
                       {aiResults.llm_used ? 'Shari picked' : (aiResults.scoring_method === 'hybrid' ? 'AI + keyword match' : 'Keyword match')}
                       {aiResults.results.length > 0 && ` · ${aiResults.results.length} total`}
@@ -417,74 +424,90 @@ export default function CustomerMenuTab() {
                       <>
                         {/* LLM narrative with clickable item names */}
                         {aiResults.narrative && (
-                          <p className="text-sm text-on-surface leading-relaxed px-1">
+                          <p className="text-[13px] text-on-surface leading-snug px-1">
                             {renderAskShariNarrative(aiResults.narrative, aiResults.featured, openItem)}
                           </p>
                         )}
 
-                        {/* Featured top picks — larger image cards that "pop" */}
+                        {/* Featured top picks — compact image cards that "pop" */}
                         {aiResults.featured.length > 0 && (
-                          <div className={`grid gap-2 pt-1 ${aiResults.featured.length === 1 ? 'grid-cols-1' : aiResults.featured.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                          <div className={`grid gap-1.5 pt-0.5 ${aiResults.featured.length === 1 ? 'grid-cols-1' : aiResults.featured.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                             {aiResults.featured.map(f => (
                               <button
                                 key={f.id}
                                 onClick={() => openItem(f.item as MenuItem)}
-                                className="flex flex-col items-center text-center p-2.5 rounded-2xl bg-gradient-to-b from-primary/10 to-primary/[0.02] ring-1 ring-primary/25 hover:ring-primary/60 shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
+                                className="flex flex-col items-center text-center p-1.5 rounded-xl bg-gradient-to-b from-primary/10 to-primary/[0.02] ring-1 ring-primary/25 shadow-sm active:scale-[0.97] transition-all"
                               >
                                 {f.item.image_url ? (
                                   <img
                                     src={resolveImageUrl(f.item.image_url) ?? undefined}
                                     alt=""
-                                    className="w-full aspect-square rounded-xl object-cover"
+                                    className="w-full aspect-square rounded-lg object-cover"
                                     style={getMenuImageStyle(f.item as MenuItem)}
                                   />
                                 ) : (
-                                  <div className="w-full aspect-square rounded-xl bg-surface-container flex items-center justify-center">
-                                    <span className="text-2xl opacity-25">🍣</span>
+                                  <div className="w-full aspect-square rounded-lg bg-surface-container flex items-center justify-center">
+                                    <span className="text-xl opacity-25">🍣</span>
                                   </div>
                                 )}
-                                <p className="text-xs font-semibold text-on-surface mt-2 line-clamp-2 leading-tight">{f.name}</p>
-                                <p className="text-[11px] font-bold text-primary mt-1">{priceLabel(f.item as MenuItem)}</p>
+                                <p className="text-[11px] font-semibold text-on-surface mt-1.5 line-clamp-2 leading-tight">{f.name}</p>
+                                <p className="text-[10px] font-bold text-primary mt-0.5">{priceLabel(f.item as MenuItem)}</p>
                               </button>
                             ))}
                           </div>
                         )}
 
-                        {/* Native list: remaining ranked RAG results */}
+                        {/* Remaining RAG results — inline, expandable (no inner scroll) */}
                         {moreItems.length > 0 && (
                           <div className="space-y-0.5 pt-1 border-t border-outline-variant/10">
-                            <p className="text-[10px] text-on-surface-variant/40 px-1 pt-1.5">
+                            <p className="text-[10px] text-on-surface-variant/40 px-1 pt-1">
                               {aiResults.follow_up || 'Want a few more?'}
                             </p>
-                            <div className="max-h-56 overflow-y-auto space-y-0.5">
-                              {moreItems.map(item => (
+                            <div className="space-y-0.5">
+                              {visibleMore.map(item => (
                                 <button
                                   key={item.id}
                                   onClick={() => openItem(item as MenuItem)}
-                                  className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-surface-container active:scale-[0.98] transition-all text-left"
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-container active:scale-[0.98] transition-all text-left"
                                 >
                                   {item.image_url ? (
                                     <img
                                       src={resolveImageUrl(item.image_url) ?? undefined}
                                       alt=""
-                                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                      className="w-8 h-8 rounded-md object-cover flex-shrink-0"
                                       style={getMenuImageStyle(item)}
                                     />
                                   ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
-                                      <span className="text-lg opacity-25">🍣</span>
+                                    <div className="w-8 h-8 rounded-md bg-surface-container flex items-center justify-center flex-shrink-0">
+                                      <span className="text-sm opacity-25">🍣</span>
                                     </div>
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-on-surface truncate">{item.name}</p>
+                                    <p className="text-[13px] font-medium text-on-surface truncate leading-tight">{item.name}</p>
                                     {item.description && (
-                                      <p className="text-xs text-on-surface-variant/55 truncate">{item.description}</p>
+                                      <p className="text-[11px] text-on-surface-variant/55 truncate leading-tight">{item.description}</p>
                                     )}
                                   </div>
-                                  <p className="text-sm font-bold text-primary flex-shrink-0">{priceLabel(item as MenuItem)}</p>
+                                  <p className="text-[13px] font-bold text-primary flex-shrink-0">{priceLabel(item as MenuItem)}</p>
                                 </button>
                               ))}
                             </div>
+                            {hiddenCount > 0 && (
+                              <button
+                                onClick={() => setShowAllMore(true)}
+                                className="w-full text-[11px] font-semibold text-primary py-1.5 rounded-lg hover:bg-primary/5 active:scale-[0.98] transition-all"
+                              >
+                                Show {hiddenCount} more
+                              </button>
+                            )}
+                            {showAllMore && moreItems.length > INITIAL_MORE && (
+                              <button
+                                onClick={() => setShowAllMore(false)}
+                                className="w-full text-[11px] font-medium text-on-surface-variant/60 py-1.5 rounded-lg hover:bg-surface-container active:scale-[0.98] transition-all"
+                              >
+                                Show less
+                              </button>
+                            )}
                           </div>
                         )}
                       </>
